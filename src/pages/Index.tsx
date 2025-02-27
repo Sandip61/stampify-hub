@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, CreditCard } from "lucide-react";
 import StampCard from "@/components/StampCard";
 import { getCurrentUser } from "@/utils/auth";
 import { getUserStampCards, initializeDemoData } from "@/utils/data";
