@@ -70,14 +70,14 @@ const MerchantLogin = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8 animate-fade-in">
+    <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8 animate-fade-in bg-gradient-to-br from-teal-50 via-white to-amber-50">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold">Merchant Login</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-amber-600 bg-clip-text text-transparent">Merchant Login</h1>
           <p className="text-muted-foreground mt-2">Sign in to your Stampify Merchant account</p>
         </div>
         
-        <div className="bg-card rounded-xl shadow-sm border p-6">
+        <div className="bg-white rounded-xl shadow-lg border border-teal-100 p-6 backdrop-blur-sm">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="form-control">
               <label htmlFor="email" className="text-sm font-medium">
@@ -90,7 +90,7 @@ const MerchantLogin = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 className={`flex h-10 w-full rounded-md border ${
                   errors.email ? "border-destructive" : "border-input"
-                } bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
+                } bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
                 placeholder="your@email.com"
                 disabled={isLoading}
               />
@@ -116,7 +116,7 @@ const MerchantLogin = () => {
             <div className="flex justify-end">
               <Link 
                 to="/merchant/forgot-password" 
-                className="text-sm text-primary hover:underline"
+                className="text-sm text-teal-600 hover:text-teal-800 hover:underline"
               >
                 Forgot password?
               </Link>
@@ -124,7 +124,7 @@ const MerchantLogin = () => {
             
             <button
               type="submit"
-              className="w-full h-10 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+              className="w-full h-10 px-4 py-2 rounded-md bg-gradient-to-r from-teal-600 to-amber-600 text-white hover:from-teal-700 hover:to-amber-700 transition-colors disabled:opacity-50 disabled:pointer-events-none"
               disabled={isLoading}
             >
               {isLoading ? "Signing in..." : "Sign in"}
@@ -135,12 +135,14 @@ const MerchantLogin = () => {
         <div className="text-center mt-6">
           <p className="text-sm text-muted-foreground">
             New to Stampify?{" "}
-            <Link to="/merchant/signup" className="text-primary hover:underline">
+            <Link to="/merchant/signup" className="text-teal-600 hover:text-teal-800 hover:underline">
               Create a merchant account
             </Link>
           </p>
         </div>
       </div>
+      
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-600 via-amber-600 to-teal-600"></div>
     </div>
   );
 };
