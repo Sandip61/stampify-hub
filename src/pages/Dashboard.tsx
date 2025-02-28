@@ -95,13 +95,7 @@ const Dashboard = () => {
                 <div className="grid gap-4">
                   {activeCards.map((card) => (
                     <Link to={`/card/${card.id}`} key={card.id}>
-                      <StampCard
-                        businessName={card.businessName}
-                        businessLogo={card.businessLogo}
-                        currentStamps={card.currentStamps}
-                        totalStamps={card.totalStamps}
-                        color={card.color}
-                      />
+                      <StampCard card={card} />
                     </Link>
                   ))}
                 </div>

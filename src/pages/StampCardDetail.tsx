@@ -136,13 +136,9 @@ const StampCardDetail = () => {
           Back
         </button>
 
-        <StampCard
-          businessName={card.businessName}
-          businessLogo={card.businessLogo}
-          currentStamps={card.currentStamps}
-          totalStamps={card.totalStamps}
-          color={card.color}
-          size="large"
+        <StampCard 
+          card={card} 
+          className="large" 
         />
 
         <div className="bg-card rounded-xl border p-5 mt-6">
