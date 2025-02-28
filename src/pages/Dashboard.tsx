@@ -1,16 +1,16 @@
 
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { StampCard as StampCardComponent } from "@/components/StampCard";
+import StampCard from "@/components/StampCard";
 import { getCurrentUser, User } from "@/utils/auth";
-import { getUserStampCards, getUserTransactions, StampCard, Transaction, initializeDemoData } from "@/utils/data";
+import { getUserStampCards, getUserTransactions, StampCard as StampCardType, Transaction, initializeDemoData } from "@/utils/data";
 import { Stamp, Gift, ChevronRight } from "lucide-react";
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [cards, setCards] = useState<StampCard[]>([]);
+  const [cards, setCards] = useState<StampCardType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeCards, setActiveCards] = useState<StampCard[]>([]);
+  const [activeCards, setActiveCards] = useState<StampCardType[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
   const navigate = useNavigate();
 
@@ -95,7 +95,7 @@ const Dashboard = () => {
                 <div className="grid gap-4">
                   {activeCards.map((card) => (
                     <Link to={`/card/${card.id}`} key={card.id}>
-                      <StampCardComponent
+                      <StampCard
                         businessName={card.businessName}
                         businessLogo={card.businessLogo}
                         currentStamps={card.currentStamps}

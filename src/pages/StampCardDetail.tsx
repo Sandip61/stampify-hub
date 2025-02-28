@@ -3,15 +3,15 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getCurrentUser, User } from "@/utils/auth";
-import { getStampCard, addStamp, redeemReward, StampCard, Transaction } from "@/utils/data";
-import { StampCard as StampCardComponent } from "@/components/StampCard";
+import { getStampCard, addStamp, redeemReward, StampCard as StampCardType, Transaction } from "@/utils/data";
+import StampCard from "@/components/StampCard";
 import { ArrowLeft, Clock, Gift, Award, Badge, BadgeCheck } from "lucide-react";
 
 const StampCardDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
-  const [card, setCard] = useState<StampCard | null>(null);
+  const [card, setCard] = useState<StampCardType | null>(null);
   const [loading, setLoading] = useState(true);
   const [addingStamp, setAddingStamp] = useState(false);
   const [redeeming, setRedeeming] = useState(false);
@@ -136,7 +136,7 @@ const StampCardDetail = () => {
           Back
         </button>
 
-        <StampCardComponent
+        <StampCard
           businessName={card.businessName}
           businessLogo={card.businessLogo}
           currentStamps={card.currentStamps}
