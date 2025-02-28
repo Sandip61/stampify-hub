@@ -70,14 +70,14 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8 animate-fade-in bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8 animate-fade-in bg-gradient-to-br from-violet-100 via-white to-fuchsia-100">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Welcome back</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-fuchsia-500 bg-clip-text text-transparent">Welcome back</h1>
           <p className="text-muted-foreground mt-2">Sign in to your Stampify account</p>
         </div>
         
-        <div className="bg-white rounded-xl shadow-lg border border-purple-100 p-6 backdrop-blur-sm">
+        <div className="bg-white rounded-xl shadow-lg border border-fuchsia-200 p-6 backdrop-blur-sm">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="form-control">
               <label htmlFor="email" className="text-sm font-medium">
@@ -90,7 +90,7 @@ const Login = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 className={`flex h-10 w-full rounded-md border ${
                   errors.email ? "border-destructive" : "border-input"
-                } bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
+                } bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
                 placeholder="your@email.com"
                 disabled={isLoading}
               />
@@ -116,7 +116,7 @@ const Login = () => {
             <div className="flex justify-end">
               <Link 
                 to="/forgot-password" 
-                className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                className="text-sm text-violet-600 hover:text-violet-800 hover:underline"
               >
                 Forgot password?
               </Link>
@@ -124,7 +124,7 @@ const Login = () => {
             
             <button
               type="submit"
-              className="w-full h-10 px-4 py-2 rounded-md bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+              className="w-full h-10 px-4 py-2 rounded-md bg-gradient-to-r from-violet-600 via-fuchsia-500 to-violet-600 text-white hover:from-violet-700 hover:via-fuchsia-600 hover:to-violet-700 transition-colors disabled:opacity-50 disabled:pointer-events-none"
               disabled={isLoading}
             >
               {isLoading ? "Signing in..." : "Sign in"}
@@ -135,14 +135,14 @@ const Login = () => {
         <div className="text-center mt-6">
           <p className="text-sm text-muted-foreground">
             Don't have an account?{" "}
-            <Link to="/signup" className="text-blue-600 hover:text-blue-800 hover:underline">
+            <Link to="/signup" className="text-violet-600 hover:text-violet-800 hover:underline">
               Sign up
             </Link>
           </p>
         </div>
       </div>
       
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600"></div>
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-600 via-fuchsia-500 to-violet-600"></div>
     </div>
   );
 };
