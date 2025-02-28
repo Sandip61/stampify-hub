@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { isValidEmail, loginMerchant, initializeDemoMerchantData } from "@/utils/merchantAuth";
+import { isValidEmail, loginMerchant, getCurrentMerchant } from "@/utils/merchantAuth";
 import PasswordInput from "@/components/PasswordInput";
 
 const MerchantLogin = () => {
@@ -11,11 +11,20 @@ const MerchantLogin = () => {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
-    // Initialize demo merchant data on page load
-    initializeDemoMerchantData();
-  }, []);
+    const checkAuth = async () => {
+      const merchant = await getCurrentMerchant();
+      if (merchant) {
+        navigate("/merchant");
+      } else {
+        setIsCheckingAuth(false);
+      }
+    };
+    
+    checkAuth();
+  }, [navigate]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -52,22 +61,13 @@ const MerchantLogin = () => {
     }
   };
 
-  const handleDemoLogin = async () => {
-    setEmail("coffee@example.com");
-    setPassword("password");
-    
-    setIsLoading(true);
-    
-    try {
-      const merchant = await loginMerchant("coffee@example.com", "password");
-      toast.success(`Welcome to the demo, ${merchant.businessName}!`);
-      navigate("/merchant");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Demo login failed");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8">
+        <div className="w-12 h-12 rounded-full border-t-2 border-primary animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8 animate-fade-in">
@@ -128,25 +128,6 @@ const MerchantLogin = () => {
               disabled={isLoading}
             >
               {isLoading ? "Signing in..." : "Sign in"}
-            </button>
-            
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t"></div>
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-            
-            <button
-              type="button"
-              className="w-full h-10 px-4 py-2 rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-colors"
-              onClick={handleDemoLogin}
-            >
-              Demo Account
             </button>
           </form>
         </div>

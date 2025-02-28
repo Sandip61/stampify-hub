@@ -1,9 +1,9 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, BellOff, Download } from "lucide-react";
+import { Bell, BellOff, Download, LogOut } from "lucide-react";
 import { toast } from "sonner";
-import { getCurrentUser, updateUserProfile, User } from "@/utils/auth";
+import { getCurrentUser, updateUserProfile, User, logoutUser } from "@/utils/auth";
 import { getUserStampCards, getUserTransactions } from "@/utils/data";
 
 const Profile = () => {
@@ -13,14 +13,18 @@ const Profile = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const currentUser = getCurrentUser();
-    if (!currentUser) {
-      navigate("/login");
-      return;
-    }
+    const loadUser = async () => {
+      const currentUser = await getCurrentUser();
+      if (!currentUser) {
+        navigate("/login");
+        return;
+      }
 
-    setUser(currentUser);
-    setIsLoading(false);
+      setUser(currentUser);
+      setIsLoading(false);
+    };
+    
+    loadUser();
   }, [navigate]);
 
   const toggleNotifications = async () => {
@@ -67,6 +71,16 @@ const Profile = () => {
     downloadAnchorNode.remove();
     
     toast.success("Your data has been exported");
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      toast.success("Logged out successfully");
+      navigate("/login");
+    } catch (error) {
+      toast.error("Failed to log out");
+    }
   };
 
   if (isLoading || !user) {
@@ -152,6 +166,21 @@ const Profile = () => {
           <p className="text-xs text-muted-foreground mt-2">
             Download a copy of your personal data including your profile, stamp cards, and activity history.
           </p>
+        </div>
+      </div>
+
+      <div className="bg-card rounded-xl border overflow-hidden mb-6">
+        <div className="border-b px-4 py-3">
+          <h3 className="font-medium">Account Actions</h3>
+        </div>
+        <div className="p-4">
+          <button
+            onClick={handleLogout}
+            className="inline-flex items-center px-4 py-2 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Log Out
+          </button>
         </div>
       </div>
 

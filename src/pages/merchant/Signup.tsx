@@ -1,8 +1,8 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { isValidEmail, registerMerchant } from "@/utils/merchantAuth";
+import { isValidEmail, registerMerchant, getCurrentMerchant } from "@/utils/merchantAuth";
 import PasswordInput from "@/components/PasswordInput";
 
 const MerchantSignup = () => {
@@ -20,6 +20,20 @@ const MerchantSignup = () => {
     confirmPassword?: string;
   }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const merchant = await getCurrentMerchant();
+      if (merchant) {
+        navigate("/merchant");
+      } else {
+        setIsCheckingAuth(false);
+      }
+    };
+    
+    checkAuth();
+  }, [navigate]);
 
   const validateForm = () => {
     const newErrors: {
@@ -87,6 +101,14 @@ const MerchantSignup = () => {
     "#F97316", // Orange
     "#84CC16", // Lime
   ];
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8">
+        <div className="w-12 h-12 rounded-full border-t-2 border-primary animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8 animate-fade-in">

@@ -1,8 +1,8 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { isValidEmail, loginUser } from "@/utils/auth";
+import { isValidEmail, loginUser, getCurrentUser } from "@/utils/auth";
 import PasswordInput from "@/components/PasswordInput";
 
 const Login = () => {
@@ -11,6 +11,20 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        navigate("/");
+      } else {
+        setIsCheckingAuth(false);
+      }
+    };
+    
+    checkAuth();
+  }, [navigate]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -46,6 +60,14 @@ const Login = () => {
       setIsLoading(false);
     }
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8">
+        <div className="w-12 h-12 rounded-full border-t-2 border-primary animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8 animate-fade-in">

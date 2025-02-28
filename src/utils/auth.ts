@@ -1,7 +1,8 @@
 
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// Simple user interface
+// User interface
 export interface User {
   id: string;
   email: string;
@@ -9,170 +10,180 @@ export interface User {
   notificationsEnabled: boolean;
 }
 
-// Local storage keys
-const USER_KEY = "stampify-user";
-const USERS_KEY = "stampify-users";
-
-// Simulate user registration
-export const registerUser = (
+// Register a new user
+export const registerUser = async (
   email: string,
   password: string,
   name: string
 ): Promise<User> => {
-  return new Promise((resolve, reject) => {
-    // Simulate API delay
-    setTimeout(() => {
-      // Get existing users
-      const usersJson = localStorage.getItem(USERS_KEY);
-      const users = usersJson ? JSON.parse(usersJson) : {};
-
-      // Check if email is already registered
-      if (users[email]) {
-        reject(new Error("Email already registered"));
-        return;
-      }
-
-      // Create a new user
-      const newUser: User = {
-        id: Date.now().toString(),
-        email,
+  // Register the user with Supabase
+  const { data: authData, error: authError } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
         name,
-        notificationsEnabled: true,
-      };
-
-      // Add password to users object (in a real app, this would be properly hashed)
-      users[email] = { password, userId: newUser.id };
-      localStorage.setItem(USERS_KEY, JSON.stringify(users));
-
-      // Store all users except their passwords in a users array
-      const currentUsers = getAllUsers();
-      currentUsers.push(newUser);
-      localStorage.setItem("stampify-all-users", JSON.stringify(currentUsers));
-
-      // Set current user
-      localStorage.setItem(USER_KEY, JSON.stringify(newUser));
-
-      resolve(newUser);
-    }, 800);
+        is_merchant: false,
+      },
+    },
   });
+
+  if (authError) {
+    throw new Error(authError.message);
+  }
+
+  if (!authData.user) {
+    throw new Error("Registration failed");
+  }
+
+  // Get the user profile
+  const { data: profileData, error: profileError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", authData.user.id)
+    .single();
+
+  if (profileError) {
+    console.error("Error fetching profile:", profileError);
+    // We can still proceed since the user was created
+  }
+
+  return {
+    id: authData.user.id,
+    email: authData.user.email || "",
+    name: profileData?.name || name,
+    notificationsEnabled: profileData?.notifications_enabled || true,
+  };
 };
 
-// Simulate user login
-export const loginUser = (
+// Login a user
+export const loginUser = async (
   email: string,
   password: string
 ): Promise<User> => {
-  return new Promise((resolve, reject) => {
-    // Simulate API delay
-    setTimeout(() => {
-      // Get existing users
-      const usersJson = localStorage.getItem(USERS_KEY);
-      const users = usersJson ? JSON.parse(usersJson) : {};
-
-      // Check if user exists and password matches
-      const user = users[email];
-      if (!user || user.password !== password) {
-        reject(new Error("Invalid email or password"));
-        return;
-      }
-
-      // Get user from all users
-      const allUsersJson = localStorage.getItem("stampify-all-users");
-      const allUsers = allUsersJson ? JSON.parse(allUsersJson) : [];
-      const userData = allUsers.find((u: User) => u.id === user.userId);
-
-      if (!userData) {
-        reject(new Error("User data not found"));
-        return;
-      }
-
-      // Set current user
-      localStorage.setItem(USER_KEY, JSON.stringify(userData));
-
-      resolve(userData);
-    }, 800);
+  // Login the user with Supabase
+  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
   });
+
+  if (authError) {
+    throw new Error(authError.message);
+  }
+
+  if (!authData.user) {
+    throw new Error("Login failed");
+  }
+
+  // Get the user profile
+  const { data: profileData, error: profileError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", authData.user.id)
+    .single();
+
+  if (profileError) {
+    console.error("Error fetching profile:", profileError);
+    // We can still return basic user info
+    return {
+      id: authData.user.id,
+      email: authData.user.email || "",
+      name: authData.user.user_metadata.name || "",
+      notificationsEnabled: true,
+    };
+  }
+
+  return {
+    id: authData.user.id,
+    email: authData.user.email || "",
+    name: profileData.name || "",
+    notificationsEnabled: profileData.notifications_enabled,
+  };
 };
 
 // Get current user
-export const getCurrentUser = (): User | null => {
-  const userJson = localStorage.getItem(USER_KEY);
-  if (!userJson) return null;
-  return JSON.parse(userJson);
+export const getCurrentUser = async (): Promise<User | null> => {
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  
+  if (sessionError || !session) {
+    return null;
+  }
+
+  // Get the user profile
+  const { data: profileData, error: profileError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", session.user.id)
+    .single();
+
+  if (profileError) {
+    console.error("Error fetching profile:", profileError);
+    // We can still return basic user info
+    return {
+      id: session.user.id,
+      email: session.user.email || "",
+      name: session.user.user_metadata.name || "",
+      notificationsEnabled: true,
+    };
+  }
+
+  return {
+    id: session.user.id,
+    email: session.user.email || "",
+    name: profileData.name || "",
+    notificationsEnabled: profileData.notifications_enabled,
+  };
 };
 
 // Logout user
-export const logoutUser = (): void => {
-  localStorage.removeItem(USER_KEY);
+export const logoutUser = async (): Promise<void> => {
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    toast.error("Error signing out: " + error.message);
+  }
 };
 
 // Update user profile
-export const updateUserProfile = (
+export const updateUserProfile = async (
   userId: string,
   updates: Partial<User>
 ): Promise<User> => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      // Get all users
-      const allUsersJson = localStorage.getItem("stampify-all-users");
-      const allUsers = allUsersJson ? JSON.parse(allUsersJson) : [];
-      
-      // Find the user to update
-      const userIndex = allUsers.findIndex((u: User) => u.id === userId);
-      
-      if (userIndex === -1) {
-        reject(new Error("User not found"));
-        return;
-      }
-      
-      // Update the user
-      const updatedUser = {
-        ...allUsers[userIndex],
-        ...updates,
-      };
-      
-      allUsers[userIndex] = updatedUser;
-      
-      // Save back to localStorage
-      localStorage.setItem("stampify-all-users", JSON.stringify(allUsers));
-      
-      // If this is the current user, update the current user as well
-      const currentUser = getCurrentUser();
-      if (currentUser && currentUser.id === userId) {
-        localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
-      }
-      
-      resolve(updatedUser);
-    }, 600);
-  });
+  // Update profile in Supabase
+  const { data: profileData, error: profileError } = await supabase
+    .from("profiles")
+    .update({
+      name: updates.name,
+      notifications_enabled: updates.notificationsEnabled,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userId)
+    .select()
+    .single();
+
+  if (profileError) {
+    throw new Error("Failed to update profile: " + profileError.message);
+  }
+
+  return {
+    id: userId,
+    email: profileData.email,
+    name: profileData.name,
+    notificationsEnabled: profileData.notifications_enabled,
+  };
 };
 
-// Reset password (simplified version)
-export const resetPassword = (email: string): Promise<boolean> => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      // Get existing users
-      const usersJson = localStorage.getItem(USERS_KEY);
-      const users = usersJson ? JSON.parse(usersJson) : {};
-      
-      // Check if user exists
-      if (!users[email]) {
-        reject(new Error("Email not registered"));
-        return;
-      }
-      
-      // In a real app, this would send an email with a reset link
-      // Here we'll just simulate success
-      toast.success("Password reset email sent. Check your inbox!");
-      resolve(true);
-    }, 1000);
+// Reset password
+export const resetPassword = async (email: string): Promise<boolean> => {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
   });
-};
 
-// Get all users (helper function)
-const getAllUsers = (): User[] => {
-  const allUsersJson = localStorage.getItem("stampify-all-users");
-  return allUsersJson ? JSON.parse(allUsersJson) : [];
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  toast.success("Password reset email sent. Check your inbox!");
+  return true;
 };
 
 // Validate email format
