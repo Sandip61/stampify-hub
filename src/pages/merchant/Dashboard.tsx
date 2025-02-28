@@ -10,7 +10,7 @@ import {
   PlusCircle,
   ArrowUpRight
 } from "lucide-react";
-import { getCurrentMerchant } from "@/utils/merchantAuth";
+import { getCurrentMerchant, Merchant } from "@/utils/merchantAuth";
 import { 
   getMerchantStampCards, 
   getMerchantCustomers, 
@@ -22,24 +22,36 @@ import {
 
 const MerchantDashboard = () => {
   const navigate = useNavigate();
+  const [merchant, setMerchant] = useState<Merchant | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [analytics, setAnalytics] = useState<any>(null);
   const [recentTransactions, setRecentTransactions] = useState<MerchantTransaction[]>([]);
 
   useEffect(() => {
-    const merchant = getCurrentMerchant();
-    if (!merchant) {
-      navigate("/merchant/login");
-      return;
-    }
+    const loadData = async () => {
+      try {
+        const currentMerchant = await getCurrentMerchant();
+        if (!currentMerchant) {
+          navigate("/merchant/login");
+          return;
+        }
+        
+        setMerchant(currentMerchant);
 
-    // Initialize demo data for this merchant
-    initializeDemoMerchantDataForLogin(merchant.id);
+        // Initialize demo data for this merchant
+        initializeDemoMerchantDataForLogin(currentMerchant.id);
+        
+        // Load data
+        setAnalytics(getMerchantAnalytics());
+        setRecentTransactions(getMerchantTransactions().slice(0, 5));
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error loading merchant data:", error);
+        navigate("/merchant/login");
+      }
+    };
     
-    // Load data
-    setAnalytics(getMerchantAnalytics());
-    setRecentTransactions(getMerchantTransactions().slice(0, 5));
-    setIsLoading(false);
+    loadData();
   }, [navigate]);
 
   const formatDate = (dateString: string) => {

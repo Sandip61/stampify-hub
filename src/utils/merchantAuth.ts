@@ -95,6 +95,10 @@ export const loginMerchant = async (
     throw new Error("Could not find merchant account. Are you sure you registered as a merchant?");
   }
 
+  if (!merchantData) {
+    throw new Error("Could not find merchant account");
+  }
+
   return {
     id: authData.user.id,
     email: authData.user.email || "",
@@ -123,6 +127,10 @@ export const getCurrentMerchant = async (): Promise<Merchant | null> => {
   if (merchantError) {
     console.error("Error fetching merchant:", merchantError);
     return null; // Not a merchant or not found
+  }
+
+  if (!merchantData) {
+    return null;
   }
 
   return {
@@ -163,6 +171,10 @@ export const updateMerchantProfile = async (
 
   if (merchantError) {
     throw new Error("Failed to update merchant profile: " + merchantError.message);
+  }
+
+  if (!merchantData) {
+    throw new Error("Failed to retrieve updated merchant profile");
   }
 
   return {

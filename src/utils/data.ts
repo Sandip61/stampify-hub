@@ -66,13 +66,13 @@ const demoBusiness: Business[] = [
 ];
 
 // Initialize demo data
-export const initializeDemoData = (): void => {
+export const initializeDemoData = async (): Promise<void> => {
   // Check if businesses exist
   if (!localStorage.getItem(BUSINESSES_KEY)) {
     localStorage.setItem(BUSINESSES_KEY, JSON.stringify(demoBusiness));
   }
 
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) return;
 
   // Check if user has stamp cards
@@ -126,8 +126,8 @@ export const initializeDemoData = (): void => {
 };
 
 // Get all stamp cards for the current user
-export const getUserStampCards = (): StampCard[] => {
-  const user = getCurrentUser();
+export const getUserStampCards = async (): Promise<StampCard[]> => {
+  const user = await getCurrentUser();
   if (!user) return [];
   
   const allCardsJson = localStorage.getItem(STAMP_CARDS_KEY);
@@ -137,16 +137,16 @@ export const getUserStampCards = (): StampCard[] => {
 };
 
 // Get a specific stamp card by ID
-export const getStampCard = (cardId: string): StampCard | null => {
-  const cards = getUserStampCards();
+export const getStampCard = async (cardId: string): Promise<StampCard | null> => {
+  const cards = await getUserStampCards();
   return cards.find(card => card.id === cardId) || null;
 };
 
 // Add a stamp to a card
-export const addStamp = (cardId: string, count: number = 1): Promise<StampCard> => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const user = getCurrentUser();
+export const addStamp = async (cardId: string, count: number = 1): Promise<StampCard> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const user = await getCurrentUser();
       if (!user) {
         reject(new Error("User not logged in"));
         return;
@@ -192,16 +192,19 @@ export const addStamp = (cardId: string, count: number = 1): Promise<StampCard> 
       allTransactions[user.id] = userTransactions;
       localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(allTransactions));
       
-      resolve(updatedCard);
-    }, 600);
+      // Simulate network delay
+      setTimeout(() => resolve(updatedCard), 600);
+    } catch (error) {
+      reject(error);
+    }
   });
 };
 
 // Redeem a reward
-export const redeemReward = (cardId: string): Promise<{ card: StampCard, code: string, transaction: Transaction }> => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const user = getCurrentUser();
+export const redeemReward = async (cardId: string): Promise<{ card: StampCard, code: string, transaction: Transaction }> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const user = await getCurrentUser();
       if (!user) {
         reject(new Error("User not logged in"));
         return;
@@ -258,14 +261,17 @@ export const redeemReward = (cardId: string): Promise<{ card: StampCard, code: s
       allTransactions[user.id] = userTransactions;
       localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(allTransactions));
       
-      resolve({ card: updatedCard, code: rewardCode, transaction });
-    }, 800);
+      // Simulate network delay
+      setTimeout(() => resolve({ card: updatedCard, code: rewardCode, transaction }), 800);
+    } catch (error) {
+      reject(error);
+    }
   });
 };
 
 // Get all transactions for the current user
-export const getUserTransactions = (): Transaction[] => {
-  const user = getCurrentUser();
+export const getUserTransactions = async (): Promise<Transaction[]> => {
+  const user = await getCurrentUser();
   if (!user) return [];
   
   const allTransactionsJson = localStorage.getItem(TRANSACTIONS_KEY);

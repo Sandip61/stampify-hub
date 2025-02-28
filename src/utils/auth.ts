@@ -96,8 +96,8 @@ export const loginUser = async (
   return {
     id: authData.user.id,
     email: authData.user.email || "",
-    name: profileData.name || "",
-    notificationsEnabled: profileData.notifications_enabled,
+    name: profileData?.name || "",
+    notificationsEnabled: profileData?.notifications_enabled || false,
   };
 };
 
@@ -130,8 +130,8 @@ export const getCurrentUser = async (): Promise<User | null> => {
   return {
     id: session.user.id,
     email: session.user.email || "",
-    name: profileData.name || "",
-    notificationsEnabled: profileData.notifications_enabled,
+    name: profileData?.name || "",
+    notificationsEnabled: profileData?.notifications_enabled || false,
   };
 };
 
@@ -162,6 +162,10 @@ export const updateUserProfile = async (
 
   if (profileError) {
     throw new Error("Failed to update profile: " + profileError.message);
+  }
+
+  if (!profileData) {
+    throw new Error("Failed to retrieve updated profile");
   }
 
   return {

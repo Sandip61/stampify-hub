@@ -7,11 +7,11 @@ import {
   Store,
   PaintBucket
 } from "lucide-react";
-import { getCurrentMerchant, updateMerchantProfile } from "@/utils/merchantAuth";
+import { getCurrentMerchant, updateMerchantProfile, Merchant } from "@/utils/merchantAuth";
 
 const MerchantSettings = () => {
   const navigate = useNavigate();
-  const [merchant, setMerchant] = useState<any>(null);
+  const [merchant, setMerchant] = useState<Merchant | null>(null);
   const [businessName, setBusinessName] = useState("");
   const [businessLogo, setBusinessLogo] = useState("");
   const [businessColor, setBusinessColor] = useState("");
@@ -19,17 +19,26 @@ const MerchantSettings = () => {
   const [isSaving, setIsSaving] = useState(false);
   
   useEffect(() => {
-    const currentMerchant = getCurrentMerchant();
-    if (!currentMerchant) {
-      navigate("/merchant/login");
-      return;
-    }
+    const loadMerchantData = async () => {
+      try {
+        const currentMerchant = await getCurrentMerchant();
+        if (!currentMerchant) {
+          navigate("/merchant/login");
+          return;
+        }
+        
+        setMerchant(currentMerchant);
+        setBusinessName(currentMerchant.businessName);
+        setBusinessLogo(currentMerchant.businessLogo);
+        setBusinessColor(currentMerchant.businessColor);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error loading merchant data:", error);
+        navigate("/merchant/login");
+      }
+    };
     
-    setMerchant(currentMerchant);
-    setBusinessName(currentMerchant.businessName);
-    setBusinessLogo(currentMerchant.businessLogo);
-    setBusinessColor(currentMerchant.businessColor);
-    setIsLoading(false);
+    loadMerchantData();
   }, [navigate]);
 
   const handleSave = async () => {

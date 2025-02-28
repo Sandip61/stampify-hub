@@ -11,7 +11,7 @@ import {
   ChevronDown,
   Filter
 } from "lucide-react";
-import { getCurrentMerchant } from "@/utils/merchantAuth";
+import { getCurrentMerchant, Merchant } from "@/utils/merchantAuth";
 import { 
   getMerchantCustomers, 
   getMerchantTransactions,
@@ -23,6 +23,7 @@ import {
 
 const MerchantCustomers = () => {
   const navigate = useNavigate();
+  const [merchant, setMerchant] = useState<Merchant | null>(null);
   const [customers, setCustomers] = useState<MerchantCustomer[]>([]);
   const [transactions, setTransactions] = useState<MerchantTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,16 +36,27 @@ const MerchantCustomers = () => {
   const [transactionFilter, setTransactionFilter] = useState<"all" | "stamp" | "redeem">("all");
   
   useEffect(() => {
-    const merchant = getCurrentMerchant();
-    if (!merchant) {
-      navigate("/merchant/login");
-      return;
-    }
+    const loadData = async () => {
+      try {
+        const currentMerchant = await getCurrentMerchant();
+        if (!currentMerchant) {
+          navigate("/merchant/login");
+          return;
+        }
+        
+        setMerchant(currentMerchant);
 
-    // Initialize demo data for this merchant
-    initializeDemoMerchantDataForLogin(merchant.id);
+        // Initialize demo data for this merchant
+        initializeDemoMerchantDataForLogin(currentMerchant.id);
+        
+        // Load data
+        loadData();
+      } catch (error) {
+        console.error("Error loading merchant data:", error);
+        navigate("/merchant/login");
+      }
+    };
     
-    // Load data
     loadData();
   }, [navigate]);
 

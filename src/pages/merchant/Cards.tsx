@@ -10,7 +10,7 @@ import {
   CheckCircle,
   XCircle
 } from "lucide-react";
-import { getCurrentMerchant } from "@/utils/merchantAuth";
+import { getCurrentMerchant, Merchant } from "@/utils/merchantAuth";
 import { 
   getMerchantStampCards, 
   MerchantStampCard,
@@ -21,22 +21,34 @@ import {
 
 const MerchantCards = () => {
   const navigate = useNavigate();
+  const [merchant, setMerchant] = useState<Merchant | null>(null);
   const [cards, setCards] = useState<MerchantStampCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   
   useEffect(() => {
-    const merchant = getCurrentMerchant();
-    if (!merchant) {
-      navigate("/merchant/login");
-      return;
-    }
+    const loadData = async () => {
+      try {
+        const currentMerchant = await getCurrentMerchant();
+        if (!currentMerchant) {
+          navigate("/merchant/login");
+          return;
+        }
+        
+        setMerchant(currentMerchant);
 
-    // Initialize demo data for this merchant
-    initializeDemoMerchantDataForLogin(merchant.id);
+        // Initialize demo data for this merchant
+        initializeDemoMerchantDataForLogin(currentMerchant.id);
+        
+        // Load cards
+        loadCards();
+      } catch (error) {
+        console.error("Error loading merchant data:", error);
+        navigate("/merchant/login");
+      }
+    };
     
-    // Load cards
-    loadCards();
+    loadData();
   }, [navigate]);
 
   const loadCards = () => {
