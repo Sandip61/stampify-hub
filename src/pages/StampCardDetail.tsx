@@ -1,228 +1,260 @@
 
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Gift } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { getCurrentUser } from "@/utils/auth";
-import { getStampCard, addStamp, redeemReward, StampCard as StampCardType } from "@/utils/data";
+import { getCurrentUser, User } from "@/utils/auth";
+import { getStampCard, addStamp, redeemReward, StampCard, Transaction } from "@/utils/data";
+import { StampCard as StampCardComponent } from "@/components/StampCard";
+import { ArrowLeft, Clock, Gift, Award, Badge, BadgeCheck } from "lucide-react";
 
 const StampCardDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [card, setCard] = useState<StampCardType | null>(null);
-  const [isRedeeming, setIsRedeeming] = useState(false);
-  const [isAddingStamp, setIsAddingStamp] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [card, setCard] = useState<StampCard | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [addingStamp, setAddingStamp] = useState(false);
+  const [redeeming, setRedeeming] = useState(false);
   const [rewardCode, setRewardCode] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [rewardTransaction, setRewardTransaction] = useState<Transaction | null>(null);
 
   useEffect(() => {
-    const user = getCurrentUser();
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-
-    if (!id) {
-      navigate("/");
-      return;
-    }
-
-    // Load card
-    const cardData = getStampCard(id);
-    if (!cardData) {
-      toast.error("Stamp card not found");
-      navigate("/");
-      return;
-    }
-
-    setCard(cardData);
-    setIsLoading(false);
+    const loadData = async () => {
+      try {
+        if (!id) {
+          navigate("/");
+          return;
+        }
+        
+        // Check user authentication
+        const currentUser = await getCurrentUser();
+        if (!currentUser) {
+          navigate("/login");
+          return;
+        }
+        
+        setUser(currentUser);
+        
+        // Load card details
+        const cardDetails = await getStampCard(id);
+        if (!cardDetails) {
+          toast.error("Stamp card not found");
+          navigate("/");
+          return;
+        }
+        
+        setCard(cardDetails);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error loading card details:", error);
+        toast.error("Failed to load card details");
+        navigate("/");
+      }
+    };
+    
+    loadData();
   }, [id, navigate]);
 
   const handleAddStamp = async () => {
-    if (!card || isAddingStamp) return;
+    if (!card) return;
     
-    setIsAddingStamp(true);
+    setAddingStamp(true);
     
     try {
       const updatedCard = await addStamp(card.id);
       setCard(updatedCard);
-      toast.success("Stamp added!");
+      toast.success("Stamp added successfully");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to add stamp");
     } finally {
-      setIsAddingStamp(false);
+      setAddingStamp(false);
     }
   };
 
   const handleRedeemReward = async () => {
-    if (!card || isRedeeming) return;
+    if (!card) return;
     
+    // Check if enough stamps
     if (card.currentStamps < card.totalStamps) {
-      toast.error("Not enough stamps to redeem reward");
+      toast.error(`You need ${card.totalStamps - card.currentStamps} more stamps to redeem this reward`);
       return;
     }
     
-    setIsRedeeming(true);
+    setRedeeming(true);
     
     try {
-      const result = await redeemReward(card.id);
-      setCard(result.card);
-      setRewardCode(result.code);
+      const { card: updatedCard, code, transaction } = await redeemReward(card.id);
+      setCard(updatedCard);
+      setRewardCode(code);
+      setRewardTransaction(transaction);
       toast.success("Reward redeemed successfully!");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to redeem reward");
     } finally {
-      setIsRedeeming(false);
+      setRedeeming(false);
     }
   };
 
-  if (isLoading || !card) {
+  const closeRewardModal = () => {
+    setRewardCode(null);
+    setRewardTransaction(null);
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-screen pt-16 pb-20 px-4 max-w-3xl mx-auto animate-fade-in">
-        <div className="h-screen flex items-center justify-center">
-          <div className="w-12 h-12 rounded-full border-t-2 border-primary animate-spin" />
+      <div className="min-h-screen flex justify-center items-center">
+        <div className="w-12 h-12 rounded-full border-t-2 border-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (!card) {
+    return (
+      <div className="min-h-screen flex flex-col justify-center items-center px-4">
+        <div className="text-center">
+          <h1 className="text-xl font-semibold mb-4">Card not found</h1>
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center text-primary hover:underline"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Go back
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pt-16 pb-20 px-4 max-w-3xl mx-auto animate-fade-in">
-      <div className="mb-6 flex items-center">
+    <div className="min-h-screen pt-16 pb-20 px-4">
+      <div className="max-w-md mx-auto">
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center justify-center rounded-md w-8 h-8 text-muted-foreground hover:text-foreground"
+          className="flex items-center mb-6 text-muted-foreground hover:text-foreground transition-colors"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
         </button>
-        <h1 className="text-xl font-bold ml-2">{card.businessName}</h1>
-      </div>
 
-      <div className="stamp-card mb-8" style={{ borderColor: card.color }}>
-        <div 
-          className="absolute inset-0 opacity-10" 
-          style={{ backgroundColor: card.color }}
+        <StampCardComponent
+          businessName={card.businessName}
+          businessLogo={card.businessLogo}
+          currentStamps={card.currentStamps}
+          totalStamps={card.totalStamps}
+          color={card.color}
+          size="large"
         />
-        
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
+
+        <div className="bg-card rounded-xl border p-5 mt-6">
+          <h3 className="text-lg font-medium mb-4">{card.businessName}</h3>
+          
+          <div className="flex items-center text-muted-foreground mb-6">
+            <Clock className="h-4 w-4 mr-1" />
+            <span className="text-sm">
+              Since {new Date(card.createdAt).toLocaleDateString()}
+            </span>
+          </div>
+          
+          <div className="flex items-start mb-6">
+            <div className="rounded-full bg-primary/10 p-2 mr-3 text-primary">
+              <Award className="h-5 w-5" />
+            </div>
             <div>
-              <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-secondary text-secondary-foreground">
-                {card.currentStamps}/{card.totalStamps} stamps
-              </span>
-              <h2 className="text-xl font-semibold mt-2">{card.businessName}</h2>
-              <p className="text-muted-foreground">{card.reward}</p>
-            </div>
-            <div 
-              className="flex items-center justify-center w-16 h-16 rounded-full text-3xl"
-              style={{ backgroundColor: card.color }}
-            >
-              {card.businessLogo}
+              <h4 className="font-medium">Reward</h4>
+              <p className="text-sm text-muted-foreground">{card.reward}</p>
             </div>
           </div>
           
-          <div className="stamp-grid mb-6">
-            {Array.from({ length: card.totalStamps }).map((_, index) => (
-              <div 
-                key={index}
-                className={cn(
-                  "stamp",
-                  index < card.currentStamps ? "stamp-filled" : "stamp-empty"
-                )}
-                style={
-                  index < card.currentStamps 
-                    ? { backgroundColor: card.color } 
-                    : {}
-                }
-              >
-                {index < card.currentStamps && "✓"}
-              </div>
-            ))}
-          </div>
-          
-          <div className="flex justify-center">
-            {card.currentStamps === card.totalStamps ? (
-              <button
-                onClick={handleRedeemReward}
-                className="inline-flex items-center px-6 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none"
-                disabled={isRedeeming}
-                style={{ 
-                  backgroundColor: card.color,
-                  color: "#fff"
-                }}
-              >
-                <Gift className="w-4 h-4 mr-2" />
-                {isRedeeming ? "Redeeming..." : "Redeem Reward"}
-              </button>
-            ) : (
+          <div className="flex items-start mb-8">
+            <div className="rounded-full bg-primary/10 p-2 mr-3 text-primary">
+              <Badge className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="font-medium">Progress</h4>
               <p className="text-sm text-muted-foreground">
-                Collect {card.totalStamps - card.currentStamps} more stamp{card.totalStamps - card.currentStamps !== 1 ? "s" : ""} to earn your reward
+                {card.currentStamps} of {card.totalStamps} stamps collected
               </p>
-            )}
+              <div className="w-full bg-secondary rounded-full h-2 mt-2">
+                <div
+                  className="bg-primary rounded-full h-2"
+                  style={{ width: `${(card.currentStamps / card.totalStamps) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              onClick={handleAddStamp}
+              className="flex items-center justify-center px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+              disabled={addingStamp}
+            >
+              {addingStamp ? (
+                <span className="inline-block w-5 h-5 border-t-2 border-primary-foreground rounded-full animate-spin mr-2"></span>
+              ) : (
+                <Badge className="mr-2 h-4 w-4" />
+              )}
+              Add Stamp
+            </button>
+            
+            <button
+              onClick={handleRedeemReward}
+              className={`flex items-center justify-center px-4 py-2 rounded-md bg-green-500 text-white hover:bg-green-600 transition-colors disabled:opacity-50 disabled:hover:bg-green-500`}
+              disabled={card.currentStamps < card.totalStamps || redeeming}
+            >
+              {redeeming ? (
+                <span className="inline-block w-5 h-5 border-t-2 border-white rounded-full animate-spin mr-2"></span>
+              ) : (
+                <Gift className="mr-2 h-4 w-4" />
+              )}
+              Redeem Reward
+            </button>
           </div>
         </div>
-      </div>
-
-      {/* This is just a demo control to add stamps */}
-      <div className="bg-card rounded-xl border p-4 mb-6">
-        <h3 className="text-sm font-medium mb-3">Demo Controls</h3>
-        <button
-          onClick={handleAddStamp}
-          className="inline-flex items-center px-4 py-2 rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:pointer-events-none"
-          disabled={isAddingStamp || card.currentStamps >= card.totalStamps}
-        >
-          {isAddingStamp ? "Adding..." : "Add a Stamp"}
-        </button>
-        <p className="text-xs text-muted-foreground mt-2">
-          This button simulates a merchant adding a stamp to your card.
-        </p>
-      </div>
-
-      {rewardCode && (
-        <div className="bg-card rounded-xl border p-6 text-center mb-6 animate-scale-in">
-          <div 
-            className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 text-white"
-            style={{ backgroundColor: card.color }}
-          >
-            <Gift className="w-8 h-8" />
+        
+        {/* Reward redeemed modal */}
+        {rewardCode && (
+          <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 z-50">
+            <div className="bg-card rounded-xl border p-6 max-w-md w-full">
+              <div className="flex justify-center mb-4">
+                <div className="rounded-full bg-green-500/10 p-4 text-green-500">
+                  <BadgeCheck className="h-10 w-10" />
+                </div>
+              </div>
+              
+              <h3 className="text-xl font-bold text-center mb-2">Reward Redeemed!</h3>
+              <p className="text-center text-muted-foreground mb-6">
+                Show this code to the staff to claim your reward
+              </p>
+              
+              <div className="bg-muted p-4 rounded-md text-center mb-6">
+                <span className="text-2xl font-mono font-bold tracking-widest">
+                  {rewardCode}
+                </span>
+              </div>
+              
+              <div className="bg-muted/50 p-4 rounded-md mb-6">
+                <h4 className="font-medium mb-2">{card.businessName}</h4>
+                <p className="text-sm text-muted-foreground">
+                  {card.reward}
+                </p>
+                {rewardTransaction && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Redeemed on {new Date(rewardTransaction.timestamp).toLocaleDateString()} at {" "}
+                    {new Date(rewardTransaction.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                )}
+              </div>
+              
+              <button
+                onClick={closeRewardModal}
+                className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
-          <h3 className="text-lg font-medium">Congratulations!</h3>
-          <p className="text-muted-foreground mt-2 mb-4">
-            You've earned: {card.reward}
-          </p>
-          <div className="bg-secondary p-4 rounded-md font-mono text-xl font-semibold tracking-widest mb-4">
-            {rewardCode}
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Show this code to the merchant to claim your reward
-          </p>
-        </div>
-      )}
-
-      <div className="bg-card rounded-xl border overflow-hidden">
-        <div className="border-b px-4 py-3">
-          <h3 className="font-medium">Card Details</h3>
-        </div>
-        <div className="p-4 space-y-3">
-          <div className="flex justify-between">
-            <span className="text-sm text-muted-foreground">Business</span>
-            <span className="text-sm font-medium">{card.businessName}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-sm text-muted-foreground">Reward</span>
-            <span className="text-sm font-medium">{card.reward}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-sm text-muted-foreground">Progress</span>
-            <span className="text-sm font-medium">{card.currentStamps}/{card.totalStamps} stamps</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-sm text-muted-foreground">Created</span>
-            <span className="text-sm font-medium">{new Date(card.createdAt).toLocaleDateString()}</span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
