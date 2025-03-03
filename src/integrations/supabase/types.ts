@@ -9,7 +9,168 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      customer_stamp_cards: {
+        Row: {
+          card_id: string
+          created_at: string | null
+          current_stamps: number
+          customer_id: string
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          card_id: string
+          created_at?: string | null
+          current_stamps?: number
+          customer_id: string
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          card_id?: string
+          created_at?: string | null
+          current_stamps?: number
+          customer_id?: string
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_stamp_cards_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "stamp_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stamp_cards: {
+        Row: {
+          business_color: string | null
+          business_logo: string | null
+          created_at: string | null
+          description: string | null
+          expiry_days: number | null
+          id: string
+          is_active: boolean | null
+          merchant_id: string
+          name: string
+          reward: string
+          total_stamps: number
+          updated_at: string | null
+        }
+        Insert: {
+          business_color?: string | null
+          business_logo?: string | null
+          created_at?: string | null
+          description?: string | null
+          expiry_days?: number | null
+          id?: string
+          is_active?: boolean | null
+          merchant_id: string
+          name: string
+          reward: string
+          total_stamps?: number
+          updated_at?: string | null
+        }
+        Update: {
+          business_color?: string | null
+          business_logo?: string | null
+          created_at?: string | null
+          description?: string | null
+          expiry_days?: number | null
+          id?: string
+          is_active?: boolean | null
+          merchant_id?: string
+          name?: string
+          reward?: string
+          total_stamps?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      stamp_qr_codes: {
+        Row: {
+          card_id: string
+          code: string
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_single_use: boolean | null
+          is_used: boolean | null
+          merchant_id: string
+        }
+        Insert: {
+          card_id: string
+          code: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_single_use?: boolean | null
+          is_used?: boolean | null
+          merchant_id: string
+        }
+        Update: {
+          card_id?: string
+          code?: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_single_use?: boolean | null
+          is_used?: boolean | null
+          merchant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stamp_qr_codes_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "stamp_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stamp_transactions: {
+        Row: {
+          card_id: string
+          count: number | null
+          customer_id: string
+          id: string
+          merchant_id: string
+          reward_code: string | null
+          timestamp: string | null
+          type: string
+        }
+        Insert: {
+          card_id: string
+          count?: number | null
+          customer_id: string
+          id?: string
+          merchant_id: string
+          reward_code?: string | null
+          timestamp?: string | null
+          type: string
+        }
+        Update: {
+          card_id?: string
+          count?: number | null
+          customer_id?: string
+          id?: string
+          merchant_id?: string
+          reward_code?: string | null
+          timestamp?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stamp_transactions_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "stamp_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

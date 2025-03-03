@@ -1,84 +1,106 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/cors.ts";
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL") as string;
-const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_KEY") as string;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
-
-// Generate a random string for QR code
-function generateRandomCode(): string {
-  const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 8; i++) {
-    code += characters.charAt(Math.floor(Math.random() * characters.length));
-  }
-  return code;
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Create a new QR code for a stamp card
+interface RequestBody {
+  cardId: string;
+  expiresInHours: number;
+  isSingleUse: boolean;
+}
+
 serve(async (req) => {
-  // Handle CORS
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
   }
-  
+
   try {
-    // Create a Supabase client with the user's JWT
-    const authHeader = req.headers.get('Authorization')!;
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') as string
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') as string
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Get the requesting user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
+    // Get the JWT from the request headers
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+        JSON.stringify({ 
+          success: false, 
+          error: 'Missing Authorization header' 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 401 
+        }
+      )
     }
 
-    // Get request body
-    const requestData = await req.json();
-    const { cardId, expiresInHours = 24, isSingleUse = false } = requestData;
+    // Get the current user session
+    const { data: { user }, error: userError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
+    
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Unauthorized' 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 401 
+        }
+      )
+    }
+
+    // Get the request body
+    const { cardId, expiresInHours = 24, isSingleUse = false } = await req.json() as RequestBody
 
     if (!cardId) {
       return new Response(
-        JSON.stringify({ error: "Card ID is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+        JSON.stringify({ 
+          success: false, 
+          error: 'Missing required parameters' 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 400 
+        }
+      )
     }
 
-    // Verify the merchant owns this card
+    // Verify the merchant owns this stamp card
     const { data: cardData, error: cardError } = await supabase
       .from('stamp_cards')
-      .select('*')
+      .select('id')
       .eq('id', cardId)
       .eq('merchant_id', user.id)
-      .single();
+      .single()
 
     if (cardError || !cardData) {
       return new Response(
-        JSON.stringify({ error: "Card not found or you don't have permission" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+        JSON.stringify({ 
+          success: false, 
+          error: 'Stamp card not found or you do not have permission' 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 404
+        }
+      )
     }
 
-    // Generate a unique QR code
-    const code = generateRandomCode();
+    // Generate a unique code
+    const code = crypto.randomUUID()
     
     // Calculate expiry time
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + expiresInHours);
+    const expiresAt = new Date()
+    expiresAt.setHours(expiresAt.getHours() + expiresInHours)
 
-    // Insert the QR code record
-    const { data: qrData, error: qrError } = await supabase
+    // Create QR code record in the database
+    const { data: qrCode, error: qrError } = await supabase
       .from('stamp_qr_codes')
       .insert({
         merchant_id: user.id,
@@ -86,31 +108,56 @@ serve(async (req) => {
         code,
         expires_at: expiresAt.toISOString(),
         is_single_use: isSingleUse,
+        is_used: false
       })
       .select()
-      .single();
+      .single()
 
     if (qrError) {
-      console.error("QR code creation error:", qrError);
+      console.error('Error creating QR code:', qrError)
       return new Response(
-        JSON.stringify({ error: "Failed to create QR code" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+        JSON.stringify({ 
+          success: false, 
+          error: 'Failed to create QR code' 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 500 
+        }
+      )
     }
+
+    // Create a QR code value
+    const qrValue = JSON.stringify({
+      type: 'stamp',
+      code,
+      card_id: cardId,
+      merchant_id: user.id
+    })
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        qrCode: qrData,
-        qrValue: code,
+        qrCode,
+        qrValue
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 200 
+      }
+    )
   } catch (error) {
-    console.error("Server error:", error);
+    console.error('Error in create-qr-code function:', error)
+    
     return new Response(
-      JSON.stringify({ error: "Internal Server Error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+      JSON.stringify({ 
+        success: false, 
+        error: 'Internal server error' 
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 500 
+      }
+    )
   }
-});
+})
