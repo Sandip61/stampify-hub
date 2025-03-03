@@ -1,1 +1,12 @@
+
+# A string used as a project reference
 project_id = "ctutwgntxhpuxtfkkdiy"
+
+[functions.create-qr-code]
+verify_jwt = true
+
+[functions.issue-stamp]
+verify_jwt = true
+
+[functions.redeem-reward]
+verify_jwt = true

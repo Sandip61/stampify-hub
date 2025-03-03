@@ -1,72 +1,165 @@
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { Toaster } from "sonner";
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Navigation from "./components/Navigation";
-import Index from "./pages/Index";
+// Pages
+import Home from "./pages/Home";
 import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import ForgotPassword from "./pages/ForgotPassword";
-import Dashboard from "./pages/Dashboard";
+import Register from "./pages/Register";
 import StampCardDetail from "./pages/StampCardDetail";
-import History from "./pages/History";
 import Profile from "./pages/Profile";
-import NotFound from "./pages/NotFound";
+import Transactions from "./pages/Transactions";
+import ResetPassword from "./pages/ResetPassword";
 
-// Merchant routes
-import MerchantLayout from "./pages/merchant/Layout";
+// Merchant Pages
 import MerchantLogin from "./pages/merchant/Login";
-import MerchantSignup from "./pages/merchant/Signup";
-import MerchantForgotPassword from "./pages/merchant/ForgotPassword";
+import MerchantRegister from "./pages/merchant/Register";
 import MerchantDashboard from "./pages/merchant/Dashboard";
 import MerchantCards from "./pages/merchant/Cards";
-import MerchantCardForm from "./pages/merchant/CardForm";
 import MerchantCustomers from "./pages/merchant/Customers";
-import MerchantAnalytics from "./pages/merchant/Analytics";
 import MerchantSettings from "./pages/merchant/Settings";
+import MerchantCardForm from "./pages/merchant/CardForm";
+import MerchantResetPassword from "./pages/merchant/ResetPassword";
+import StampManagement from "./pages/merchant/StampManagement";
 
-const queryClient = new QueryClient();
+// Layouts
+import MainLayout from "./layouts/MainLayout";
+import MerchantLayout from "./layouts/MerchantLayout";
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          {/* Customer routes */}
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/" element={<Navigation />}>
-            <Route path="/cards" element={<Index />} />
-            <Route path="/card/:id" element={<StampCardDetail />} />
-            <Route path="/history" element={<History />} />
-            <Route path="/profile" element={<Profile />} />
-          </Route>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          
-          {/* Merchant routes */}
-          <Route path="/merchant" element={<MerchantLayout />}>
-            <Route index element={<MerchantDashboard />} />
-            <Route path="cards" element={<MerchantCards />} />
-            <Route path="cards/new" element={<MerchantCardForm />} />
-            <Route path="cards/edit/:id" element={<MerchantCardForm />} />
-            <Route path="customers" element={<MerchantCustomers />} />
-            <Route path="analytics" element={<MerchantAnalytics />} />
-            <Route path="settings" element={<MerchantSettings />} />
-          </Route>
-          <Route path="/merchant/login" element={<MerchantLogin />} />
-          <Route path="/merchant/signup" element={<MerchantSignup />} />
-          <Route path="/merchant/forgot-password" element={<MerchantForgotPassword />} />
-          
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: (
+      <MainLayout>
+        <Home />
+      </MainLayout>
+    ),
+  },
+  {
+    path: "/login",
+    element: (
+      <MainLayout hideNav>
+        <Login />
+      </MainLayout>
+    ),
+  },
+  {
+    path: "/register",
+    element: (
+      <MainLayout hideNav>
+        <Register />
+      </MainLayout>
+    ),
+  },
+  {
+    path: "/reset-password",
+    element: (
+      <MainLayout hideNav>
+        <ResetPassword />
+      </MainLayout>
+    ),
+  },
+  {
+    path: "/card/:id",
+    element: (
+      <MainLayout>
+        <StampCardDetail />
+      </MainLayout>
+    ),
+  },
+  {
+    path: "/profile",
+    element: (
+      <MainLayout>
+        <Profile />
+      </MainLayout>
+    ),
+  },
+  {
+    path: "/transactions",
+    element: (
+      <MainLayout>
+        <Transactions />
+      </MainLayout>
+    ),
+  },
+  // Merchant routes
+  {
+    path: "/merchant/login",
+    element: <MerchantLogin />,
+  },
+  {
+    path: "/merchant/register",
+    element: <MerchantRegister />,
+  },
+  {
+    path: "/merchant/reset-password",
+    element: <MerchantResetPassword />,
+  },
+  {
+    path: "/merchant",
+    element: (
+      <MerchantLayout>
+        <MerchantDashboard />
+      </MerchantLayout>
+    ),
+  },
+  {
+    path: "/merchant/cards",
+    element: (
+      <MerchantLayout>
+        <MerchantCards />
+      </MerchantLayout>
+    ),
+  },
+  {
+    path: "/merchant/cards/new",
+    element: (
+      <MerchantLayout>
+        <MerchantCardForm />
+      </MerchantLayout>
+    ),
+  },
+  {
+    path: "/merchant/cards/edit/:id",
+    element: (
+      <MerchantLayout>
+        <MerchantCardForm />
+      </MerchantLayout>
+    ),
+  },
+  {
+    path: "/merchant/cards/:id/manage",
+    element: (
+      <MerchantLayout>
+        <StampManagement />
+      </MerchantLayout>
+    ),
+  },
+  {
+    path: "/merchant/customers",
+    element: (
+      <MerchantLayout>
+        <MerchantCustomers />
+      </MerchantLayout>
+    ),
+  },
+  {
+    path: "/merchant/settings",
+    element: (
+      <MerchantLayout>
+        <MerchantSettings />
+      </MerchantLayout>
+    ),
+  },
+]);
+
+function App() {
+  return (
+    <>
+      <RouterProvider router={router} />
+      <Toaster position="top-center" richColors />
+    </>
+  );
+}
 
 export default App;
