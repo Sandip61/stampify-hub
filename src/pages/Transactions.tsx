@@ -58,7 +58,10 @@ const Transactions = () => {
             count: item.count || 0,
             reward_code: item.reward_code,
             timestamp: item.timestamp,
-            card: item.card as TransactionCard
+            card: {
+              name: item.card.name,
+              business_logo: item.card.business_logo
+            } as TransactionCard
           }));
           
           setTransactions(typedTransactions);
@@ -149,3 +152,4 @@ const Transactions = () => {
 };
 
 export default Transactions;
+
