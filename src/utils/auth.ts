@@ -1,5 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, type Profile } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 // User interface
@@ -170,9 +170,9 @@ export const updateUserProfile = async (
 
   return {
     id: userId,
-    email: profileData.email,
-    name: profileData.name,
-    notificationsEnabled: profileData.notifications_enabled,
+    email: profileData.email || "",
+    name: profileData.name || "",
+    notificationsEnabled: profileData.notifications_enabled || false,
   };
 };
 

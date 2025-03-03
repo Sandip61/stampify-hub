@@ -1,5 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, type Merchant } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 // Merchant interface
@@ -179,7 +179,7 @@ export const updateMerchantProfile = async (
 
   return {
     id: merchantId,
-    email: merchantData.email,
+    email: merchantData.email || "",
     businessName: merchantData.business_name,
     businessLogo: merchantData.business_logo,
     businessColor: merchantData.business_color,
