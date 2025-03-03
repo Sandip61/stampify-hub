@@ -1,5 +1,5 @@
 
-import { supabase, type Profile } from "@/integrations/supabase/client";
+import { supabase, type Profile, type DBProfile, dbProfileToProfile, profileToDBProfile } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 // User interface
@@ -37,7 +37,7 @@ export const registerUser = async (
   }
 
   // Get the user profile
-  const { data: profileData, error: profileError } = await supabase
+  const { data: dbProfileData, error: profileError } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", authData.user.id)
@@ -48,11 +48,14 @@ export const registerUser = async (
     // We can still proceed since the user was created
   }
 
+  // Convert DB profile to frontend Profile if it exists
+  const profileData = dbProfileData ? dbProfileToProfile(dbProfileData as DBProfile) : null;
+
   return {
     id: authData.user.id,
     email: authData.user.email || "",
     name: profileData?.name || name,
-    notificationsEnabled: profileData?.notifications_enabled || true,
+    notificationsEnabled: profileData?.notificationsEnabled || true,
   };
 };
 
@@ -76,7 +79,7 @@ export const loginUser = async (
   }
 
   // Get the user profile
-  const { data: profileData, error: profileError } = await supabase
+  const { data: dbProfileData, error: profileError } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", authData.user.id)
@@ -93,11 +96,14 @@ export const loginUser = async (
     };
   }
 
+  // Convert DB profile to frontend Profile
+  const profileData = dbProfileData ? dbProfileToProfile(dbProfileData as DBProfile) : null;
+
   return {
     id: authData.user.id,
     email: authData.user.email || "",
     name: profileData?.name || "",
-    notificationsEnabled: profileData?.notifications_enabled || false,
+    notificationsEnabled: profileData?.notificationsEnabled || false,
   };
 };
 
@@ -110,7 +116,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
   }
 
   // Get the user profile
-  const { data: profileData, error: profileError } = await supabase
+  const { data: dbProfileData, error: profileError } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", session.user.id)
@@ -127,11 +133,14 @@ export const getCurrentUser = async (): Promise<User | null> => {
     };
   }
 
+  // Convert DB profile to frontend Profile
+  const profileData = dbProfileData ? dbProfileToProfile(dbProfileData as DBProfile) : null;
+
   return {
     id: session.user.id,
     email: session.user.email || "",
     name: profileData?.name || "",
-    notificationsEnabled: profileData?.notifications_enabled || false,
+    notificationsEnabled: profileData?.notificationsEnabled || false,
   };
 };
 
@@ -148,14 +157,17 @@ export const updateUserProfile = async (
   userId: string,
   updates: Partial<User>
 ): Promise<User> => {
+  // Convert User updates to DBProfile format
+  const dbUpdates = {
+    name: updates.name,
+    notifications_enabled: updates.notificationsEnabled,
+    updated_at: new Date().toISOString(),
+  };
+  
   // Update profile in Supabase
-  const { data: profileData, error: profileError } = await supabase
+  const { data: dbProfileData, error: profileError } = await supabase
     .from("profiles")
-    .update({
-      name: updates.name,
-      notifications_enabled: updates.notificationsEnabled,
-      updated_at: new Date().toISOString(),
-    })
+    .update(dbUpdates)
     .eq("id", userId)
     .select()
     .single();
@@ -164,15 +176,18 @@ export const updateUserProfile = async (
     throw new Error("Failed to update profile: " + profileError.message);
   }
 
-  if (!profileData) {
+  if (!dbProfileData) {
     throw new Error("Failed to retrieve updated profile");
   }
+
+  // Convert DB profile to frontend Profile
+  const profileData = dbProfileToProfile(dbProfileData as DBProfile);
 
   return {
     id: userId,
     email: profileData.email || "",
     name: profileData.name || "",
-    notificationsEnabled: profileData.notifications_enabled || false,
+    notificationsEnabled: profileData.notificationsEnabled,
   };
 };
 

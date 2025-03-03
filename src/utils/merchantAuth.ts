@@ -1,16 +1,9 @@
 
-import { supabase, type Merchant } from "@/integrations/supabase/client";
+import { supabase, type Merchant as MerchantInterface, type DBMerchant, dbMerchantToMerchant, merchantToDBMerchant } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// Merchant interface
-export interface Merchant {
-  id: string;
-  email: string;
-  businessName: string;
-  businessLogo: string;
-  businessColor: string;
-  createdAt: string;
-}
+// Re-export the Merchant interface
+export type Merchant = MerchantInterface;
 
 // Register a new merchant
 export const registerMerchant = async (
@@ -43,7 +36,7 @@ export const registerMerchant = async (
   }
 
   // Get the merchant profile
-  const { data: merchantData, error: merchantError } = await supabase
+  const { data: dbMerchantData, error: merchantError } = await supabase
     .from("merchants")
     .select("*")
     .eq("id", authData.user.id)
@@ -54,13 +47,17 @@ export const registerMerchant = async (
     // We can still proceed since the user was created
   }
 
+  // Convert DB merchant to frontend Merchant if it exists
+  const merchantData = dbMerchantData ? dbMerchantToMerchant(dbMerchantData as DBMerchant) : null;
+
   return {
     id: authData.user.id,
     email: authData.user.email || "",
-    businessName: merchantData?.business_name || businessName,
-    businessLogo: merchantData?.business_logo || businessLogo,
-    businessColor: merchantData?.business_color || businessColor,
-    createdAt: merchantData?.created_at || new Date().toISOString(),
+    businessName: merchantData?.businessName || businessName,
+    businessLogo: merchantData?.businessLogo || businessLogo,
+    businessColor: merchantData?.businessColor || businessColor,
+    createdAt: merchantData?.createdAt || new Date().toISOString(),
+    updatedAt: merchantData?.updatedAt || new Date().toISOString(),
   };
 };
 
@@ -84,7 +81,7 @@ export const loginMerchant = async (
   }
 
   // Get the merchant profile
-  const { data: merchantData, error: merchantError } = await supabase
+  const { data: dbMerchantData, error: merchantError } = await supabase
     .from("merchants")
     .select("*")
     .eq("id", authData.user.id)
@@ -95,17 +92,21 @@ export const loginMerchant = async (
     throw new Error("Could not find merchant account. Are you sure you registered as a merchant?");
   }
 
-  if (!merchantData) {
+  if (!dbMerchantData) {
     throw new Error("Could not find merchant account");
   }
+
+  // Convert DB merchant to frontend Merchant
+  const merchantData = dbMerchantToMerchant(dbMerchantData as DBMerchant);
 
   return {
     id: authData.user.id,
     email: authData.user.email || "",
-    businessName: merchantData.business_name,
-    businessLogo: merchantData.business_logo,
-    businessColor: merchantData.business_color,
-    createdAt: merchantData.created_at,
+    businessName: merchantData.businessName,
+    businessLogo: merchantData.businessLogo,
+    businessColor: merchantData.businessColor,
+    createdAt: merchantData.createdAt,
+    updatedAt: merchantData.updatedAt,
   };
 };
 
@@ -118,7 +119,7 @@ export const getCurrentMerchant = async (): Promise<Merchant | null> => {
   }
 
   // Get the merchant profile
-  const { data: merchantData, error: merchantError } = await supabase
+  const { data: dbMerchantData, error: merchantError } = await supabase
     .from("merchants")
     .select("*")
     .eq("id", session.user.id)
@@ -129,17 +130,21 @@ export const getCurrentMerchant = async (): Promise<Merchant | null> => {
     return null; // Not a merchant or not found
   }
 
-  if (!merchantData) {
+  if (!dbMerchantData) {
     return null;
   }
+
+  // Convert DB merchant to frontend Merchant
+  const merchantData = dbMerchantToMerchant(dbMerchantData as DBMerchant);
 
   return {
     id: session.user.id,
     email: session.user.email || "",
-    businessName: merchantData.business_name,
-    businessLogo: merchantData.business_logo,
-    businessColor: merchantData.business_color,
-    createdAt: merchantData.created_at,
+    businessName: merchantData.businessName,
+    businessLogo: merchantData.businessLogo,
+    businessColor: merchantData.businessColor,
+    createdAt: merchantData.createdAt,
+    updatedAt: merchantData.updatedAt,
   };
 };
 
@@ -156,15 +161,14 @@ export const updateMerchantProfile = async (
   merchantId: string,
   updates: Partial<Merchant>
 ): Promise<Merchant> => {
+  // Convert Merchant updates to DBMerchant format
+  const dbUpdates = merchantToDBMerchant(updates);
+  dbUpdates.updated_at = new Date().toISOString();
+
   // Update merchant in Supabase
-  const { data: merchantData, error: merchantError } = await supabase
+  const { data: dbMerchantData, error: merchantError } = await supabase
     .from("merchants")
-    .update({
-      business_name: updates.businessName,
-      business_logo: updates.businessLogo,
-      business_color: updates.businessColor,
-      updated_at: new Date().toISOString(),
-    })
+    .update(dbUpdates)
     .eq("id", merchantId)
     .select()
     .single();
@@ -173,17 +177,21 @@ export const updateMerchantProfile = async (
     throw new Error("Failed to update merchant profile: " + merchantError.message);
   }
 
-  if (!merchantData) {
+  if (!dbMerchantData) {
     throw new Error("Failed to retrieve updated merchant profile");
   }
+
+  // Convert DB merchant to frontend Merchant
+  const merchantData = dbMerchantToMerchant(dbMerchantData as DBMerchant);
 
   return {
     id: merchantId,
     email: merchantData.email || "",
-    businessName: merchantData.business_name,
-    businessLogo: merchantData.business_logo,
-    businessColor: merchantData.business_color,
-    createdAt: merchantData.created_at,
+    businessName: merchantData.businessName,
+    businessLogo: merchantData.businessLogo,
+    businessColor: merchantData.businessColor,
+    createdAt: merchantData.createdAt,
+    updatedAt: merchantData.updatedAt,
   };
 };
 

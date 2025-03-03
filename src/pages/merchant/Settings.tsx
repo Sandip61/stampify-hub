@@ -7,7 +7,7 @@ import {
   Store,
   PaintBucket
 } from "lucide-react";
-import { getCurrentMerchant, updateMerchantProfile, Merchant } from "@/utils/merchantAuth";
+import { getCurrentMerchant, updateMerchantProfile, type Merchant } from "@/utils/merchantAuth";
 
 const MerchantSettings = () => {
   const navigate = useNavigate();
