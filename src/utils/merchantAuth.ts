@@ -8,6 +8,9 @@ import {
 } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// Re-export the Merchant type from client.ts
+export type { Merchant };
+
 // Register a new merchant
 export const registerMerchant = async (
   email: string,
