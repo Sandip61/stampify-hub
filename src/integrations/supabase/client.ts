@@ -9,7 +9,30 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+// Create a custom Database type that includes our tables
+export interface CustomDatabase extends Database {
+  public: {
+    Tables: {
+      profiles: {
+        Row: DBProfile;
+        Insert: DBProfile;
+        Update: Partial<DBProfile>;
+      };
+      merchants: {
+        Row: DBMerchant;
+        Insert: DBMerchant;
+        Update: Partial<DBMerchant>;
+      };
+    };
+    Views: Database["public"]["Views"];
+    Functions: Database["public"]["Functions"];
+    Enums: Database["public"]["Enums"];
+    CompositeTypes: Database["public"]["CompositeTypes"];
+  };
+}
+
+// Create the supabase client with our custom database type
+export const supabase = createClient<CustomDatabase>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 // Database interfaces for internal use
 export interface DBProfile {

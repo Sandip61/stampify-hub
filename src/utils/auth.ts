@@ -1,5 +1,11 @@
 
-import { supabase, type Profile, type DBProfile, dbProfileToProfile, profileToDBProfile } from "@/integrations/supabase/client";
+import { 
+  supabase, 
+  type Profile, 
+  type DBProfile, 
+  dbProfileToProfile, 
+  profileToDBProfile 
+} from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 // User interface
@@ -49,7 +55,7 @@ export const registerUser = async (
   }
 
   // Convert DB profile to frontend Profile if it exists
-  const profileData = dbProfileData ? dbProfileToProfile(dbProfileData as DBProfile) : null;
+  const profileData = dbProfileData ? dbProfileToProfile(dbProfileData) : null;
 
   return {
     id: authData.user.id,
@@ -97,7 +103,7 @@ export const loginUser = async (
   }
 
   // Convert DB profile to frontend Profile
-  const profileData = dbProfileData ? dbProfileToProfile(dbProfileData as DBProfile) : null;
+  const profileData = dbProfileData ? dbProfileToProfile(dbProfileData) : null;
 
   return {
     id: authData.user.id,
@@ -134,7 +140,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
   }
 
   // Convert DB profile to frontend Profile
-  const profileData = dbProfileData ? dbProfileToProfile(dbProfileData as DBProfile) : null;
+  const profileData = dbProfileData ? dbProfileToProfile(dbProfileData) : null;
 
   return {
     id: session.user.id,
@@ -181,7 +187,7 @@ export const updateUserProfile = async (
   }
 
   // Convert DB profile to frontend Profile
-  const profileData = dbProfileToProfile(dbProfileData as DBProfile);
+  const profileData = dbProfileToProfile(dbProfileData);
 
   return {
     id: userId,

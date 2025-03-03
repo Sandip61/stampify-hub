@@ -1,9 +1,12 @@
 
-import { supabase, type Merchant as MerchantInterface, type DBMerchant, dbMerchantToMerchant, merchantToDBMerchant } from "@/integrations/supabase/client";
+import { 
+  supabase, 
+  type Merchant, 
+  type DBMerchant, 
+  dbMerchantToMerchant, 
+  merchantToDBMerchant 
+} from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-// Re-export the Merchant interface
-export type Merchant = MerchantInterface;
 
 // Register a new merchant
 export const registerMerchant = async (
@@ -48,7 +51,7 @@ export const registerMerchant = async (
   }
 
   // Convert DB merchant to frontend Merchant if it exists
-  const merchantData = dbMerchantData ? dbMerchantToMerchant(dbMerchantData as DBMerchant) : null;
+  const merchantData = dbMerchantData ? dbMerchantToMerchant(dbMerchantData) : null;
 
   return {
     id: authData.user.id,
@@ -97,7 +100,7 @@ export const loginMerchant = async (
   }
 
   // Convert DB merchant to frontend Merchant
-  const merchantData = dbMerchantToMerchant(dbMerchantData as DBMerchant);
+  const merchantData = dbMerchantToMerchant(dbMerchantData);
 
   return {
     id: authData.user.id,
@@ -135,7 +138,7 @@ export const getCurrentMerchant = async (): Promise<Merchant | null> => {
   }
 
   // Convert DB merchant to frontend Merchant
-  const merchantData = dbMerchantToMerchant(dbMerchantData as DBMerchant);
+  const merchantData = dbMerchantToMerchant(dbMerchantData);
 
   return {
     id: session.user.id,
@@ -182,7 +185,7 @@ export const updateMerchantProfile = async (
   }
 
   // Convert DB merchant to frontend Merchant
-  const merchantData = dbMerchantToMerchant(dbMerchantData as DBMerchant);
+  const merchantData = dbMerchantToMerchant(dbMerchantData);
 
   return {
     id: merchantId,
