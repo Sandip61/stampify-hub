@@ -23,6 +23,10 @@ export interface CustomDatabase extends Database {
         Insert: DBMerchant;
         Update: Partial<DBMerchant>;
       };
+      customer_stamp_cards: Database["public"]["Tables"]["customer_stamp_cards"];
+      stamp_cards: Database["public"]["Tables"]["stamp_cards"];
+      stamp_qr_codes: Database["public"]["Tables"]["stamp_qr_codes"];
+      stamp_transactions: Database["public"]["Tables"]["stamp_transactions"];
     };
     Views: Database["public"]["Views"];
     Functions: Database["public"]["Functions"];

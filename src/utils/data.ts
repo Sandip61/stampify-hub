@@ -1,4 +1,3 @@
-
 import { getCurrentUser } from "./auth";
 
 // Type definitions

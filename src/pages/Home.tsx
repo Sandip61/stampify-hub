@@ -101,7 +101,7 @@ const Home = () => {
           {stampCards.map((card) => (
             <Link to={`/card/${card.id}`} key={card.id}>
               <StampCard
-                name={card.name}
+                businessName={card.name}
                 description={card.description}
                 currentStamps={card.current_stamps || 0}
                 totalStamps={card.total_stamps}

@@ -4,16 +4,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUser } from "@/utils/auth";
 import { format } from "date-fns";
 
+interface TransactionCard {
+  name: string;
+  business_logo: string;
+}
+
 interface Transaction {
   id: string;
   type: "stamp" | "redeem";
   count?: number;
   timestamp: string;
   reward_code?: string;
-  card: {
-    name: string;
-    business_logo: string;
-  };
+  card: TransactionCard;
 }
 
 const Transactions = () => {
@@ -48,7 +50,19 @@ const Transactions = () => {
           return;
         }
 
-        setTransactions(data);
+        if (data) {
+          // Ensure data conforms to our Transaction interface
+          const typedTransactions: Transaction[] = data.map(item => ({
+            id: item.id,
+            type: item.type as "stamp" | "redeem",
+            count: item.count || 0,
+            reward_code: item.reward_code,
+            timestamp: item.timestamp,
+            card: item.card as TransactionCard
+          }));
+          
+          setTransactions(typedTransactions);
+        }
       } catch (error) {
         console.error("Error:", error);
       } finally {
