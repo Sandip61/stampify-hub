@@ -10,6 +10,17 @@ export const registerUser = async (
   password: string,
   name: string
 ): Promise<User> => {
+  // Check if user already exists
+  const { data: existingUser } = await supabase
+    .from('profiles')
+    .select('email')
+    .eq('email', email)
+    .maybeSingle();
+
+  if (existingUser) {
+    throw new Error("An account with this email already exists");
+  }
+
   // Register the user with Supabase
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
@@ -64,6 +75,21 @@ export const loginUser = async (
   });
 
   if (authError) {
+    // Special handling for "Email not confirmed" error
+    if (authError.message.includes("Email not confirmed")) {
+      // Try to resend the confirmation email
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+      });
+      
+      if (resendError) {
+        throw new Error(`Email not confirmed. Failed to resend confirmation: ${resendError.message}`);
+      }
+      
+      throw new Error("Email not confirmed. We've sent a new confirmation email - please check your inbox and spam folder.");
+    }
+    
     throw new Error(authError.message);
   }
 

@@ -12,6 +12,7 @@ const Login = () => {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -55,7 +56,15 @@ const Login = () => {
       toast.success(`Welcome back, ${user.name || 'User'}!`);
       navigate("/");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Login failed");
+      const errorMessage = error instanceof Error ? error.message : "Login failed";
+      
+      // Check if it's an email confirmation error
+      if (errorMessage.includes("Email not confirmed")) {
+        setEmailConfirmationSent(true);
+        toast.error("Please check your email to confirm your account");
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -76,6 +85,16 @@ const Login = () => {
           <h1 className="text-3xl font-bold text-gray-900">Welcome back</h1>
           <p className="text-gray-500 mt-2">Sign in to your account</p>
         </div>
+        
+        {emailConfirmationSent && (
+          <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mb-6">
+            <h3 className="text-amber-800 font-medium">Email confirmation required</h3>
+            <p className="text-amber-700 text-sm mt-1">
+              We've sent a confirmation email to <strong>{email}</strong>. 
+              Please check your inbox and spam folder, then click the confirmation link to activate your account.
+            </p>
+          </div>
+        )}
         
         <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
           <form onSubmit={handleSubmit} className="space-y-4">

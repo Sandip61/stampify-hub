@@ -15,7 +15,7 @@ interface Transaction {
   count?: number;
   timestamp: string;
   reward_code?: string;
-  card: TransactionCard;
+  card: TransactionCard | TransactionCard[];
 }
 
 const Transactions = () => {
@@ -53,22 +53,23 @@ const Transactions = () => {
         if (data) {
           // Ensure data conforms to our Transaction interface
           const typedTransactions: Transaction[] = data.map(item => {
-            // Log the structure of the item.card to debug
-            console.log("Card data structure:", item.card);
-            
-            // Safe access to card data whether it's an array, object, or potentially undefined
+            // Create a default cardData object with empty values
             let cardData: TransactionCard = {
               name: '',
               business_logo: ''
             };
             
+            // Check if card data exists
             if (item.card) {
+              // Handle case when card is an array
               if (Array.isArray(item.card) && item.card.length > 0) {
                 cardData = {
                   name: item.card[0]?.name || '',
                   business_logo: item.card[0]?.business_logo || ''
                 };
-              } else if (typeof item.card === 'object') {
+              } 
+              // Handle case when card is an object
+              else if (typeof item.card === 'object') {
                 cardData = {
                   name: (item.card as any).name || '',
                   business_logo: (item.card as any).business_logo || ''
@@ -139,33 +140,40 @@ const Transactions = () => {
       ) : (
         <div className="bg-white rounded-lg shadow">
           <ul className="divide-y divide-gray-200">
-            {transactions.map((transaction) => (
-              <li key={transaction.id} className="p-4 hover:bg-gray-50">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-gray-100 h-12 w-12 flex items-center justify-center rounded-full overflow-hidden">
-                    <span className="text-2xl">{transaction.card.business_logo}</span>
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate">
-                      {transaction.card.name}
-                    </p>
-                    <p className="text-sm text-gray-500 truncate">
-                      {formatType(transaction.type, transaction.count)}
-                    </p>
-                    {transaction.reward_code && (
-                      <p className="text-xs text-blue-600">
-                        Reward code: {transaction.reward_code}
+            {transactions.map((transaction) => {
+              // Safely access card data regardless of whether it's an array or object
+              const cardData = Array.isArray(transaction.card) ? 
+                transaction.card[0] || { name: '', business_logo: '' } : 
+                transaction.card;
+              
+              return (
+                <li key={transaction.id} className="p-4 hover:bg-gray-50">
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-gray-100 h-12 w-12 flex items-center justify-center rounded-full overflow-hidden">
+                      <span className="text-2xl">{cardData.business_logo}</span>
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 truncate">
+                        {cardData.name}
                       </p>
-                    )}
+                      <p className="text-sm text-gray-500 truncate">
+                        {formatType(transaction.type, transaction.count)}
+                      </p>
+                      {transaction.reward_code && (
+                        <p className="text-xs text-blue-600">
+                          Reward code: {transaction.reward_code}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div className="text-sm text-gray-500 text-right">
+                      {formatDate(transaction.timestamp)}
+                    </div>
                   </div>
-                  
-                  <div className="text-sm text-gray-500 text-right">
-                    {formatDate(transaction.timestamp)}
-                  </div>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
