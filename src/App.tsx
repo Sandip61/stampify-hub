@@ -1,3 +1,4 @@
+
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Toaster } from "sonner";
 
@@ -9,6 +10,7 @@ import StampCardDetail from "./pages/StampCardDetail";
 import Profile from "./pages/Profile";
 import Transactions from "./pages/Transactions";
 import ResetPassword from "./pages/ResetPassword";
+import NotFound from "./pages/NotFound";
 
 // Merchant Pages
 import MerchantLogin from "./pages/merchant/Login";
@@ -44,6 +46,14 @@ const router = createBrowserRouter([
   },
   {
     path: "/register",
+    element: (
+      <MainLayout hideNav>
+        <Register />
+      </MainLayout>
+    ),
+  },
+  {
+    path: "/signup",
     element: (
       <MainLayout hideNav>
         <Register />
@@ -150,6 +160,11 @@ const router = createBrowserRouter([
         <MerchantSettings />
       </MerchantLayout>
     ),
+  },
+  // 404 catch-all route
+  {
+    path: "*",
+    element: <NotFound />,
   },
 ]);
 
