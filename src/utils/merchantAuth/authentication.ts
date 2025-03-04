@@ -25,6 +25,7 @@ export const registerMerchant = async (
         business_color: businessColor,
         is_merchant: true,
       },
+      emailRedirectTo: `${window.location.origin}/merchant/login?confirmed=true`
     },
   });
 
@@ -74,6 +75,24 @@ export const loginMerchant = async (
   });
 
   if (authError) {
+    // Special handling for "Email not confirmed" error
+    if (authError.message.includes("Email not confirmed")) {
+      // Try to resend the confirmation email
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/merchant/login?confirmed=true`
+        }
+      });
+      
+      if (resendError) {
+        throw new Error(`Email not confirmed. Failed to resend confirmation: ${resendError.message}`);
+      }
+      
+      throw new Error("Email not confirmed. We've sent a new confirmation email - please check your inbox and spam folder.");
+    }
+    
     throw new Error(authError.message);
   }
 
@@ -170,4 +189,3 @@ export const resetMerchantPassword = async (email: string): Promise<boolean> => 
   toast.success("Password reset email sent. Check your inbox!");
   return true;
 };
-

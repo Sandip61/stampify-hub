@@ -1,18 +1,27 @@
-
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { loginUser, isValidEmail, getCurrentUser } from "@/utils/auth";
 import { toast } from "sonner";
 import PasswordInput from "@/components/PasswordInput";
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
+  
+  // Check if the user is coming from a confirmed email link
+  const hasConfirmed = new URLSearchParams(location.search).get('confirmed') === 'true';
+
+  useEffect(() => {
+    if (hasConfirmed) {
+      toast.success("Email verified successfully! You can now log in.");
+    }
+  }, [hasConfirmed]);
 
   useEffect(() => {
     const checkAuth = async () => {

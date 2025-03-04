@@ -1,17 +1,28 @@
 
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { isValidEmail, loginMerchant, getCurrentMerchant } from "@/utils/merchantAuth";
 import PasswordInput from "@/components/PasswordInput";
 
 const MerchantLogin = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
+  
+  // Check if the user is coming from a confirmed email link
+  const hasConfirmed = new URLSearchParams(location.search).get('confirmed') === 'true';
+
+  useEffect(() => {
+    if (hasConfirmed) {
+      toast.success("Email verified successfully! You can now log in.");
+    }
+  }, [hasConfirmed]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -55,7 +66,15 @@ const MerchantLogin = () => {
       toast.success(`Welcome back, ${merchant.businessName}!`);
       navigate("/merchant");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Login failed");
+      const errorMessage = error instanceof Error ? error.message : "Login failed";
+      
+      // Check if it's an email confirmation error
+      if (errorMessage.includes("Email not confirmed")) {
+        setEmailConfirmationSent(true);
+        toast.error("Please check your email to confirm your account");
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -76,6 +95,16 @@ const MerchantLogin = () => {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-amber-600 bg-clip-text text-transparent">Merchant Login</h1>
           <p className="text-muted-foreground mt-2">Sign in to your Stampify Merchant account</p>
         </div>
+        
+        {emailConfirmationSent && (
+          <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mb-6">
+            <h3 className="text-amber-800 font-medium">Email confirmation required</h3>
+            <p className="text-amber-700 text-sm mt-1">
+              We've sent a confirmation email to <strong>{email}</strong>. 
+              Please check your inbox and spam folder, then click the confirmation link to activate your account.
+            </p>
+          </div>
+        )}
         
         <div className="bg-white rounded-xl shadow-lg border border-teal-100 p-6 backdrop-blur-sm">
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -100,9 +129,17 @@ const MerchantLogin = () => {
             </div>
             
             <div className="form-control">
-              <label htmlFor="password" className="text-sm font-medium">
-                Password
-              </label>
+              <div className="flex justify-between items-center">
+                <label htmlFor="password" className="text-sm font-medium">
+                  Password
+                </label>
+                <Link 
+                  to="/merchant/forgot-password" 
+                  className="text-sm text-teal-600 hover:text-teal-800 hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <PasswordInput
                 id="password"
                 value={password}
@@ -111,15 +148,6 @@ const MerchantLogin = () => {
                 errorMessage={errors.password}
                 disabled={isLoading}
               />
-            </div>
-            
-            <div className="flex justify-end">
-              <Link 
-                to="/merchant/forgot-password" 
-                className="text-sm text-teal-600 hover:text-teal-800 hover:underline"
-              >
-                Forgot password?
-              </Link>
             </div>
             
             <button

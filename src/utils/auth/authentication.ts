@@ -30,6 +30,7 @@ export const registerUser = async (
         name,
         is_merchant: false,
       },
+      emailRedirectTo: `${window.location.origin}/login?confirmed=true`
     },
   });
 
@@ -81,6 +82,9 @@ export const loginUser = async (
       const { error: resendError } = await supabase.auth.resend({
         type: 'signup',
         email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login?confirmed=true`
+        }
       });
       
       if (resendError) {
