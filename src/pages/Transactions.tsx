@@ -52,17 +52,22 @@ const Transactions = () => {
 
         if (data) {
           // Ensure data conforms to our Transaction interface
-          const typedTransactions: Transaction[] = data.map(item => ({
-            id: item.id,
-            type: item.type as "stamp" | "redeem",
-            count: item.count || 0,
-            reward_code: item.reward_code,
-            timestamp: item.timestamp,
-            card: {
-              name: item.card.name,
-              business_logo: item.card.business_logo
-            } as TransactionCard
-          }));
+          const typedTransactions: Transaction[] = data.map(item => {
+            // Log the structure of the item.card to debug
+            console.log("Card data structure:", item.card);
+            
+            return {
+              id: item.id,
+              type: item.type as "stamp" | "redeem",
+              count: item.count || 0,
+              reward_code: item.reward_code,
+              timestamp: item.timestamp,
+              // Check if card is an array or object and handle appropriately
+              card: Array.isArray(item.card) ? 
+                { name: item.card[0]?.name || '', business_logo: item.card[0]?.business_logo || '' } : 
+                { name: item.card?.name || '', business_logo: item.card?.business_logo || '' }
+            };
+          });
           
           setTransactions(typedTransactions);
         }
@@ -152,4 +157,3 @@ const Transactions = () => {
 };
 
 export default Transactions;
-
