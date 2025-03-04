@@ -56,16 +56,33 @@ const Transactions = () => {
             // Log the structure of the item.card to debug
             console.log("Card data structure:", item.card);
             
+            // Safe access to card data whether it's an array, object, or potentially undefined
+            let cardData: TransactionCard = {
+              name: '',
+              business_logo: ''
+            };
+            
+            if (item.card) {
+              if (Array.isArray(item.card) && item.card.length > 0) {
+                cardData = {
+                  name: item.card[0]?.name || '',
+                  business_logo: item.card[0]?.business_logo || ''
+                };
+              } else if (typeof item.card === 'object') {
+                cardData = {
+                  name: (item.card as any).name || '',
+                  business_logo: (item.card as any).business_logo || ''
+                };
+              }
+            }
+            
             return {
               id: item.id,
               type: item.type as "stamp" | "redeem",
               count: item.count || 0,
               reward_code: item.reward_code,
               timestamp: item.timestamp,
-              // Check if card is an array or object and handle appropriately
-              card: Array.isArray(item.card) ? 
-                { name: item.card[0]?.name || '', business_logo: item.card[0]?.business_logo || '' } : 
-                { name: item.card?.name || '', business_logo: item.card?.business_logo || '' }
+              card: cardData
             };
           });
           
