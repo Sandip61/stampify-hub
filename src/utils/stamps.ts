@@ -1,6 +1,12 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { 
+  AppError, 
+  ErrorType, 
+  handleError, 
+  handleSupabaseError 
+} from "@/utils/errorHandling";
 
 // Types
 export interface QRCode {
@@ -76,12 +82,14 @@ export const generateStampQRCode = async (
     });
 
     if (error) {
-      console.error("QR code generation error:", error);
-      throw new Error("Failed to generate QR code: " + error.message);
+      throw handleSupabaseError(error, "generating QR code", ErrorType.QR_CODE_GENERATION_FAILED);
     }
 
     if (!data.success) {
-      throw new Error(data.error || "Failed to generate QR code");
+      throw new AppError(
+        ErrorType.QR_CODE_GENERATION_FAILED,
+        data.error || "Failed to generate QR code"
+      );
     }
 
     return {
@@ -89,8 +97,7 @@ export const generateStampQRCode = async (
       qrValue: data.qrValue
     };
   } catch (error) {
-    console.error("QR code generation error:", error);
-    throw error;
+    throw handleError(error, ErrorType.QR_CODE_GENERATION_FAILED, "Failed to generate QR code");
   }
 };
 
@@ -111,18 +118,19 @@ export const issueStampsToCustomer = async (
     });
 
     if (error) {
-      console.error("Stamp issue error:", error);
-      throw new Error("Failed to issue stamps: " + error.message);
+      throw handleSupabaseError(error, "issuing stamps", ErrorType.STAMP_ISSUE_FAILED);
     }
 
     if (!data.success) {
-      throw new Error(data.error || "Failed to issue stamps");
+      throw new AppError(
+        ErrorType.STAMP_ISSUE_FAILED,
+        data.error || "Failed to issue stamps"
+      );
     }
 
     return data;
   } catch (error) {
-    console.error("Stamp issue error:", error);
-    throw error;
+    throw handleError(error, ErrorType.STAMP_ISSUE_FAILED, "Failed to issue stamps");
   }
 };
 
@@ -134,18 +142,19 @@ export const redeemStampReward = async (rewardCode: string): Promise<RedeemRespo
     });
 
     if (error) {
-      console.error("Reward redemption error:", error);
-      throw new Error("Failed to redeem reward: " + error.message);
+      throw handleSupabaseError(error, "redeeming reward", ErrorType.STAMP_REDEEM_FAILED);
     }
 
     if (!data.success) {
-      throw new Error(data.error || "Failed to redeem reward");
+      throw new AppError(
+        ErrorType.STAMP_REDEEM_FAILED,
+        data.error || "Failed to redeem reward"
+      );
     }
 
     return data;
   } catch (error) {
-    console.error("Reward redemption error:", error);
-    throw error;
+    throw handleError(error, ErrorType.STAMP_REDEEM_FAILED, "Failed to redeem reward");
   }
 };
 
@@ -156,15 +165,21 @@ export const processScannedQRCode = async (
   customerEmail?: string,
   count: number = 1
 ): Promise<StampResponse> => {
-  if (!qrCode) {
-    throw new Error("No QR code detected");
-  }
-  
-  if (!customerId && !customerEmail) {
-    throw new Error("Customer ID or email is required");
-  }
-  
   try {
+    if (!qrCode) {
+      throw new AppError(
+        ErrorType.QR_CODE_INVALID,
+        "No QR code detected"
+      );
+    }
+    
+    if (!customerId && !customerEmail) {
+      throw new AppError(
+        ErrorType.VALIDATION_ERROR,
+        "Customer ID or email is required"
+      );
+    }
+    
     return await issueStampsToCustomer({
       qrCode,
       customerId,
@@ -173,7 +188,6 @@ export const processScannedQRCode = async (
       method: "qr"
     });
   } catch (error) {
-    console.error("QR code processing error:", error);
-    throw error;
+    throw handleError(error, ErrorType.QR_CODE_INVALID, "Failed to process QR code");
   }
 };

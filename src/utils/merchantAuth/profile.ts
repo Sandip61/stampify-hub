@@ -5,6 +5,11 @@ import {
   dbMerchantToMerchant, 
   merchantToDBMerchant 
 } from "@/integrations/supabase/client";
+import {
+  AppError,
+  ErrorType,
+  handleSupabaseError
+} from "@/utils/errorHandling";
 
 // Get merchant profile by ID
 export const getMerchantProfile = async (merchantId: string): Promise<Merchant | null> => {
@@ -32,28 +37,46 @@ export const updateMerchantProfile = async (
   merchantId: string,
   updates: Partial<Merchant>
 ): Promise<Merchant> => {
-  // Convert Merchant updates to DBMerchant format
-  const dbUpdates = merchantToDBMerchant(updates);
-  dbUpdates.updated_at = new Date().toISOString();
+  try {
+    // Convert Merchant updates to DBMerchant format
+    const dbUpdates = merchantToDBMerchant(updates);
+    dbUpdates.updated_at = new Date().toISOString();
 
-  // Update merchant in Supabase
-  const { data: dbMerchantData, error: merchantError } = await supabase
-    .from("merchants")
-    .update(dbUpdates)
-    .eq("id", merchantId)
-    .select()
-    .maybeSingle();
+    // Update merchant in Supabase
+    const { data: dbMerchantData, error: merchantError } = await supabase
+      .from("merchants")
+      .update(dbUpdates)
+      .eq("id", merchantId)
+      .select()
+      .maybeSingle();
 
-  if (merchantError) {
-    throw new Error("Failed to update merchant profile: " + merchantError.message);
+    if (merchantError) {
+      throw handleSupabaseError(
+        merchantError, 
+        "updating merchant profile", 
+        ErrorType.MERCHANT_UPDATE_FAILED
+      );
+    }
+
+    if (!dbMerchantData) {
+      throw new AppError(
+        ErrorType.MERCHANT_NOT_FOUND,
+        "Failed to retrieve updated merchant profile"
+      );
+    }
+
+    // Convert DB merchant to frontend Merchant
+    return dbMerchantToMerchant(dbMerchantData);
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError(
+      ErrorType.MERCHANT_UPDATE_FAILED,
+      "Failed to update merchant profile",
+      error
+    );
   }
-
-  if (!dbMerchantData) {
-    throw new Error("Failed to retrieve updated merchant profile");
-  }
-
-  // Convert DB merchant to frontend Merchant
-  return dbMerchantToMerchant(dbMerchantData);
 };
 
 // For demo merchants
