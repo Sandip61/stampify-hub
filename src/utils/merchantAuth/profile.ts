@@ -12,7 +12,7 @@ export const getMerchantProfile = async (merchantId: string): Promise<Merchant |
     .from("merchants")
     .select("*")
     .eq("id", merchantId)
-    .single();
+    .maybeSingle();
 
   if (fetchError) {
     console.error("Error fetching merchant profile:", fetchError);
@@ -42,7 +42,7 @@ export const updateMerchantProfile = async (
     .update(dbUpdates)
     .eq("id", merchantId)
     .select()
-    .single();
+    .maybeSingle();
 
   if (merchantError) {
     throw new Error("Failed to update merchant profile: " + merchantError.message);
@@ -53,17 +53,7 @@ export const updateMerchantProfile = async (
   }
 
   // Convert DB merchant to frontend Merchant
-  const merchantData = dbMerchantToMerchant(dbMerchantData);
-
-  return {
-    id: merchantId,
-    email: merchantData.email || "",
-    businessName: merchantData.businessName,
-    businessLogo: merchantData.businessLogo,
-    businessColor: merchantData.businessColor,
-    createdAt: merchantData.createdAt,
-    updatedAt: merchantData.updatedAt,
-  };
+  return dbMerchantToMerchant(dbMerchantData);
 };
 
 // For demo merchants
