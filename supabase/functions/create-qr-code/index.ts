@@ -11,6 +11,7 @@ interface RequestBody {
   cardId: string;
   expiresInHours: number;
   isSingleUse: boolean;
+  securityLevel?: string;
 }
 
 serve(async (req) => {
@@ -27,6 +28,7 @@ serve(async (req) => {
     // Get the JWT from the request headers
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
+      console.error('Missing Authorization header')
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -43,6 +45,7 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
     
     if (userError || !user) {
+      console.error('Unauthorized access attempt:', userError)
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -56,9 +59,10 @@ serve(async (req) => {
     }
 
     // Get the request body
-    const { cardId, expiresInHours = 24, isSingleUse = false } = await req.json() as RequestBody
+    const { cardId, expiresInHours = 24, isSingleUse = false, securityLevel = 'M' } = await req.json() as RequestBody
 
     if (!cardId) {
+      console.error('Missing required parameter: cardId')
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -71,15 +75,31 @@ serve(async (req) => {
       )
     }
 
+    // Validate expiry hours are within acceptable range (1-72 hours)
+    if (expiresInHours < 1 || expiresInHours > 72) {
+      console.error('Invalid expiry hours:', expiresInHours)
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Expiry hours must be between 1 and 72' 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 400 
+        }
+      )
+    }
+
     // Verify the merchant owns this stamp card
     const { data: cardData, error: cardError } = await supabase
       .from('stamp_cards')
-      .select('id')
+      .select('id, is_active')
       .eq('id', cardId)
       .eq('merchant_id', user.id)
       .single()
 
     if (cardError || !cardData) {
+      console.error('Stamp card not found or unauthorized:', cardError)
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -92,8 +112,27 @@ serve(async (req) => {
       )
     }
 
-    // Generate a unique code
-    const code = crypto.randomUUID()
+    // Check if the card is active
+    if (cardData && cardData.is_active === false) {
+      console.error('Attempt to create QR code for inactive card:', cardId)
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Cannot create QR code for inactive stamp card' 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 400
+        }
+      )
+    }
+
+    // Generate a unique code with more entropy
+    const timestamp = Date.now().toString(36)
+    const randomPart = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+    const code = `${timestamp}-${randomPart}-${user.id.substring(0, 8)}`
     
     // Calculate expiry time
     const expiresAt = new Date()
@@ -127,14 +166,18 @@ serve(async (req) => {
       )
     }
 
-    // Create a QR code value
+    // Create a more structured QR code value
     const qrValue = JSON.stringify({
+      v: 1, // version
       type: 'stamp',
       code,
       card_id: cardId,
-      merchant_id: user.id
+      merchant_id: user.id,
+      security: securityLevel
     })
 
+    console.log(`QR code created successfully for card ${cardId}, merchant ${user.id}`)
+    
     return new Response(
       JSON.stringify({ 
         success: true, 

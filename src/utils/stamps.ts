@@ -74,11 +74,19 @@ export interface RedeemResponse {
 export const generateStampQRCode = async (
   cardId: string,
   expiresInHours: number = 24,
-  isSingleUse: boolean = false
+  isSingleUse: boolean = false,
+  securityLevel: "L" | "M" | "Q" | "H" = "M"
 ): Promise<{ qrCode: QRCode; qrValue: string }> => {
   try {
+    if (expiresInHours < 1 || expiresInHours > 72) {
+      throw new AppError(
+        ErrorType.VALIDATION_ERROR,
+        "Expiry hours must be between 1 and 72"
+      );
+    }
+
     const { data, error } = await supabase.functions.invoke('create-qr-code', {
-      body: { cardId, expiresInHours, isSingleUse }
+      body: { cardId, expiresInHours, isSingleUse, securityLevel }
     });
 
     if (error) {
@@ -98,6 +106,45 @@ export const generateStampQRCode = async (
     };
   } catch (error) {
     throw handleError(error, ErrorType.QR_CODE_GENERATION_FAILED, "Failed to generate QR code");
+  }
+};
+
+// Fetch active QR codes for a merchant's stamp card
+export const fetchActiveQRCodes = async (cardId: string): Promise<QRCode[]> => {
+  try {
+    const now = new Date().toISOString();
+    
+    const { data, error } = await supabase
+      .from("stamp_qr_codes")
+      .select("*")
+      .eq("card_id", cardId)
+      .gt("expires_at", now)
+      .eq("is_used", false)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw handleSupabaseError(error, "fetching QR codes", ErrorType.DATA_FETCH_FAILED);
+    }
+
+    return data || [];
+  } catch (error) {
+    throw handleError(error, ErrorType.DATA_FETCH_FAILED, "Failed to fetch active QR codes");
+  }
+};
+
+// Delete a QR code
+export const deleteQRCode = async (qrCodeId: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from("stamp_qr_codes")
+      .delete()
+      .eq("id", qrCodeId);
+
+    if (error) {
+      throw handleSupabaseError(error, "deleting QR code", ErrorType.DATA_DELETE_FAILED);
+    }
+  } catch (error) {
+    throw handleError(error, ErrorType.DATA_DELETE_FAILED, "Failed to delete QR code");
   }
 };
 
