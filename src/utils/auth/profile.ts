@@ -53,5 +53,6 @@ export const updateUserProfile = async (
     email: profileData.email || "",
     name: profileData.name || "",
     notificationsEnabled: profileData.notificationsEnabled,
+    isMerchant: false, // Add the missing isMerchant property
   };
 };
