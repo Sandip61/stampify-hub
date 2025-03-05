@@ -44,6 +44,36 @@ export type Database = {
           },
         ]
       }
+      merchants: {
+        Row: {
+          business_color: string
+          business_logo: string
+          business_name: string
+          created_at: string | null
+          email: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_color?: string
+          business_logo?: string
+          business_name: string
+          created_at?: string | null
+          email?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_color?: string
+          business_logo?: string
+          business_name?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null

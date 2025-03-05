@@ -5,6 +5,7 @@ import {
   dbMerchantToMerchant
 } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getMerchantProfile } from "./profile";
 
 // Check if a user is already registered as a regular user
 export const isUserCustomer = async (userId: string): Promise<boolean> => {
@@ -84,30 +85,14 @@ export const registerMerchant = async (
     throw new Error("Failed to create merchant profile");
   }
 
-  // Get the merchant profile
-  const { data: dbMerchantData, error: fetchError } = await supabase
-    .from("merchants")
-    .select("*")
-    .eq("id", authData.user.id)
-    .single();
-
-  if (fetchError) {
-    console.error("Error fetching merchant:", fetchError);
-    // We can still proceed since the user was created
+  // Get the created merchant profile
+  const merchantProfile = await getMerchantProfile(authData.user.id);
+  
+  if (!merchantProfile) {
+    throw new Error("Failed to retrieve merchant profile after creation");
   }
-
-  // Convert DB merchant to frontend Merchant if it exists
-  const merchantData = dbMerchantData ? dbMerchantToMerchant(dbMerchantData) : null;
-
-  return {
-    id: authData.user.id,
-    email: authData.user.email || "",
-    businessName: merchantData?.businessName || businessName,
-    businessLogo: merchantData?.businessLogo || businessLogo,
-    businessColor: merchantData?.businessColor || businessColor,
-    createdAt: merchantData?.createdAt || new Date().toISOString(),
-    updatedAt: merchantData?.updatedAt || new Date().toISOString(),
-  };
+  
+  return merchantProfile;
 };
 
 // Login a merchant
@@ -148,33 +133,13 @@ export const loginMerchant = async (
   }
 
   // Get the merchant profile
-  const { data: dbMerchantData, error: merchantError } = await supabase
-    .from("merchants")
-    .select("*")
-    .eq("id", authData.user.id)
-    .single();
-
-  if (merchantError) {
-    console.error("Error fetching merchant:", merchantError);
+  const merchantProfile = await getMerchantProfile(authData.user.id);
+  
+  if (!merchantProfile) {
     throw new Error("Could not find merchant account. Are you sure you registered as a merchant?");
   }
 
-  if (!dbMerchantData) {
-    throw new Error("Could not find merchant account");
-  }
-
-  // Convert DB merchant to frontend Merchant
-  const merchantData = dbMerchantToMerchant(dbMerchantData);
-
-  return {
-    id: authData.user.id,
-    email: authData.user.email || "",
-    businessName: merchantData.businessName,
-    businessLogo: merchantData.businessLogo,
-    businessColor: merchantData.businessColor,
-    createdAt: merchantData.createdAt,
-    updatedAt: merchantData.updatedAt,
-  };
+  return merchantProfile;
 };
 
 // Get current merchant
@@ -185,34 +150,8 @@ export const getCurrentMerchant = async (): Promise<Merchant | null> => {
     return null;
   }
 
-  // Get the merchant profile
-  const { data: dbMerchantData, error: merchantError } = await supabase
-    .from("merchants")
-    .select("*")
-    .eq("id", session.user.id)
-    .single();
-
-  if (merchantError) {
-    console.error("Error fetching merchant:", merchantError);
-    return null; // Not a merchant or not found
-  }
-
-  if (!dbMerchantData) {
-    return null;
-  }
-
-  // Convert DB merchant to frontend Merchant
-  const merchantData = dbMerchantToMerchant(dbMerchantData);
-
-  return {
-    id: session.user.id,
-    email: session.user.email || "",
-    businessName: merchantData.businessName,
-    businessLogo: merchantData.businessLogo,
-    businessColor: merchantData.businessColor,
-    createdAt: merchantData.createdAt,
-    updatedAt: merchantData.updatedAt,
-  };
+  // Get the merchant profile using the shared function
+  return getMerchantProfile(session.user.id);
 };
 
 // Logout merchant

@@ -6,6 +6,27 @@ import {
   merchantToDBMerchant 
 } from "@/integrations/supabase/client";
 
+// Get merchant profile by ID
+export const getMerchantProfile = async (merchantId: string): Promise<Merchant | null> => {
+  const { data: dbMerchantData, error: fetchError } = await supabase
+    .from("merchants")
+    .select("*")
+    .eq("id", merchantId)
+    .single();
+
+  if (fetchError) {
+    console.error("Error fetching merchant profile:", fetchError);
+    return null;
+  }
+
+  if (!dbMerchantData) {
+    return null;
+  }
+
+  // Convert DB merchant to frontend Merchant
+  return dbMerchantToMerchant(dbMerchantData);
+};
+
 // Update merchant profile
 export const updateMerchantProfile = async (
   merchantId: string,

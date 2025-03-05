@@ -34,6 +34,7 @@ const MerchantSettings = () => {
         setIsLoading(false);
       } catch (error) {
         console.error("Error loading merchant data:", error);
+        toast.error("Failed to load merchant profile");
         navigate("/merchant/login");
       }
     };
