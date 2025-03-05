@@ -6,6 +6,26 @@ import {
 } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// Check if a user is already registered as a regular user
+export const isUserCustomer = async (userId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .not('id', 'eq', userId) // This is redundant but helps clarify the intention
+      .maybeSingle();
+      
+    if (error) throw error;
+    
+    // If we found a profile that doesn't have a merchant entry, it's a customer
+    return !!data;
+  } catch (error) {
+    console.error("Error checking customer status:", error);
+    return false;
+  }
+};
+
 // Register a new merchant
 export const registerMerchant = async (
   email: string,
@@ -14,6 +34,17 @@ export const registerMerchant = async (
   businessLogo: string = "🏪",
   businessColor: string = "#3B82F6"
 ): Promise<Merchant> => {
+  // Check if merchant already exists
+  const { data: existingMerchant } = await supabase
+    .from('merchants')
+    .select('email')
+    .eq('email', email)
+    .maybeSingle();
+
+  if (existingMerchant) {
+    throw new Error("A merchant account with this email already exists");
+  }
+
   // Register the merchant with Supabase
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
@@ -37,15 +68,31 @@ export const registerMerchant = async (
     throw new Error("Registration failed");
   }
 
+  // Create the merchant profile in the merchants table
+  const { error: merchantError } = await supabase
+    .from('merchants')
+    .insert({
+      id: authData.user.id,
+      business_name: businessName,
+      business_logo: businessLogo,
+      business_color: businessColor,
+      email: email
+    });
+
+  if (merchantError) {
+    console.error("Error creating merchant profile:", merchantError);
+    throw new Error("Failed to create merchant profile");
+  }
+
   // Get the merchant profile
-  const { data: dbMerchantData, error: merchantError } = await supabase
+  const { data: dbMerchantData, error: fetchError } = await supabase
     .from("merchants")
     .select("*")
     .eq("id", authData.user.id)
     .single();
 
-  if (merchantError) {
-    console.error("Error fetching merchant:", merchantError);
+  if (fetchError) {
+    console.error("Error fetching merchant:", fetchError);
     // We can still proceed since the user was created
   }
 

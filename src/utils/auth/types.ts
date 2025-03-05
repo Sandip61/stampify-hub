@@ -5,4 +5,5 @@ export interface User {
   email: string;
   name: string;
   notificationsEnabled: boolean;
+  isMerchant: boolean;
 }

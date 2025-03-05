@@ -4,6 +4,23 @@ import { User } from "./types";
 import { getUserProfile } from "./profile";
 import { toast } from "sonner";
 
+// Check if a user is a merchant
+export const isUserMerchant = async (userId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('merchants')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
+      
+    if (error) throw error;
+    return !!data;
+  } catch (error) {
+    console.error("Error checking merchant status:", error);
+    return false;
+  }
+};
+
 // Register a new user
 export const registerUser = async (
   email: string,
@@ -51,6 +68,7 @@ export const registerUser = async (
       email: authData.user.email || "",
       name: profileData?.name || name,
       notificationsEnabled: profileData?.notificationsEnabled || true,
+      isMerchant: false,
     };
   } catch (error) {
     console.error("Error fetching profile:", error);
@@ -60,6 +78,7 @@ export const registerUser = async (
       email: authData.user.email || "",
       name: name,
       notificationsEnabled: true,
+      isMerchant: false,
     };
   }
 };
@@ -101,6 +120,13 @@ export const loginUser = async (
     throw new Error("Login failed");
   }
 
+  // Check if this is a merchant account
+  const isMerchant = await isUserMerchant(authData.user.id);
+  
+  if (isMerchant) {
+    throw new Error("This appears to be a merchant account. Please use the merchant login page.");
+  }
+
   // Get the user profile
   try {
     const profileData = await getUserProfile(authData.user.id);
@@ -110,6 +136,7 @@ export const loginUser = async (
       email: authData.user.email || "",
       name: profileData?.name || authData.user.user_metadata.name || "",
       notificationsEnabled: profileData?.notificationsEnabled || false,
+      isMerchant: false,
     };
   } catch (error) {
     console.error("Error fetching profile:", error);
@@ -119,6 +146,7 @@ export const loginUser = async (
       email: authData.user.email || "",
       name: authData.user.user_metadata.name || "",
       notificationsEnabled: true,
+      isMerchant: false,
     };
   }
 };
@@ -131,6 +159,9 @@ export const getCurrentUser = async (): Promise<User | null> => {
     return null;
   }
 
+  // Check if this is a merchant account
+  const isMerchant = await isUserMerchant(session.user.id);
+  
   // Get the user profile
   try {
     const profileData = await getUserProfile(session.user.id);
@@ -140,6 +171,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
       email: session.user.email || "",
       name: profileData?.name || session.user.user_metadata.name || "",
       notificationsEnabled: profileData?.notificationsEnabled || false,
+      isMerchant,
     };
   } catch (error) {
     console.error("Error fetching profile:", error);
@@ -149,6 +181,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
       email: session.user.email || "",
       name: session.user.user_metadata.name || "",
       notificationsEnabled: true,
+      isMerchant,
     };
   }
 };
