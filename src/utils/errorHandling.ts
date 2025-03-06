@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 
 /**
@@ -32,6 +31,12 @@ export enum ErrorType {
   QR_CODE_EXPIRED = "QR_CODE_EXPIRED",
   QR_CODE_ALREADY_USED = "QR_CODE_ALREADY_USED",
   QR_CODE_GENERATION_FAILED = "QR_CODE_GENERATION_FAILED",
+  
+  // Data operations errors
+  DATA_FETCH_FAILED = "DATA_FETCH_FAILED",
+  DATA_CREATE_FAILED = "DATA_CREATE_FAILED",
+  DATA_UPDATE_FAILED = "DATA_UPDATE_FAILED",
+  DATA_DELETE_FAILED = "DATA_DELETE_FAILED",
   
   // Stamp operation errors
   STAMP_ISSUE_FAILED = "STAMP_ISSUE_FAILED",
@@ -121,6 +126,14 @@ export const getUserFriendlyErrorMessage = (
       "Failed to issue stamps. Please try again",
     [ErrorType.STAMP_REDEEM_FAILED]:
       "Failed to redeem reward. Please try again",
+    [ErrorType.DATA_FETCH_FAILED]:
+      "Failed to fetch data. Please try again or check your connection",
+    [ErrorType.DATA_CREATE_FAILED]:
+      "Failed to create record. Please try again",
+    [ErrorType.DATA_UPDATE_FAILED]:
+      "Failed to update record. Please try again",
+    [ErrorType.DATA_DELETE_FAILED]:
+      "Failed to delete record. Please try again",
     [ErrorType.NETWORK_ERROR]:
       "Network error. Please check your connection and try again",
     [ErrorType.UNKNOWN_ERROR]:
