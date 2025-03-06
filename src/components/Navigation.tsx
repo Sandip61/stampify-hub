@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, CreditCard, History, User, LogOut } from "lucide-react";
+import { Home, CreditCard, History, User, LogOut, ScanLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { logoutUser } from "@/utils/auth";
@@ -74,6 +74,14 @@ const Navigation = () => {
               >
                 History
               </NavLink>
+              <NavLink 
+                to="/scan" 
+                className={({isActive}) => 
+                  cn("nav-link", isActive && "nav-link-active")
+                }
+              >
+                Scan QR
+              </NavLink>
             </div>
             <div className="flex items-center space-x-1">
               <NavLink 
@@ -122,6 +130,16 @@ const Navigation = () => {
             >
               <CreditCard className="w-5 h-5" />
               <span className="text-xs">Cards</span>
+            </NavLink>
+            <NavLink 
+              to="/scan" 
+              className={({isActive}) => 
+                cn("flex flex-col items-center space-y-1", 
+                isActive ? "text-foreground" : "text-muted-foreground")
+              }
+            >
+              <ScanLine className="w-5 h-5" />
+              <span className="text-xs">Scan</span>
             </NavLink>
             <NavLink 
               to="/history" 
