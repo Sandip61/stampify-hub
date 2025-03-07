@@ -21,6 +21,10 @@ export const getUserFriendlyErrorMessage = (
       "Password is too weak. It should be at least 6 characters long",
     [ErrorType.AUTH_INVALID_RESET_TOKEN]:
       "Invalid or expired password reset link. Please request a new one",
+    [ErrorType.UNAUTHORIZED]:
+      "You need to be logged in to perform this action",
+    [ErrorType.PERMISSION_DENIED]:
+      "You don't have permission to perform this action",
     [ErrorType.PROFILE_NOT_FOUND]:
       "User profile not found",
     [ErrorType.PROFILE_UPDATE_FAILED]:
@@ -62,9 +66,7 @@ export const getUserFriendlyErrorMessage = (
     [ErrorType.UNKNOWN_ERROR]:
       "An unexpected error occurred. Please try again",
     [ErrorType.VALIDATION_ERROR]:
-      "Please check the information you provided and try again",
-    [ErrorType.PERMISSION_DENIED]:
-      "You don't have permission to perform this action"
+      "Please check the information you provided and try again"
   };
 
   return messages[errorType] || fallbackMessage || "Something went wrong. Please try again";

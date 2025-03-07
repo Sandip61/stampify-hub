@@ -1,5 +1,5 @@
 
-// Re-export all stamps functionality from a single entry point
+// Re-export all stamp card functionality from a single entry point
 export * from './types';
-export * from './qrCodes';
 export * from './operations';
+export * from './qrCodes';
