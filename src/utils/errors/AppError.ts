@@ -2,9 +2,6 @@
 import { ErrorType } from './types';
 import { getUserFriendlyErrorMessage } from './messages';
 
-/**
- * Application error class with standardized structure
- */
 export class AppError extends Error {
   public type: ErrorType;
   public originalError?: Error | unknown;
@@ -23,10 +20,7 @@ export class AppError extends Error {
     this.name = "AppError";
   }
 
-  /**
-   * Get user-friendly message based on error type
-   */
   public getUserFriendlyMessage(): string {
-    return getUserFriendlyErrorMessage(this.type, this.message);
+    return getUserFriendlyErrorMessage(this.type);
   }
 }

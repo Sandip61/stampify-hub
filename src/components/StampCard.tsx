@@ -54,8 +54,8 @@ const StampCard = ({
         className
       )}
       style={{ 
-        ...(isComplete && { ringColor: colorValue }) 
-      }}
+        ...(isComplete && { "--ring-color": colorValue }) 
+      } as React.CSSProperties}
     >
       <div 
         className="absolute inset-0 opacity-10 rounded-xl" 

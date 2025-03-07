@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { getCurrentUser, User } from "@/utils/auth";
 import { getStampCard, addStamp, redeemReward, StampCard as StampCardType, Transaction } from "@/utils/data";
 import StampCard from "@/components/StampCard";
-import { ArrowLeft, Clock, Gift, Award, Badge, BadgeCheck, Copy, RefreshCw } from "lucide-react";
+import { ArrowLeft, Clock, Gift, Award, Badge, BadgeCheck, Copy, RefreshCw, Stamp } from "lucide-react";
 
 const StampCardDetail = () => {
   const { id } = useParams<{ id: string }>();
