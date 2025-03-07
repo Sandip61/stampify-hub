@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -140,6 +139,9 @@ const StampCardDetail = () => {
     );
   }
 
+  // Calculate if the card is ready to redeem
+  const isReadyToRedeem = card.currentStamps >= card.totalStamps;
+
   return (
     <div className="min-h-screen pt-16 pb-20 px-4">
       <div className="max-w-md mx-auto">
@@ -167,18 +169,30 @@ const StampCardDetail = () => {
           </div>
           
           <div className="flex items-start mb-6">
-            <div className="rounded-full bg-primary/10 p-2 mr-3 text-primary">
+            <div className={`rounded-full p-2 mr-3 ${isReadyToRedeem ? "bg-green-100 text-green-600" : "bg-primary/10 text-primary"}`}>
               <Award className="h-5 w-5" />
             </div>
             <div>
               <h4 className="font-medium">Reward</h4>
-              <p className="text-sm text-muted-foreground">{card.reward}</p>
+              <p className={`text-sm ${isReadyToRedeem ? "text-green-600 font-medium" : "text-muted-foreground"}`}>
+                {card.reward}
+              </p>
+              {isReadyToRedeem && (
+                <p className="text-xs text-green-600 mt-1 flex items-center">
+                  <BadgeCheck className="h-3 w-3 mr-1" />
+                  Ready to claim
+                </p>
+              )}
             </div>
           </div>
           
           <div className="flex items-start mb-8">
-            <div className="rounded-full bg-primary/10 p-2 mr-3 text-primary">
-              <Badge className="h-5 w-5" />
+            <div className={`rounded-full p-2 mr-3 ${isReadyToRedeem ? "bg-green-100 text-green-600" : "bg-primary/10 text-primary"}`}>
+              {isReadyToRedeem ? (
+                <BadgeCheck className="h-5 w-5" />
+              ) : (
+                <Badge className="h-5 w-5" />
+              )}
             </div>
             <div>
               <h4 className="font-medium">Progress</h4>
@@ -187,12 +201,36 @@ const StampCardDetail = () => {
               </p>
               <div className="w-full bg-secondary rounded-full h-2 mt-2">
                 <div
-                  className="bg-primary rounded-full h-2"
+                  className={`rounded-full h-2 transition-all duration-500 ease-out ${isReadyToRedeem ? "bg-green-500" : "bg-primary"}`}
                   style={{ width: `${(card.currentStamps / card.totalStamps) * 100}%` }}
                 ></div>
               </div>
-              {card.currentStamps >= card.totalStamps && (
-                <p className="text-sm text-green-600 mt-2 font-medium">
+              
+              <div className="flex items-center gap-2 flex-wrap mt-4">
+                {Array.from({ length: card.totalStamps }).map((_, index) => (
+                  <div 
+                    key={index}
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs border transition-all ${
+                      index < card.currentStamps 
+                        ? "border-none text-white" 
+                        : "border-gray-300 text-gray-400"
+                    }`}
+                    style={{ 
+                      backgroundColor: index < card.currentStamps 
+                        ? (isReadyToRedeem && index === card.totalStamps - 1 ? "#10B981" : card.color) 
+                        : 'transparent'
+                    }}
+                  >
+                    {index < card.currentStamps && (
+                      <Stamp className="h-3.5 w-3.5" />
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              {isReadyToRedeem && (
+                <p className="text-sm text-green-600 mt-3 font-medium flex items-center">
+                  <BadgeCheck className="h-4 w-4 mr-1.5" />
                   You have enough stamps to redeem your reward!
                 </p>
               )}
@@ -215,8 +253,12 @@ const StampCardDetail = () => {
             
             <button
               onClick={confirmRedemption}
-              className={`flex items-center justify-center px-4 py-2 rounded-md bg-green-500 text-white hover:bg-green-600 transition-colors disabled:opacity-50 disabled:hover:bg-green-500`}
-              disabled={card.currentStamps < card.totalStamps || redeeming}
+              className={`flex items-center justify-center px-4 py-2 rounded-md transition-all ${
+                isReadyToRedeem 
+                  ? "bg-green-500 text-white hover:bg-green-600" 
+                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+              }`}
+              disabled={!isReadyToRedeem || redeeming}
             >
               {redeeming ? (
                 <span className="inline-block w-5 h-5 border-t-2 border-white rounded-full animate-spin mr-2"></span>

@@ -23,16 +23,24 @@ export interface StampResponse {
     id: string;
     totalStampsRequired: number;
     currentStamps: number;
+    name?: string;
+    business_logo?: string;
+    business_color?: string;
   };
   customerInfo?: {
     id: string;
     email?: string;
+    name?: string;
   };
   transaction?: {
     id: string;
     type: string;
     timestamp?: string;
     created_at?: string;
+    card_id?: string;
+    customer_id?: string;
+    merchant_id?: string;
+    count?: number;
   };
   offlineMode?: boolean;
   
@@ -65,6 +73,7 @@ export interface RedeemResponse {
   customerInfo: {
     id: string;
     email?: string;
+    name?: string;
   };
   transaction: {
     id: string;

@@ -1,21 +1,21 @@
-
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import StampCard from "@/components/StampCard";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { getCurrentUser, User } from "@/utils/auth";
-import { getUserStampCards, getUserTransactions, StampCard as StampCardType, Transaction, initializeDemoData } from "@/utils/data";
-import { Stamp, Gift, ChevronRight } from "lucide-react";
+import { getUserStampCards, StampCard as StampCardType, initializeDemoData } from "@/utils/data";
+import StampCard from "@/components/StampCard";
+import { generateDummyData } from "@/utils/generateDummyData";
+import { Plus, RefreshCw, Stamp, Gift } from "lucide-react";
 
 const Dashboard = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [cards, setCards] = useState<StampCardType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeCards, setActiveCards] = useState<StampCardType[]>([]);
-  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
   const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  const [stampCards, setStampCards] = useState<StampCardType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    const initializeUser = async () => {
+    const checkAuth = async () => {
       try {
         const currentUser = await getCurrentUser();
         if (!currentUser) {
@@ -29,129 +29,176 @@ const Dashboard = () => {
         await initializeDemoData();
         
         // Load stamp cards
-        const userCards = await getUserStampCards();
-        setCards(userCards);
-        setActiveCards(userCards.filter(card => card.currentStamps > 0));
-        
-        // Load recent transactions
-        const transactions = await getUserTransactions();
-        setRecentTransactions(transactions.slice(0, 3));
-        
-        setLoading(false);
+        loadStampCards();
       } catch (error) {
-        console.error("Error initializing dashboard:", error);
+        console.error("Error checking authentication:", error);
         navigate("/login");
       }
     };
     
-    initializeUser();
+    checkAuth();
   }, [navigate]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex justify-center items-center">
-        <div className="w-12 h-12 rounded-full border-t-2 border-primary animate-spin" />
-      </div>
-    );
-  }
+  const loadStampCards = async () => {
+    try {
+      setLoading(true);
+      const cards = await getUserStampCards();
+      setStampCards(cards);
+    } catch (error) {
+      console.error("Error loading stamp cards:", error);
+      toast.error("Failed to load your stamp cards");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadStampCards();
+    setRefreshing(false);
+  };
+
+  const handleCardClick = (cardId: string) => {
+    navigate(`/card/${cardId}`);
+  };
 
   return (
-    <div className="min-h-screen pt-16 pb-20 px-4">
-      <div className="max-w-2xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-2xl font-bold">Welcome, {user?.name || "Friend"}</h1>
-          <p className="text-muted-foreground mt-1">
-            Collect stamps and earn rewards
-          </p>
-        </header>
+    <div className="container mx-auto py-6 px-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <button
+          onClick={handleRefresh}
+          className="flex items-center px-3 py-2 text-sm font-medium rounded-md border hover:bg-muted transition-colors"
+          disabled={refreshing}
+        >
+          <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+          Refresh
+        </button>
+      </div>
 
-        {cards.length === 0 ? (
-          <div className="bg-card rounded-xl border p-6 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-              <Stamp className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-medium">No stamp cards yet</h3>
-            <p className="text-muted-foreground mt-2 mb-4">
-              Visit your favorite merchants to start collecting stamps
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="bg-card border rounded-xl p-5">
+          <div className="flex items-center text-primary mb-2">
+            <Stamp className="h-5 w-5 mr-2" />
+            <h2 className="font-semibold">Total Stamps</h2>
+          </div>
+          <p className="text-3xl font-bold">
+            {loading ? (
+              <span className="animate-pulse">...</span>
+            ) : (
+              stampCards.reduce((total, card) => total + card.currentStamps, 0)
+            )}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Across all your loyalty cards
+          </p>
+        </div>
+
+        <div className="bg-card border rounded-xl p-5">
+          <div className="flex items-center text-green-600 mb-2">
+            <Gift className="h-5 w-5 mr-2" />
+            <h2 className="font-semibold">Available Rewards</h2>
+          </div>
+          <p className="text-3xl font-bold">
+            {loading ? (
+              <span className="animate-pulse">...</span>
+            ) : (
+              stampCards.filter(card => card.currentStamps >= card.totalStamps).length
+            )}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Ready to redeem
+          </p>
+        </div>
+      </div>
+
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Your Loyalty Cards</h2>
+          
+          {process.env.NODE_ENV === 'development' && (
+            <button
+              onClick={generateDummyData}
+              className="text-xs px-2 py-1 bg-muted/70 text-muted-foreground hover:bg-muted rounded-md transition-colors"
+            >
+              Generate Dummy Data
+            </button>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-40 bg-muted/40 rounded-xl animate-pulse"
+              />
+            ))}
+          </div>
+        ) : stampCards.length === 0 ? (
+          <div className="text-center py-12 bg-muted/20 rounded-xl">
+            <h3 className="text-xl font-medium text-muted-foreground mb-2">
+              No loyalty cards yet
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              Visit a participating merchant to get started
             </p>
+            <button
+              onClick={() => navigate("/scan")}
+              className="inline-flex items-center px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Card
+            </button>
           </div>
         ) : (
-          <>
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium">Your Active Cards</h2>
-                <Link to="/history" className="text-sm text-primary flex items-center">
-                  View all <ChevronRight className="w-4 h-4 ml-1" />
-                </Link>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {stampCards.map((card) => (
+              <div
+                key={card.id}
+                onClick={() => handleCardClick(card.id)}
+                className="cursor-pointer"
+              >
+                <StampCard card={card} />
               </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-              {activeCards.length === 0 ? (
-                <div className="bg-card rounded-xl border p-6 text-center">
-                  <p className="text-muted-foreground">
-                    You don't have any active stamp cards yet
-                  </p>
-                </div>
-              ) : (
-                <div className="grid gap-4">
-                  {activeCards.map((card) => (
-                    <Link to={`/card/${card.id}`} key={card.id}>
-                      <StampCard card={card} />
-                    </Link>
-                  ))}
-                </div>
-              )}
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Recent Activity</h2>
+          <button
+            onClick={() => navigate("/transactions")}
+            className="text-sm text-primary hover:underline"
+          >
+            View All
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-16 bg-muted/40 rounded-md animate-pulse"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-card border rounded-xl overflow-hidden">
+            {/* This would be populated with actual transaction data */}
+            <div className="p-8 text-center text-muted-foreground">
+              <p>Your recent activity will appear here</p>
+              <button
+                onClick={() => navigate("/transactions")}
+                className="mt-2 text-primary hover:underline text-sm"
+              >
+                View transaction history
+              </button>
             </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium">Recent Activity</h2>
-                <Link to="/history" className="text-sm text-primary flex items-center">
-                  View all <ChevronRight className="w-4 h-4 ml-1" />
-                </Link>
-              </div>
-
-              {recentTransactions.length === 0 ? (
-                <div className="bg-card rounded-xl border p-6 text-center">
-                  <p className="text-muted-foreground">
-                    No activity yet
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-card rounded-xl border overflow-hidden">
-                  <div className="divide-y">
-                    {recentTransactions.map((transaction) => (
-                      <div key={transaction.id} className="p-4 flex items-center">
-                        <div className={`rounded-full p-2 mr-3 ${
-                          transaction.type === 'stamp' 
-                            ? 'bg-blue-500/10 text-blue-500' 
-                            : 'bg-green-500/10 text-green-500'
-                        }`}>
-                          {transaction.type === 'stamp' ? (
-                            <Stamp className="h-4 w-4" />
-                          ) : (
-                            <Gift className="h-4 w-4" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">
-                            {transaction.businessName}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {transaction.type === 'stamp' 
-                              ? `Added ${transaction.count || 1} stamp${(transaction.count || 1) > 1 ? 's' : ''}` 
-                              : 'Redeemed reward'}
-                          </p>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(transaction.timestamp).toLocaleDateString()}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </>
+          </div>
         )}
       </div>
     </div>
