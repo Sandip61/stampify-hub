@@ -42,8 +42,26 @@ export const issueStampsToCustomer = async (
  */
 export const redeemStampReward = async (rewardCode: string): Promise<RedeemResponse> => {
   try {
+    // Validate the rewardCode format before sending to the server
+    if (!rewardCode || typeof rewardCode !== 'string') {
+      throw new AppError(
+        ErrorType.VALIDATION_ERROR,
+        "Reward code is required"
+      );
+    }
+
+    // Standardize the code format (uppercase, no spaces)
+    const formattedCode = rewardCode.trim().toUpperCase();
+    
+    if (formattedCode.length !== 6 || !/^[A-Z0-9]{6}$/.test(formattedCode)) {
+      throw new AppError(
+        ErrorType.VALIDATION_ERROR,
+        "Invalid reward code format. Code should be 6 alphanumeric characters"
+      );
+    }
+
     const { data, error } = await supabase.functions.invoke('redeem-reward', {
-      body: { rewardCode }
+      body: { rewardCode: formattedCode }
     });
 
     if (error) {
@@ -51,10 +69,18 @@ export const redeemStampReward = async (rewardCode: string): Promise<RedeemRespo
     }
 
     if (!data.success) {
-      throw new AppError(
-        ErrorType.STAMP_REDEEM_FAILED,
-        data.error || "Failed to redeem reward"
-      );
+      // Check if we have a specific error type from the server
+      if (data.errorType) {
+        throw new AppError(
+          data.errorType as ErrorType,
+          data.error || "Failed to redeem reward"
+        );
+      } else {
+        throw new AppError(
+          ErrorType.STAMP_REDEEM_FAILED,
+          data.error || "Failed to redeem reward"
+        );
+      }
     }
 
     return data;

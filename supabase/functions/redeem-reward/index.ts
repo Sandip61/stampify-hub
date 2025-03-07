@@ -28,7 +28,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Missing Authorization header' 
+          error: 'Missing Authorization header',
+          errorType: 'UNAUTHORIZED'
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
@@ -44,7 +45,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Unauthorized' 
+          error: 'Unauthorized',
+          errorType: 'UNAUTHORIZED'
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
@@ -60,7 +62,45 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Missing reward code' 
+          error: 'Missing reward code',
+          errorType: 'VALIDATION_ERROR'
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 400 
+        }
+      )
+    }
+
+    // Validate the reward code format
+    if (!/^[A-Z0-9]{6}$/.test(rewardCode)) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Invalid reward code format. Code should be 6 alphanumeric characters',
+          errorType: 'VALIDATION_ERROR'
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 400 
+        }
+      )
+    }
+
+    // Check if this code has already been redeemed
+    const { data: existingRedemption, error: existingError } = await supabase
+      .from('stamp_transactions')
+      .select('id')
+      .eq('reward_code', rewardCode)
+      .eq('type', 'redeem')
+      .maybeSingle()
+
+    if (existingRedemption) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'This reward has already been redeemed',
+          errorType: 'QR_CODE_ALREADY_USED'
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
@@ -83,13 +123,14 @@ serve(async (req) => {
       `)
       .eq('reward_code', rewardCode)
       .eq('type', 'stamp')
-      .single()
+      .maybeSingle()
 
     if (transactionError || !transaction) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Invalid reward code' 
+          error: 'Invalid reward code',
+          errorType: 'QR_CODE_INVALID'
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
@@ -103,11 +144,31 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'You are not authorized to redeem this reward' 
+          error: 'You are not authorized to redeem this reward',
+          errorType: 'PERMISSION_DENIED'
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
           status: 403
+        }
+      )
+    }
+
+    // Check if the reward code is expired (more than 24 hours old)
+    const redemptionTimestamp = new Date(transaction.timestamp);
+    const currentTime = new Date();
+    const hoursDifference = (currentTime.getTime() - redemptionTimestamp.getTime()) / (1000 * 60 * 60);
+    
+    if (hoursDifference > 24) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'This reward code has expired',
+          errorType: 'QR_CODE_EXPIRED'
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 400
         }
       )
     }
@@ -117,13 +178,14 @@ serve(async (req) => {
       .from('stamp_cards')
       .select('*')
       .eq('id', transaction.card_id)
-      .single()
+      .maybeSingle()
 
     if (cardError || !stampCard) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Stamp card not found' 
+          error: 'Stamp card not found',
+          errorType: 'STAMP_CARD_NOT_FOUND'
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
@@ -138,7 +200,7 @@ serve(async (req) => {
       .select('*')
       .eq('card_id', transaction.card_id)
       .eq('customer_id', transaction.customer_id)
-      .single()
+      .maybeSingle()
 
     if (customerError) {
       console.error('Error fetching customer stamp card:', customerError)
@@ -163,7 +225,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Failed to record redemption' 
+          error: 'Failed to record redemption',
+          errorType: 'STAMP_REDEEM_FAILED'
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
@@ -208,7 +271,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: 'Internal server error' 
+        error: 'Internal server error',
+        errorType: 'UNKNOWN_ERROR'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 

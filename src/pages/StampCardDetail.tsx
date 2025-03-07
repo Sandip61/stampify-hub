@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { getCurrentUser, User } from "@/utils/auth";
 import { getStampCard, addStamp, redeemReward, StampCard as StampCardType, Transaction } from "@/utils/data";
 import StampCard from "@/components/StampCard";
-import { ArrowLeft, Clock, Gift, Award, Badge, BadgeCheck } from "lucide-react";
+import { ArrowLeft, Clock, Gift, Award, Badge, BadgeCheck, Copy, RefreshCw } from "lucide-react";
 
 const StampCardDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +17,7 @@ const StampCardDetail = () => {
   const [redeeming, setRedeeming] = useState(false);
   const [rewardCode, setRewardCode] = useState<string | null>(null);
   const [rewardTransaction, setRewardTransaction] = useState<Transaction | null>(null);
+  const [redeemStage, setRedeemStage] = useState<"initial" | "confirming" | "success">("initial");
 
   useEffect(() => {
     const loadData = async () => {
@@ -71,14 +72,17 @@ const StampCardDetail = () => {
     }
   };
 
-  const handleRedeemReward = async () => {
-    if (!card) return;
-    
-    // Check if enough stamps
-    if (card.currentStamps < card.totalStamps) {
+  const confirmRedemption = () => {
+    if (!card || card.currentStamps < card.totalStamps) {
       toast.error(`You need ${card.totalStamps - card.currentStamps} more stamps to redeem this reward`);
       return;
     }
+    
+    setRedeemStage("confirming");
+  };
+
+  const handleRedeemReward = async () => {
+    if (!card) return;
     
     setRedeeming(true);
     
@@ -87,17 +91,28 @@ const StampCardDetail = () => {
       setCard(updatedCard);
       setRewardCode(code);
       setRewardTransaction(transaction);
+      setRedeemStage("success");
       toast.success("Reward redeemed successfully!");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to redeem reward");
+      setRedeemStage("initial");
     } finally {
       setRedeeming(false);
     }
   };
 
+  const copyToClipboard = () => {
+    if (!rewardCode) return;
+    
+    navigator.clipboard.writeText(rewardCode)
+      .then(() => toast.success("Code copied to clipboard"))
+      .catch(() => toast.error("Failed to copy code"));
+  };
+
   const closeRewardModal = () => {
     setRewardCode(null);
     setRewardTransaction(null);
+    setRedeemStage("initial");
   };
 
   if (loading) {
@@ -176,6 +191,11 @@ const StampCardDetail = () => {
                   style={{ width: `${(card.currentStamps / card.totalStamps) * 100}%` }}
                 ></div>
               </div>
+              {card.currentStamps >= card.totalStamps && (
+                <p className="text-sm text-green-600 mt-2 font-medium">
+                  You have enough stamps to redeem your reward!
+                </p>
+              )}
             </div>
           </div>
           
@@ -194,7 +214,7 @@ const StampCardDetail = () => {
             </button>
             
             <button
-              onClick={handleRedeemReward}
+              onClick={confirmRedemption}
               className={`flex items-center justify-center px-4 py-2 rounded-md bg-green-500 text-white hover:bg-green-600 transition-colors disabled:opacity-50 disabled:hover:bg-green-500`}
               disabled={card.currentStamps < card.totalStamps || redeeming}
             >
@@ -208,8 +228,49 @@ const StampCardDetail = () => {
           </div>
         </div>
         
+        {/* Confirmation Modal */}
+        {redeemStage === "confirming" && (
+          <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 z-50">
+            <div className="bg-card rounded-xl border p-6 max-w-md w-full">
+              <h3 className="text-xl font-bold text-center mb-4">Confirm Redemption</h3>
+              
+              <div className="bg-muted/50 p-4 rounded-md mb-6">
+                <h4 className="font-medium mb-2">You're about to redeem:</h4>
+                <p className="text-lg font-semibold text-primary">
+                  {card.reward}
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  From {card.businessName}
+                </p>
+                <p className="mt-4 text-sm">
+                  This will reset your stamp count to 0.
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setRedeemStage("initial")}
+                  className="flex-1 py-2 px-4 bg-muted hover:bg-muted/80 text-foreground rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRedeemReward}
+                  className="flex-1 py-2 px-4 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors flex items-center justify-center"
+                  disabled={redeeming}
+                >
+                  {redeeming && (
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  )}
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Reward redeemed modal */}
-        {rewardCode && (
+        {rewardCode && redeemStage === "success" && (
           <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 z-50">
             <div className="bg-card rounded-xl border p-6 max-w-md w-full">
               <div className="flex justify-center mb-4">
@@ -223,10 +284,17 @@ const StampCardDetail = () => {
                 Show this code to the staff to claim your reward
               </p>
               
-              <div className="bg-muted p-4 rounded-md text-center mb-6">
+              <div className="bg-muted p-4 rounded-md text-center mb-6 relative">
                 <span className="text-2xl font-mono font-bold tracking-widest">
                   {rewardCode}
                 </span>
+                <button 
+                  onClick={copyToClipboard}
+                  className="absolute right-2 top-2 p-1 rounded-md hover:bg-muted-foreground/10"
+                  title="Copy code"
+                >
+                  <Copy className="h-4 w-4" />
+                </button>
               </div>
               
               <div className="bg-muted/50 p-4 rounded-md mb-6">
