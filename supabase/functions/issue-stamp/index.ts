@@ -16,6 +16,83 @@ interface RequestBody {
   method: "direct" | "qr";
 }
 
+// Security validation functions
+const validateRequestParameters = (body: RequestBody): { valid: boolean; error?: string } => {
+  // Method validation
+  if (!body.method || !['direct', 'qr'].includes(body.method)) {
+    return { valid: false, error: 'Invalid method specified' };
+  }
+  
+  // QR method validation
+  if (body.method === 'qr' && !body.qrCode) {
+    return { valid: false, error: 'QR code is required for QR method' };
+  }
+  
+  // Direct method validation
+  if (body.method === 'direct') {
+    if (!body.cardId) {
+      return { valid: false, error: 'Card ID is required for direct method' };
+    }
+    
+    if (!body.customerId && !body.customerEmail) {
+      return { valid: false, error: 'Customer ID or email is required for direct method' };
+    }
+  }
+  
+  // Count validation
+  if (body.count !== undefined) {
+    if (!Number.isInteger(body.count) || body.count <= 0 || body.count > 10) {
+      return { valid: false, error: 'Count must be a positive integer not exceeding 10' };
+    }
+  }
+  
+  return { valid: true };
+}
+
+// Security function to validate rate limits
+const checkRateLimit = async (
+  supabase: any, 
+  merchantId: string, 
+  customerId: string
+): Promise<{ allowed: boolean; error?: string }> => {
+  // Check for merchant rate limiting (no more than 100 stamps per hour)
+  const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  
+  const { count: merchantCount, error: merchantError } = await supabase
+    .from('stamp_transactions')
+    .select('id', { count: 'exact', head: true })
+    .eq('merchant_id', merchantId)
+    .gte('timestamp', hourAgo);
+    
+  if (merchantError) {
+    console.error('Error checking merchant rate limit:', merchantError);
+    return { allowed: false, error: 'Error checking rate limits' };
+  }
+  
+  if (merchantCount > 100) {
+    return { allowed: false, error: 'Merchant rate limit exceeded (100 stamps per hour)' };
+  }
+  
+  // Check for customer rate limiting (no more than 20 stamps per hour from same merchant)
+  const { count: customerCount, error: customerError } = await supabase
+    .from('stamp_transactions')
+    .select('id', { count: 'exact', head: true })
+    .eq('merchant_id', merchantId)
+    .eq('customer_id', customerId)
+    .gte('timestamp', hourAgo);
+    
+  if (customerError) {
+    console.error('Error checking customer rate limit:', customerError);
+    return { allowed: false, error: 'Error checking rate limits' };
+  }
+  
+  if (customerCount > 20) {
+    return { allowed: false, error: 'Customer rate limit exceeded (20 stamps per hour from same merchant)' };
+  }
+  
+  return { allowed: true };
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -67,48 +144,66 @@ serve(async (req) => {
     // Get the request body
     const body = await req.json() as RequestBody
     
+    // Validate request parameters
+    const validation = validateRequestParameters(body);
+    if (!validation.valid) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: validation.error 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 400 
+        }
+      )
+    }
+    
     let cardId: string | undefined = body.cardId
     let customerId: string | undefined = body.customerId
     let customerEmail: string | undefined = body.customerEmail
     const count = body.count || 1
     const method = body.method || 'direct'
 
-    // Validate required parameters
-    if (method === 'direct' && (!cardId || (!customerId && !customerEmail))) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Missing required parameters for direct method' 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-          status: 400 
-        }
-      )
-    }
-
-    if (method === 'qr' && !body.qrCode) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Missing QR code for QR method' 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-          status: 400 
-        }
-      )
-    }
-
     // Process QR code if using QR method
     if (method === 'qr' && body.qrCode) {
       try {
-        // Parse the QR code value
-        const qrData = JSON.parse(body.qrCode) as {
+        // Parse the QR code value with additional validation
+        let qrData: {
           type: string;
           code: string;
           card_id: string;
           merchant_id: string;
+          timestamp?: number;
+        };
+        
+        try {
+          qrData = JSON.parse(body.qrCode);
+        } catch (e) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'Invalid QR code format: not valid JSON' 
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+              status: 400
+            }
+          )
+        }
+
+        // Validate QR data properties
+        if (!qrData.type || !qrData.code || !qrData.card_id || !qrData.merchant_id) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'Invalid QR code format: missing required fields' 
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+              status: 400
+            }
+          )
         }
 
         if (qrData.type !== 'stamp') {
@@ -124,6 +219,40 @@ serve(async (req) => {
           )
         }
 
+        // Check for timestamp to prevent QR replay attacks
+        if (qrData.timestamp) {
+          const now = Date.now();
+          const qrTimestamp = qrData.timestamp;
+          
+          // QR codes should not be from the future
+          if (qrTimestamp > now) {
+            return new Response(
+              JSON.stringify({ 
+                success: false, 
+                error: 'Invalid QR code: future timestamp' 
+              }),
+              { 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+                status: 400
+              }
+            )
+          }
+          
+          // QR codes older than 5 minutes should be rejected
+          if (now - qrTimestamp > 5 * 60 * 1000) {
+            return new Response(
+              JSON.stringify({ 
+                success: false, 
+                error: 'QR code has expired (>5 minutes)' 
+              }),
+              { 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+                status: 400
+              }
+            )
+          }
+        }
+
         // Get the QR code from the database
         const { data: qrCode, error: qrError } = await supabase
           .from('stamp_qr_codes')
@@ -135,7 +264,7 @@ serve(async (req) => {
           return new Response(
             JSON.stringify({ 
               success: false, 
-              error: 'QR code not found' 
+              error: 'QR code not found in database' 
             }),
             { 
               headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
@@ -200,7 +329,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            error: 'Invalid QR code format' 
+            error: 'Invalid QR code format or processing error' 
           }),
           { 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
@@ -280,6 +409,21 @@ serve(async (req) => {
 
       customerId = foundUser.id
     }
+    
+    // Check rate limiting for security
+    const rateLimitCheck = await checkRateLimit(supabase, user.id, customerId as string);
+    if (!rateLimitCheck.allowed) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: rateLimitCheck.error 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 429
+        }
+      )
+    }
 
     // Check if customer already has a stamp card
     const { data: existingCard, error: existingCardError } = await supabase
@@ -331,7 +475,12 @@ serve(async (req) => {
       // Check if customer has earned a reward
       if (newStampCount >= stampCard.total_stamps && existingCard.current_stamps < stampCard.total_stamps) {
         rewardEarned = true
-        rewardCode = crypto.randomUUID()
+        // Generate a secure reward code with additional entropy
+        const randomBytes = new Uint8Array(16);
+        crypto.getRandomValues(randomBytes);
+        rewardCode = crypto.randomUUID() + '-' + Array.from(randomBytes)
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('').substring(0, 6).toUpperCase();
       }
 
       // If stamps exceed the total, cap at total stamps
@@ -364,7 +513,7 @@ serve(async (req) => {
       currentStamps = updatedCard.current_stamps
     }
 
-    // Create a transaction record
+    // Create a transaction record with additional security metadata
     const { data: transaction, error: transactionError } = await supabase
       .from('stamp_transactions')
       .insert({
@@ -373,7 +522,13 @@ serve(async (req) => {
         merchant_id: user.id,
         type: 'stamp',
         count: count,
-        reward_code: rewardEarned ? rewardCode : null
+        reward_code: rewardEarned ? rewardCode : null,
+        metadata: {
+          ip_address: req.headers.get('x-forwarded-for') || 'unknown',
+          user_agent: req.headers.get('user-agent') || 'unknown',
+          method: method,
+          timestamp: new Date().toISOString()
+        }
       })
       .select()
       .single()
@@ -428,6 +583,23 @@ serve(async (req) => {
         }
       )
     }
+
+    // Create detailed security audit log
+    const auditLog = {
+      type: 'stamp_issuance',
+      merchant_id: user.id,
+      customer_id: customerId,
+      card_id: cardId,
+      count: count,
+      method: method,
+      result: 'success',
+      reward_earned: rewardEarned,
+      timestamp: new Date().toISOString(),
+      ip_address: req.headers.get('x-forwarded-for') || 'unknown',
+      user_agent: req.headers.get('user-agent') || 'unknown',
+    };
+    
+    console.log('Stamp issuance audit log:', JSON.stringify(auditLog));
 
     return new Response(
       JSON.stringify({ 

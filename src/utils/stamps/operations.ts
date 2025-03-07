@@ -87,6 +87,23 @@ export const processScannedQRCode = async (
       );
     }
     
+    // Try to parse the QR code to add a timestamp if it doesn't have one
+    try {
+      const qrData = JSON.parse(qrCode);
+      
+      // Add timestamp to prevent replay attacks if not already present
+      if (!qrData.timestamp) {
+        qrData.timestamp = Date.now();
+        qrCode = JSON.stringify(qrData);
+      }
+    } catch (e) {
+      // If parsing fails, it's not a valid JSON QR code
+      throw new AppError(
+        ErrorType.QR_CODE_INVALID,
+        "Invalid QR code format"
+      );
+    }
+    
     return await issueStampsToCustomer({
       qrCode,
       customerId,

@@ -1,15 +1,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  AppError, 
-  ErrorType, 
-  handleError, 
-  handleSupabaseError 
-} from "@/utils/errors";
-import { QRCode, QRCodeGenerationOptions } from "./types";
+import { QRCodeGenerationOptions, QRCode } from "./types";
+import { AppError, ErrorType, handleError, handleSupabaseError } from "@/utils/errors";
 
 /**
- * Generate a QR code for a stamp card
+ * Generate a stamp QR code for a merchant
  */
 export const generateStampQRCode = async (
   cardId: string,
@@ -18,6 +13,14 @@ export const generateStampQRCode = async (
   securityLevel: "L" | "M" | "Q" | "H" = "M"
 ): Promise<{ qrCode: QRCode; qrValue: string }> => {
   try {
+    // Validate inputs
+    if (!cardId) {
+      throw new AppError(
+        ErrorType.VALIDATION_ERROR,
+        "Card ID is required"
+      );
+    }
+
     if (expiresInHours < 1 || expiresInHours > 72) {
       throw new AppError(
         ErrorType.VALIDATION_ERROR,
@@ -25,83 +28,67 @@ export const generateStampQRCode = async (
       );
     }
 
-    const { data, error } = await supabase.functions.invoke('create-qr-code', {
-      body: { cardId, expiresInHours, isSingleUse, securityLevel }
-    });
-
-    if (error) {
-      throw handleSupabaseError(error, "generating QR code", ErrorType.QR_CODE_GENERATION_FAILED);
-    }
-
-    if (!data.success) {
+    // Get the current merchant
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData.user) {
       throw new AppError(
-        ErrorType.QR_CODE_GENERATION_FAILED,
-        data.error || "Failed to generate QR code"
+        ErrorType.UNAUTHORIZED,
+        "You must be logged in to generate QR codes"
       );
     }
 
-    return {
-      qrCode: data.qrCode,
-      qrValue: data.qrValue
-    };
+    const merchantId = authData.user.id;
+
+    // Check if the card belongs to the merchant
+    const { data: cardData, error: cardError } = await supabase
+      .from("stamp_cards")
+      .select("id")
+      .eq("id", cardId)
+      .eq("merchant_id", merchantId)
+      .single();
+
+    if (cardError || !cardData) {
+      throw new AppError(
+        ErrorType.UNAUTHORIZED,
+        "You do not have permission to generate QR codes for this card"
+      );
+    }
+
+    // Create expiry date
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + expiresInHours);
+
+    // Generate a random code
+    const code = crypto.randomUUID();
+
+    // Create the QR code in the database
+    const { data: qrCode, error: qrError } = await supabase
+      .from("stamp_qr_codes")
+      .insert({
+        merchant_id: merchantId,
+        card_id: cardId,
+        code,
+        expires_at: expiresAt.toISOString(),
+        is_single_use: isSingleUse
+      })
+      .select()
+      .single();
+
+    if (qrError || !qrCode) {
+      throw handleSupabaseError(qrError, "generating QR code", ErrorType.QR_CODE_GENERATION_FAILED);
+    }
+
+    // Create the QR code value with timestamp for added security
+    const qrValue = JSON.stringify({
+      type: "stamp",
+      code: qrCode.code,
+      card_id: qrCode.card_id,
+      merchant_id: qrCode.merchant_id,
+      timestamp: Date.now() // Add current timestamp to prevent replay attacks
+    });
+
+    return { qrCode, qrValue };
   } catch (error) {
     throw handleError(error, ErrorType.QR_CODE_GENERATION_FAILED, "Failed to generate QR code");
-  }
-};
-
-/**
- * Generate a QR code with more options
- */
-export const generateQRCode = async (
-  options: QRCodeGenerationOptions
-): Promise<{ qrCode: QRCode; qrValue: string }> => {
-  return generateStampQRCode(
-    options.cardId,
-    options.expiresInHours || 24,
-    options.isSingleUse || false,
-    options.securityLevel || "M"
-  );
-};
-
-/**
- * Fetch active QR codes for a merchant's stamp card
- */
-export const fetchActiveQRCodes = async (cardId: string): Promise<QRCode[]> => {
-  try {
-    const now = new Date().toISOString();
-    
-    const { data, error } = await supabase
-      .from("stamp_qr_codes")
-      .select("*")
-      .eq("card_id", cardId)
-      .gt("expires_at", now)
-      .eq("is_used", false)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      throw handleSupabaseError(error, "fetching QR codes", ErrorType.DATA_FETCH_FAILED);
-    }
-
-    return data || [];
-  } catch (error) {
-    throw handleError(error, ErrorType.DATA_FETCH_FAILED, "Failed to fetch active QR codes");
-  }
-};
-
-/**
- * Delete a QR code
- */
-export const deleteQRCode = async (qrCodeId: string): Promise<void> => {
-  try {
-    const { error } = await supabase
-      .from("stamp_qr_codes")
-      .delete()
-      .eq("id", qrCodeId);
-
-    if (error) {
-      throw handleSupabaseError(error, "deleting QR code", ErrorType.DATA_DELETE_FAILED);
-    }
-  } catch (error) {
-    throw handleError(error, ErrorType.DATA_DELETE_FAILED, "Failed to delete QR code");
   }
 };
