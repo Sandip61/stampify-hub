@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -38,23 +39,23 @@ export const issueStampsToCustomer = async (
         success: true,
         message: "Stamps will be issued when online",
         stamps: {
-          count: options.count,
+          count: options.count || 1,
           issuedAt: new Date().toISOString(),
           offlineOperationId: operationId
         },
         cardInfo: {
           id: options.cardId || "offline-placeholder",
           totalStampsRequired: 10, // Default value
-          currentStamps: options.count // Approximate
+          currentStamps: options.count || 1 // Approximate
         },
         customerInfo: {
           id: options.customerId || "offline-placeholder",
-          email: options.customerEmail || "offline@example.com"
+          email: options.customerEmail
         },
         transaction: {
           id: operationId,
           type: "stamp",
-          created_at: new Date().toISOString()
+          timestamp: new Date().toISOString()
         },
         offlineMode: true
       };
@@ -93,23 +94,23 @@ export const issueStampsToCustomer = async (
           success: true,
           message: "Stamps will be issued when online",
           stamps: {
-            count: options.count,
+            count: options.count || 1,
             issuedAt: new Date().toISOString(),
             offlineOperationId: operationId
           },
           cardInfo: {
             id: options.cardId || "offline-placeholder",
             totalStampsRequired: 10, // Default value
-            currentStamps: options.count // Approximate
+            currentStamps: options.count || 1 // Approximate
           },
           customerInfo: {
             id: options.customerId || "offline-placeholder",
-            email: options.customerEmail || "offline@example.com"
+            email: options.customerEmail
           },
           transaction: {
             id: operationId,
             type: "stamp",
-            created_at: new Date().toISOString()
+            timestamp: new Date().toISOString()
           },
           offlineMode: true
         };
@@ -149,6 +150,12 @@ export const redeemStampReward = async (rewardCode: string): Promise<RedeemRespo
         },
         transaction: {
           id: operationId,
+          type: "redemption",
+          card_id: "offline-placeholder",
+          customer_id: "offline-placeholder",
+          merchant_id: "offline-placeholder",
+          reward_code: rewardCode,
+          timestamp: new Date().toISOString(),
           redeemed_at: new Date().toISOString()
         },
         offlineMode: true
@@ -219,6 +226,12 @@ export const redeemStampReward = async (rewardCode: string): Promise<RedeemRespo
           },
           transaction: {
             id: operationId,
+            type: "redemption",
+            card_id: "offline-placeholder",
+            customer_id: "offline-placeholder",
+            merchant_id: "offline-placeholder",
+            reward_code: rewardCode,
+            timestamp: new Date().toISOString(),
             redeemed_at: new Date().toISOString()
           },
           offlineMode: true

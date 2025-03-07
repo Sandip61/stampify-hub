@@ -1,3 +1,4 @@
+
 import { ErrorType } from './types';
 
 /**
@@ -17,6 +18,14 @@ export const ErrorMessages: Record<ErrorType, string> = {
   [ErrorType.AUTH_MISSING_PASSWORD]: "Password is required",
   [ErrorType.AUTH_PASSWORD_MISMATCH]: "Passwords do not match",
   
+  // Profile errors
+  [ErrorType.PROFILE_NOT_FOUND]: "User profile not found",
+  [ErrorType.PROFILE_UPDATE_FAILED]: "Failed to update user profile",
+  
+  // Merchant errors
+  [ErrorType.MERCHANT_NOT_FOUND]: "Merchant account not found",
+  [ErrorType.MERCHANT_UPDATE_FAILED]: "Failed to update merchant information",
+  
   // Stamp card errors
   [ErrorType.STAMP_CARD_NOT_FOUND]: "Stamp card not found",
   [ErrorType.STAMP_CARD_INACTIVE]: "This stamp card is inactive",
@@ -30,6 +39,12 @@ export const ErrorMessages: Record<ErrorType, string> = {
   [ErrorType.QR_CODE_EXPIRED]: "This QR code has expired",
   [ErrorType.QR_CODE_USED]: "This QR code has already been used",
   [ErrorType.QR_CODE_GENERATION_FAILED]: "Failed to generate QR code",
+  
+  // Data operation errors
+  [ErrorType.DATA_FETCH_FAILED]: "Failed to retrieve data. Please try again.",
+  [ErrorType.DATA_UPDATE_FAILED]: "Failed to update data. Please try again.",
+  [ErrorType.DATA_DELETE_FAILED]: "Failed to delete data. Please try again.",
+  [ErrorType.DATA_CREATE_FAILED]: "Failed to create data. Please try again.",
   
   // Validation errors
   [ErrorType.VALIDATION_ERROR]: "Invalid input. Please check your data.",
@@ -52,4 +67,14 @@ export const ErrorMessages: Record<ErrorType, string> = {
   [ErrorType.OFFLINE_MODE]: "You're offline. This action will be performed when you reconnect.",
   [ErrorType.OFFLINE_STORAGE_ERROR]: "Failed to store data for offline use. Check your device storage.",
   [ErrorType.OFFLINE_SYNC_FAILED]: "Failed to sync offline data. Please try again later."
+};
+
+/**
+ * Get user-friendly error message based on error type
+ */
+export const getUserFriendlyErrorMessage = (
+  errorType: ErrorType,
+  fallbackMessage?: string
+): string => {
+  return ErrorMessages[errorType] || fallbackMessage || "An unexpected error occurred";
 };

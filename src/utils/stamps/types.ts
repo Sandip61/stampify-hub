@@ -13,7 +13,31 @@ export interface QRCode {
 
 export interface StampResponse {
   success: boolean;
-  stampCard: {
+  message?: string;
+  stamps?: {
+    count: number;
+    issuedAt: string;
+    offlineOperationId?: string;
+  };
+  cardInfo?: {
+    id: string;
+    totalStampsRequired: number;
+    currentStamps: number;
+  };
+  customerInfo?: {
+    id: string;
+    email?: string;
+  };
+  transaction?: {
+    id: string;
+    type: string;
+    timestamp?: string;
+    created_at?: string;
+  };
+  offlineMode?: boolean;
+  
+  // Original response from server
+  stampCard?: {
     id: string;
     card_id: string;
     customer_id: string;
@@ -30,35 +54,29 @@ export interface StampResponse {
       business_color: string;
     }
   };
-  rewardEarned: boolean;
-  rewardCode: string | null;
-  transaction: {
-    id: string;
-    card_id: string;
-    customer_id: string;
-    merchant_id: string;
-    type: string;
-    count?: number;
-    timestamp: string;
-  };
+  rewardEarned?: boolean;
+  rewardCode?: string | null;
 }
 
 export interface RedeemResponse {
   success: boolean;
-  transaction: {
-    id: string;
-    card_id: string;
-    customer_id: string;
-    merchant_id: string;
-    type: string;
-    reward_code: string;
-    timestamp: string;
-    redeemed_at: string;
-  };
+  message?: string;
   reward: string;
   customerInfo: {
     id: string;
+    email?: string;
   };
+  transaction: {
+    id: string;
+    card_id?: string;
+    customer_id?: string;
+    merchant_id?: string;
+    type?: string;
+    reward_code?: string;
+    timestamp?: string;
+    redeemed_at: string;
+  };
+  offlineMode?: boolean;
 }
 
 export interface QRCodeGenerationOptions {
