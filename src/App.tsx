@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 
 // Pages
 import Home from "./pages/Home";
+import Cards from "./pages/Cards";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import StampCardDetail from "./pages/StampCardDetail";
@@ -90,7 +91,7 @@ const router = createBrowserRouter([
     path: "/cards",
     element: (
       <MainLayout>
-        <Home />
+        <Cards />
       </MainLayout>
     ),
   },

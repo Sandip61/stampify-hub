@@ -1,154 +1,201 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { getCurrentUser } from "@/utils/auth";
+import { getCurrentUser, User } from "@/utils/auth";
+import { getUserStampCards, StampCard as StampCardType, initializeDemoData } from "@/utils/data";
 import StampCard from "@/components/StampCard";
-
-// Define types for stamp cards
-interface StampCardType {
-  id: string;
-  name: string;
-  description: string;
-  total_stamps: number;
-  reward: string;
-  business_logo: string;
-  business_color: string;
-  current_stamps?: number;
-}
+import { Button } from "@/components/ui/button";
+import { ArrowRight, Clock, Star, Scan, TrendingUp } from "lucide-react";
 
 const Home = () => {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [stampCards, setStampCards] = useState<StampCardType[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [cards, setCards] = useState<StampCardType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const checkUser = async () => {
-      const userData = await getCurrentUser();
-      setUser(userData);
-      setLoading(false);
+    const checkAuth = async () => {
+      try {
+        const currentUser = await getCurrentUser();
+        setUser(currentUser);
+        
+        if (currentUser) {
+          // Initialize demo data if needed
+          await initializeDemoData();
+          
+          // Get user's stamp cards
+          const userCards = await getUserStampCards();
+          setCards(userCards);
+        }
+      } catch (error) {
+        console.error("Error loading user data:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
-
-    checkUser();
+    
+    checkAuth();
   }, []);
 
-  useEffect(() => {
-    if (user) {
-      fetchUserCards();
-    }
-  }, [user]);
-
-  const fetchUserCards = async () => {
-    try {
-      // Get customer's stamp cards with current stamp counts
-      const { data, error } = await supabase
-        .from("customer_stamp_cards")
-        .select(`
-          id,
-          current_stamps,
-          card:card_id (
-            id,
-            name,
-            description,
-            total_stamps,
-            reward,
-            business_logo,
-            business_color
-          )
-        `)
-        .eq("customer_id", user.id);
-
-      if (error) {
-        console.error("Error fetching stamp cards:", error);
-        return;
-      }
-
-      // Transform data to flat structure for easier consumption by components
-      const transformedData = data.map((item: any) => ({
-        id: item.card.id,
-        name: item.card.name,
-        description: item.card.description,
-        total_stamps: item.card.total_stamps,
-        reward: item.card.reward,
-        business_logo: item.card.business_logo,
-        business_color: item.card.business_color,
-        current_stamps: item.current_stamps,
-        customer_card_id: item.id,
-      }));
-
-      setStampCards(transformedData);
-    } catch (error) {
-      console.error("Error fetching stamp cards:", error);
-    }
-  };
-
-  // Content for authenticated users
-  const authenticatedContent = (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Your Stamp Cards</h2>
-      </div>
-
-      {stampCards.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <h3 className="text-xl font-medium text-gray-600">No stamp cards yet</h3>
-          <p className="text-gray-500 mt-2">
-            Visit your favorite stores to collect stamps and earn rewards.
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {stampCards.map((card) => (
-            <Link to={`/card/${card.id}`} key={card.id}>
-              <StampCard
-                businessName={card.name}
-                description={card.description}
-                currentStamps={card.current_stamps || 0}
-                totalStamps={card.total_stamps}
-                reward={card.reward}
-                businessLogo={card.business_logo}
-                businessColor={card.business_color}
-              />
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
+  // Get cards that are close to completion (>50% complete)
+  const nearCompletionCards = cards.filter(card => 
+    (card.currentStamps / card.totalStamps) >= 0.5 && 
+    card.currentStamps < card.totalStamps
   );
 
-  // Content for non-authenticated users
-  const guestContent = (
-    <div className="text-center space-y-6 max-w-2xl mx-auto py-12">
-      <h1 className="text-4xl font-bold">Digital Stamp Cards</h1>
-      <p className="text-xl text-gray-600">
-        Collect digital stamps from your favorite stores and earn rewards!
-      </p>
-      <div className="flex justify-center gap-4 pt-4">
-        <Link
-          to="/login"
-          className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
-          Login
-        </Link>
-        <Link
-          to="/register"
-          className="px-6 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
-        >
-          Register
-        </Link>
-      </div>
-    </div>
+  // Get cards that are complete and ready for redemption
+  const readyToRedeemCards = cards.filter(card => 
+    card.currentStamps >= card.totalStamps
   );
 
-  if (loading) {
+  // Get recently updated cards
+  const recentlyUpdatedCards = [...cards]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 3);
+
+  if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <div className="w-12 h-12 rounded-full border-t-2 border-primary animate-spin" />
+        <p className="mt-4 text-muted-foreground">Loading...</p>
       </div>
     );
   }
 
-  return <div>{user ? authenticatedContent : guestContent}</div>;
+  return (
+    <div className="container max-w-3xl mx-auto px-4 py-6">
+      {/* Welcome section */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold">
+          Welcome back{user?.name ? `, ${user.name}` : ''}
+        </h1>
+        <p className="text-muted-foreground">
+          Keep track of your rewards and discover new offers
+        </p>
+      </div>
+      
+      {/* Quick actions */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <Link to="/scan">
+          <Button variant="outline" className="w-full h-16 justify-start">
+            <div className="flex flex-col items-start">
+              <div className="flex items-center text-primary">
+                <Scan className="w-4 h-4 mr-2" />
+                <span className="font-medium">Scan QR</span>
+              </div>
+              <span className="text-xs text-muted-foreground mt-1">
+                Add stamps to your card
+              </span>
+            </div>
+          </Button>
+        </Link>
+        <Link to="/cards">
+          <Button variant="outline" className="w-full h-16 justify-start">
+            <div className="flex flex-col items-start">
+              <div className="flex items-center text-primary">
+                <Star className="w-4 h-4 mr-2" />
+                <span className="font-medium">View Cards</span>
+              </div>
+              <span className="text-xs text-muted-foreground mt-1">
+                See all your loyalty cards
+              </span>
+            </div>
+          </Button>
+        </Link>
+      </div>
+      
+      {/* Ready to redeem section */}
+      {readyToRedeemCards.length > 0 && (
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold flex items-center">
+              <Star className="w-5 h-5 mr-2 text-yellow-500 fill-yellow-500" />
+              Ready to Redeem
+            </h2>
+            {readyToRedeemCards.length > 2 && (
+              <Link to="/cards" className="text-sm text-primary flex items-center">
+                View all <ArrowRight className="w-3 h-3 ml-1" />
+              </Link>
+            )}
+          </div>
+          <div className="grid grid-cols-1 gap-4">
+            {readyToRedeemCards.slice(0, 2).map((card) => (
+              <Link key={card.id} to={`/card/${card.id}`} className="block">
+                <StampCard
+                  card={card}
+                  className="transition-all transform hover:translate-y-[-2px]"
+                />
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* Almost there section */}
+      {nearCompletionCards.length > 0 && (
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold flex items-center">
+              <TrendingUp className="w-5 h-5 mr-2 text-blue-500" />
+              Almost There
+            </h2>
+            {nearCompletionCards.length > 2 && (
+              <Link to="/cards" className="text-sm text-primary flex items-center">
+                View all <ArrowRight className="w-3 h-3 ml-1" />
+              </Link>
+            )}
+          </div>
+          <div className="grid grid-cols-1 gap-4">
+            {nearCompletionCards.slice(0, 2).map((card) => (
+              <Link key={card.id} to={`/card/${card.id}`} className="block">
+                <StampCard
+                  card={card}
+                  className="transition-all transform hover:translate-y-[-2px]"
+                />
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* Recent activity section */}
+      {recentlyUpdatedCards.length > 0 && (
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold flex items-center">
+              <Clock className="w-5 h-5 mr-2 text-purple-500" />
+              Recent Activity
+            </h2>
+            <Link to="/history" className="text-sm text-primary flex items-center">
+              View history <ArrowRight className="w-3 h-3 ml-1" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {recentlyUpdatedCards.map((card) => (
+              <Link key={card.id} to={`/card/${card.id}`} className="block">
+                <StampCard
+                  card={card}
+                  className="transition-all transform hover:translate-y-[-2px]"
+                />
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* No cards state */}
+      {cards.length === 0 && (
+        <div className="bg-gray-50 rounded-lg p-6 border border-gray-100 text-center">
+          <h3 className="text-lg font-medium mb-2">Get Started with Stampify</h3>
+          <p className="text-muted-foreground mb-4">
+            Add your first loyalty card by scanning a QR code at participating businesses
+          </p>
+          <Link to="/scan">
+            <Button>Scan QR Code</Button>
+          </Link>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default Home;

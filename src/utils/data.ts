@@ -1,3 +1,4 @@
+
 import { getCurrentUser } from "./auth";
 
 // Type definitions
@@ -61,6 +62,18 @@ const demoBusiness: Business[] = [
     name: "Pizza Palace",
     logo: "🍕",
     color: "#B22222"
+  },
+  {
+    id: "b5",
+    name: "Bakery Delight",
+    logo: "🥐",
+    color: "#9B870C" 
+  },
+  {
+    id: "b6",
+    name: "Sushi Master",
+    logo: "🍣",
+    color: "#2E8B57"
   }
 ];
 
@@ -86,10 +99,10 @@ export const initializeDemoData = async (): Promise<void> => {
       businessName: business.name,
       businessLogo: business.logo,
       totalStamps: 10,
-      currentStamps: index,
-      reward: `Free ${business.name} ${index === 0 ? 'Coffee' : index === 1 ? 'Sandwich' : index === 2 ? 'Smoothie' : 'Pizza'}`,
+      currentStamps: index === 0 ? 10 : index === 1 ? 6 : index, // First card complete, second halfway, others as index
+      reward: generateReward(business.name, index),
       color: business.color,
-      createdAt: new Date().toISOString()
+      createdAt: getRandomPastDate(30).toISOString() // Within last 30 days
     }));
     
     allCards[user.id] = demoCards;
@@ -104,11 +117,13 @@ export const initializeDemoData = async (): Promise<void> => {
     // Add stamp transactions for each card
     demoCards.forEach(card => {
       for (let i = 0; i < card.currentStamps; i++) {
+        // Create a date in the past, with more recent dates for higher stamp counts
+        const daysAgo = card.currentStamps - i;
         const date = new Date();
-        date.setDate(date.getDate() - (card.currentStamps - i));
+        date.setDate(date.getDate() - daysAgo);
         
         demoTransactions.push({
-          id: `tr-${Date.now()}-${i}`,
+          id: `tr-${Date.now()}-${i}-${card.id}`,
           userId: user.id,
           cardId: card.id,
           businessName: card.businessName,
@@ -117,12 +132,50 @@ export const initializeDemoData = async (): Promise<void> => {
           timestamp: date.toISOString()
         });
       }
+      
+      // Add redemption transactions for completed cards
+      if (card.currentStamps >= card.totalStamps) {
+        const redeemDate = new Date();
+        redeemDate.setDate(redeemDate.getDate() - 1); // Redeemed yesterday
+        
+        demoTransactions.push({
+          id: `tr-redeem-${Date.now()}-${card.id}`,
+          userId: user.id,
+          cardId: card.id,
+          businessName: card.businessName,
+          type: "redeem",
+          timestamp: redeemDate.toISOString(),
+          rewardCode: generateRedemptionCode()
+        });
+      }
     });
     
     allTransactions[user.id] = demoTransactions;
     localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(allTransactions));
   }
 };
+
+// Helper function to generate a reward based on the business name
+function generateReward(businessName: string, index: number): string {
+  const rewards = [
+    `Free ${businessName} Signature Item`,
+    `50% Off Your Next Purchase`,
+    `Buy One Get One Free`,
+    `Free Upgrade to Large`,
+    `Complimentary Dessert`,
+    `$5 Off Your Next Purchase`
+  ];
+  
+  return rewards[index % rewards.length];
+}
+
+// Helper function to generate a random date in the past
+function getRandomPastDate(maxDaysAgo: number): Date {
+  const date = new Date();
+  const daysAgo = Math.floor(Math.random() * maxDaysAgo);
+  date.setDate(date.getDate() - daysAgo);
+  return date;
+}
 
 // Get all stamp cards for the current user
 export const getUserStampCards = async (): Promise<StampCard[]> => {
