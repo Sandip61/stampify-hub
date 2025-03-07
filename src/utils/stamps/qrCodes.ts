@@ -92,3 +92,122 @@ export const generateStampQRCode = async (
     throw handleError(error, ErrorType.QR_CODE_GENERATION_FAILED, "Failed to generate QR code");
   }
 };
+
+/**
+ * Fetch active QR codes for a stamp card
+ */
+export const fetchActiveQRCodes = async (cardId: string): Promise<QRCode[]> => {
+  try {
+    // Validate input
+    if (!cardId) {
+      throw new AppError(
+        ErrorType.VALIDATION_ERROR,
+        "Card ID is required"
+      );
+    }
+
+    // Get the current merchant
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData.user) {
+      throw new AppError(
+        ErrorType.UNAUTHORIZED,
+        "You must be logged in to view QR codes"
+      );
+    }
+
+    const merchantId = authData.user.id;
+
+    // Check if the card belongs to the merchant
+    const { data: cardData, error: cardError } = await supabase
+      .from("stamp_cards")
+      .select("id")
+      .eq("id", cardId)
+      .eq("merchant_id", merchantId)
+      .single();
+
+    if (cardError || !cardData) {
+      throw new AppError(
+        ErrorType.UNAUTHORIZED,
+        "You do not have permission to view QR codes for this card"
+      );
+    }
+
+    // Get active QR codes (not expired and not used if single-use)
+    const now = new Date().toISOString();
+    const { data: qrCodes, error: qrError } = await supabase
+      .from("stamp_qr_codes")
+      .select("*")
+      .eq("card_id", cardId)
+      .eq("merchant_id", merchantId)
+      .gt("expires_at", now)
+      .or("is_used.eq.false,is_single_use.eq.false")
+      .order("created_at", { ascending: false });
+
+    if (qrError) {
+      throw handleSupabaseError(qrError, "fetching QR codes", ErrorType.DATA_FETCH_FAILED);
+    }
+
+    return qrCodes || [];
+  } catch (error) {
+    throw handleError(error, ErrorType.DATA_FETCH_FAILED, "Failed to fetch QR codes");
+  }
+};
+
+/**
+ * Delete a QR code
+ */
+export const deleteQRCode = async (qrCodeId: string): Promise<void> => {
+  try {
+    // Validate input
+    if (!qrCodeId) {
+      throw new AppError(
+        ErrorType.VALIDATION_ERROR,
+        "QR code ID is required"
+      );
+    }
+
+    // Get the current merchant
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData.user) {
+      throw new AppError(
+        ErrorType.UNAUTHORIZED,
+        "You must be logged in to delete QR codes"
+      );
+    }
+
+    const merchantId = authData.user.id;
+
+    // Check if the QR code belongs to the merchant
+    const { data: qrData, error: qrError } = await supabase
+      .from("stamp_qr_codes")
+      .select("id, merchant_id")
+      .eq("id", qrCodeId)
+      .single();
+
+    if (qrError || !qrData) {
+      throw new AppError(
+        ErrorType.DATA_FETCH_FAILED,
+        "QR code not found"
+      );
+    }
+
+    if (qrData.merchant_id !== merchantId) {
+      throw new AppError(
+        ErrorType.UNAUTHORIZED,
+        "You do not have permission to delete this QR code"
+      );
+    }
+
+    // Delete the QR code
+    const { error: deleteError } = await supabase
+      .from("stamp_qr_codes")
+      .delete()
+      .eq("id", qrCodeId);
+
+    if (deleteError) {
+      throw handleSupabaseError(deleteError, "deleting QR code", ErrorType.DATA_DELETE_FAILED);
+    }
+  } catch (error) {
+    throw handleError(error, ErrorType.DATA_DELETE_FAILED, "Failed to delete QR code");
+  }
+};
