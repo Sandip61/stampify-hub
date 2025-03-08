@@ -78,35 +78,26 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   }, [onScanComplete]);
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="p-4 border-b">
-          <h3 className="text-lg font-medium flex items-center">
-            <Camera className="w-5 h-5 mr-2" />
-            Scan QR Code
-          </h3>
-        </div>
-
-        <div className="p-4">
-          <div id="qr-reader" className="w-full"></div>
-          
-          {processing && (
-            <div className="mt-4 flex items-center justify-center text-blue-600">
-              <ScanLine className="w-5 h-5 animate-spin mr-2" />
-              <span>Processing stamp...</span>
+    <div className="w-full">
+      <div className="bg-white rounded-lg overflow-hidden">
+        <div id="qr-reader" className="w-full"></div>
+        
+        {processing && (
+          <div className="p-4 flex items-center justify-center text-teal-600">
+            <ScanLine className="w-5 h-5 animate-spin mr-2" />
+            <span>Processing stamp...</span>
+          </div>
+        )}
+        
+        {scanResult && !processing && (
+          <div className="p-4 bg-green-50 border-t border-green-200 flex items-start">
+            <CheckCircle className="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-green-800 font-medium">QR Code Scanned!</p>
+              <p className="text-sm text-green-600">Processing your stamps...</p>
             </div>
-          )}
-          
-          {scanResult && !processing && (
-            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md flex items-start">
-              <CheckCircle className="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-green-800 font-medium">QR Code Scanned!</p>
-                <p className="text-sm text-green-600">Processing your stamps...</p>
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
