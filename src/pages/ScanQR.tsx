@@ -2,15 +2,17 @@
 import React, { useState } from 'react';
 import QRScanner from '@/components/QRScanner';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Camera, ScanLine } from 'lucide-react';
+import { ArrowLeft, Camera } from 'lucide-react';
 import MainLayout from '@/layouts/MainLayout';
 
 const ScanQR = () => {
   const navigate = useNavigate();
   const [isScanning, setIsScanning] = useState(true);
+  const [scanComplete, setScanComplete] = useState(false);
 
   const handleScanComplete = () => {
     setIsScanning(false);
+    setScanComplete(true);
     // Navigate to home after successful scan
     setTimeout(() => {
       navigate('/');
@@ -43,11 +45,23 @@ const ScanQR = () => {
             {isScanning && (
               <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center">
                 <div className="w-64 h-64 rounded-lg border-2 border-teal-400 border-dashed"></div>
-                <ScanLine className="absolute w-64 h-1 bg-teal-500/50 text-teal-600 animate-pulse" />
+                <div className="absolute w-64 h-1 bg-teal-500/50 top-1/2 transform -translate-y-1/2 animate-pulse"></div>
               </div>
             )}
             
-            <QRScanner onScanComplete={handleScanComplete} />
+            {!scanComplete && <QRScanner onScanComplete={handleScanComplete} />}
+            
+            {scanComplete && (
+              <div className="bg-green-50 p-8 flex flex-col items-center justify-center text-center">
+                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold text-green-800 mb-2">Scan Complete!</h2>
+                <p className="text-green-600">Your stamps have been collected</p>
+              </div>
+            )}
             
             <div className="p-4 bg-gradient-to-r from-teal-50 to-amber-50 border-t border-teal-100">
               <p className="text-sm text-center text-muted-foreground">
