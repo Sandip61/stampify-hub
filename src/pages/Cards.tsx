@@ -81,7 +81,7 @@ const Cards = () => {
         </p>
       </header>
       
-      <div className="flex items-center justify-between gap-2 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
@@ -93,8 +93,8 @@ const Cards = () => {
           />
         </div>
         
-        <Link to="/scan">
-          <Button variant="secondary" className="flex items-center gap-1.5">
+        <Link to="/scan" className="mt-2 sm:mt-0">
+          <Button variant="secondary" className="flex items-center gap-1.5 w-full sm:w-auto">
             <Scan className="h-4 w-4" />
             <span>Scan</span>
           </Button>

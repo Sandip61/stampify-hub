@@ -74,15 +74,15 @@ const Home = () => {
       </div>
       
       {/* Quick actions */}
-      <div className="grid grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
         <Link to="/scan">
           <Button variant="outline" className="w-full h-16 justify-start">
             <div className="flex flex-col items-start">
               <div className="flex items-center text-primary">
                 <Scan className="w-4 h-4 mr-2" />
-                <span className="font-medium">Scan QR</span>
+                <span className="font-medium whitespace-normal text-left">Scan QR</span>
               </div>
-              <span className="text-xs text-muted-foreground mt-1">
+              <span className="text-xs text-muted-foreground mt-1 whitespace-normal text-left">
                 Add stamps to your card
               </span>
             </div>
@@ -93,9 +93,9 @@ const Home = () => {
             <div className="flex flex-col items-start">
               <div className="flex items-center text-primary">
                 <Star className="w-4 h-4 mr-2" />
-                <span className="font-medium">View Cards</span>
+                <span className="font-medium whitespace-normal text-left">View Cards</span>
               </div>
-              <span className="text-xs text-muted-foreground mt-1">
+              <span className="text-xs text-muted-foreground mt-1 whitespace-normal text-left">
                 See all your loyalty cards
               </span>
             </div>
