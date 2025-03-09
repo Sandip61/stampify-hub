@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerMerchant, isValidEmail, getCurrentMerchant } from "@/utils/merchantAuth";
+import { logoutUser } from "@/utils/auth";
 import { toast } from "sonner";
 import PasswordInput from "@/components/PasswordInput";
 
@@ -22,10 +22,15 @@ const MerchantRegister = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const merchant = await getCurrentMerchant();
-      if (merchant) {
-        navigate("/merchant");
-      } else {
+      try {
+        const merchant = await getCurrentMerchant();
+        if (merchant) {
+          navigate("/merchant");
+        } else {
+          setIsCheckingAuth(false);
+        }
+      } catch (error) {
+        console.error("Error checking merchant auth:", error);
         setIsCheckingAuth(false);
       }
     };
@@ -79,7 +84,29 @@ const MerchantRegister = () => {
       toast.success(`Welcome, ${merchant.businessName}!`);
       navigate("/merchant");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Registration failed");
+      const errorMessage = error instanceof Error ? error.message : "Registration failed";
+      toast.error(errorMessage);
+      
+      // If the error relates to being logged in as a customer, offer to log them out
+      if (errorMessage.includes("logged in as a customer")) {
+        toast.info(
+          <div className="flex flex-col gap-2">
+            <p>Do you want to log out from your customer account?</p>
+            <button 
+              onClick={async () => {
+                await logoutUser();
+                toast.success("Logged out successfully. You can now register as a merchant.");
+                // Refresh the page after a short delay
+                setTimeout(() => window.location.reload(), 1000);
+              }}
+              className="bg-teal-600 text-white rounded px-3 py-1.5 text-sm"
+            >
+              Log out
+            </button>
+          </div>,
+          { duration: 10000 }
+        );
+      }
     } finally {
       setIsLoading(false);
     }

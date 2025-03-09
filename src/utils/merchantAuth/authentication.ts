@@ -13,6 +13,7 @@ import {
   handleSupabaseError,
   isValidEmail as validateEmail
 } from "@/utils/errorHandling";
+import { getCurrentUser } from "@/utils/auth";
 
 // Validate email format
 export const isValidEmail = (email: string): boolean => {
@@ -41,6 +42,27 @@ export const isUserCustomer = async (userId: string): Promise<boolean> => {
   }
 };
 
+// Check if an email is already used by a customer account
+export const isEmailUsedByCustomer = async (email: string): Promise<boolean> => {
+  try {
+    // First check if the email exists in auth.users table via profiles
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('email', email)
+      .maybeSingle();
+      
+    if (error) {
+      throw handleSupabaseError(error, "checking if email is used by customer", ErrorType.UNKNOWN_ERROR);
+    }
+    
+    return !!data;
+  } catch (error) {
+    console.error("Error checking if email is used by customer:", error);
+    return false;
+  }
+};
+
 // Register a new merchant
 export const registerMerchant = async (
   email: string,
@@ -65,6 +87,24 @@ export const registerMerchant = async (
       throw new AppError(
         ErrorType.AUTH_EMAIL_IN_USE,
         "A merchant account with this email already exists"
+      );
+    }
+    
+    // Check if the email is already used by a customer account
+    const isEmailUsed = await isEmailUsedByCustomer(email);
+    if (isEmailUsed) {
+      throw new AppError(
+        ErrorType.AUTH_EMAIL_IN_USE,
+        "This email is already registered as a customer. Please use a different email for your merchant account."
+      );
+    }
+
+    // Check if there's a logged-in user
+    const currentUser = await getCurrentUser();
+    if (currentUser) {
+      throw new AppError(
+        ErrorType.PERMISSION_DENIED,
+        "You're currently logged in as a customer. Please log out before creating a merchant account."
       );
     }
 
@@ -107,6 +147,15 @@ export const registerMerchant = async (
 
     if (merchantError) {
       console.error("Error creating merchant profile:", merchantError);
+      
+      // Check if this is an RLS error, which likely means the user is logged in as a customer
+      if (merchantError.code === "42501" || merchantError.message?.includes("violates row-level security policy")) {
+        throw new AppError(
+          ErrorType.PERMISSION_DENIED,
+          "You may be logged in as a customer. Please log out before creating a merchant account."
+        );
+      }
+      
       throw handleSupabaseError(merchantError, "creating merchant profile", ErrorType.MERCHANT_UPDATE_FAILED);
     }
 
