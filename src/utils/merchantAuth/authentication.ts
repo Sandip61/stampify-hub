@@ -99,9 +99,11 @@ export const registerMerchant = async (
       );
     }
 
-    // Check if there's a logged-in user
+    // Check if there's a logged-in user that may conflict with merchant creation
+    // This should happen before any registration attempts
     const currentUser = await getCurrentUser();
     if (currentUser) {
+      // The user is already logged in, we need to log them out first
       throw new AppError(
         ErrorType.PERMISSION_DENIED,
         "You're currently logged in as a customer. Please log out before creating a merchant account."

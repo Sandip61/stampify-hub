@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerMerchant, isValidEmail, getCurrentMerchant } from "@/utils/merchantAuth";
@@ -73,6 +74,9 @@ const MerchantRegister = () => {
     setIsLoading(true);
     
     try {
+      // Clear any previous toasts to prevent duplicates
+      toast.dismiss();
+      
       const merchant = await registerMerchant(
         email,
         password,
