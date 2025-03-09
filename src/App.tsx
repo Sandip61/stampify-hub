@@ -129,6 +129,10 @@ const router = createBrowserRouter([
     element: <MerchantRegister />,
   },
   {
+    path: "/merchant/signup", // Adding this route to handle /merchant/signup
+    element: <MerchantRegister />,
+  },
+  {
     path: "/merchant/reset-password",
     element: <MerchantResetPassword />,
   },
