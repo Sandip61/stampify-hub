@@ -56,5 +56,6 @@ enabled = true
 # Port to use for Edge Functions.
 port = 54328
 
-[functions.create-merchant]
+[[functions.function]]
+name = "create-merchant"
 verify_jwt = false
