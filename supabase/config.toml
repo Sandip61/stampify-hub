@@ -50,11 +50,11 @@ enabled = true
 [storage]
 enabled = true
 
-[functions.settings]
+[functions]
 enabled = true
 port = 54328
 
-# Define the create-merchant function as a separate section
+# Define the create-merchant function
 [[functions.function]]
 name = "create-merchant"
 verify_jwt = false
