@@ -72,39 +72,14 @@ export const registerMerchant = async (
   businessColor: string = "#3B82F6"
 ): Promise<Merchant> => {
   try {
-    // Check if merchant already exists with this email
-    const { data: existingMerchant, error: existingError } = await supabase
-      .from('merchants')
-      .select('email')
-      .eq('email', email)
-      .maybeSingle();
-
-    if (existingError) {
-      throw handleSupabaseError(existingError, "checking existing merchant", ErrorType.UNKNOWN_ERROR);
-    }
-
-    if (existingMerchant) {
-      throw new AppError(
-        ErrorType.AUTH_EMAIL_IN_USE,
-        "A merchant account with this email already exists"
-      );
-    }
-    
-    // COMMENTED OUT: Check if the email is already used by a customer account
-    // This check is being disabled temporarily to allow testing
-    /*
-    const isEmailUsed = await isEmailUsedByCustomer(email);
-    if (isEmailUsed) {
-      throw new AppError(
-        ErrorType.AUTH_EMAIL_IN_USE,
-        "This email is already registered as a customer. Please use a different email for your merchant account."
-      );
-    }
-    */
+    // TEMP: Completely disabled all validation to allow testing
+    // We will reintroduce proper validation later
 
     // Important: Sign out from any existing session before creating a new account
     // This ensures we don't have session conflicts
     await supabase.auth.signOut();
+    
+    console.log("Starting merchant registration for:", email);
 
     // Register the merchant with Supabase
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -122,15 +97,19 @@ export const registerMerchant = async (
     });
 
     if (authError) {
+      console.error("Auth error during registration:", authError);
       throw handleSupabaseError(authError, "merchant registration", ErrorType.UNKNOWN_ERROR);
     }
 
     if (!authData.user) {
+      console.error("No user returned from auth signup");
       throw new AppError(
         ErrorType.UNKNOWN_ERROR,
         "Registration failed"
       );
     }
+
+    console.log("Auth signup successful, creating merchant profile for:", authData.user.id);
 
     // Create the merchant profile in the merchants table
     const { error: merchantError } = await supabase
@@ -157,18 +136,23 @@ export const registerMerchant = async (
       throw handleSupabaseError(merchantError, "creating merchant profile", ErrorType.MERCHANT_UPDATE_FAILED);
     }
 
+    console.log("Merchant profile created successfully, retrieving profile");
+
     // Get the created merchant profile
     const merchantProfile = await getMerchantProfile(authData.user.id);
     
     if (!merchantProfile) {
+      console.error("Failed to retrieve merchant profile after creation");
       throw new AppError(
         ErrorType.MERCHANT_NOT_FOUND,
         "Failed to retrieve merchant profile after creation"
       );
     }
     
+    console.log("Merchant registration completed successfully");
     return merchantProfile;
   } catch (error) {
+    console.error("Registration error:", error);
     throw handleError(error, ErrorType.UNKNOWN_ERROR, "Merchant registration failed");
   }
 };

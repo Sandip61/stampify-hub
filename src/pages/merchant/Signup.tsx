@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { isValidEmail, registerMerchant, getCurrentMerchant } from "@/utils/merchantAuth";
 import { logoutUser } from "@/utils/auth";
 import PasswordInput from "@/components/PasswordInput";
+import { supabase } from "@/integrations/supabase/client";
 
 const MerchantSignup = () => {
   const navigate = useNavigate();
@@ -28,19 +30,22 @@ const MerchantSignup = () => {
     
     const checkAuth = async () => {
       try {
-        // Attempt to get merchant profile if already logged in as merchant
-        const merchant = await getCurrentMerchant();
-        if (merchant) {
-          navigate("/merchant");
-        } else {
-          // Force logout to ensure clean state (temporary solution)
-          await logoutUser();
-          setIsCheckingAuth(false);
-        }
-      } catch (error) {
-        console.error("Error checking auth:", error);
-        // Force logout on any error to ensure clean state
+        // Force complete logout to ensure clean state
+        console.log("Forcing logout on Signup page load");
+        await supabase.auth.signOut();
         await logoutUser();
+        
+        // Check if still logged in despite logout attempts
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          console.log("Still have a session after logout attempts, trying again");
+          await supabase.auth.signOut();
+          await logoutUser();
+        }
+        
+        setIsCheckingAuth(false);
+      } catch (error) {
+        console.error("Error during forced logout:", error);
         setIsCheckingAuth(false);
       }
     };
@@ -94,9 +99,20 @@ const MerchantSignup = () => {
     setIsLoading(true);
     
     try {
-      // Force logout before registration attempt
+      // Force a complete logout before registration
+      console.log("Forcing logout before registration attempt");
+      await supabase.auth.signOut();
       await logoutUser();
       
+      // Check if we're still logged in for some reason
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        console.log("Still have a session after logout attempts, trying again");
+        await supabase.auth.signOut();
+        await logoutUser();
+      }
+      
+      console.log("Proceeding with registration");
       const merchant = await registerMerchant(
         email, 
         password, 
@@ -109,6 +125,7 @@ const MerchantSignup = () => {
       navigate("/merchant");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Signup failed";
+      console.error("Registration error:", errorMessage);
       toast.error(errorMessage);
       
       // If there's a permission error or authentication conflict, offer the logout option
@@ -118,6 +135,7 @@ const MerchantSignup = () => {
             <p>Would you like to completely log out and try again?</p>
             <button 
               onClick={async () => {
+                await supabase.auth.signOut();
                 await logoutUser();
                 toast.success("Logged out successfully. Please try registering again.");
                 // Short delay before reloading to allow the toast to be seen
