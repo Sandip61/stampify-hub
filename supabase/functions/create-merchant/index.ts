@@ -29,8 +29,9 @@ serve(async (req) => {
       })
     }
     
+    // Use the service role key which bypasses RLS
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
-    console.log("Supabase client created");
+    console.log("Supabase client created with service role key");
 
     // Ensure we're only handling POST requests
     if (req.method !== 'POST') {
@@ -54,9 +55,9 @@ serve(async (req) => {
       })
     }
 
-    // First, create entry in users table if it doesn't exist
+    // First, create entry in users table if it doesn't exist - using service role which bypasses RLS
     console.log("Creating entry in users table if it doesn't exist:", id);
-    const { data: userRecord, error: userInsertError } = await supabase
+    const { error: userInsertError } = await supabase
       .from('users')
       .upsert({ id })
       .select()
@@ -65,17 +66,17 @@ serve(async (req) => {
     if (userInsertError) {
       console.error('Failed to create user record:', userInsertError);
       return new Response(JSON.stringify({ 
-        error: 'Failed to initialize user record: ' + userInsertError.message 
+        error: 'Failed to initialize user record', 
+        details: userInsertError.message 
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    console.log("Successfully initialized user record:", userRecord);
+    console.log("Successfully initialized user record, now creating merchant record");
 
-    // Now create the merchant record
-    console.log("Creating merchant record");
+    // Now create the merchant record - service role bypasses RLS
     const { data: merchant, error } = await supabase
       .from('merchants')
       .upsert({
@@ -92,13 +93,16 @@ serve(async (req) => {
 
     if (error) {
       console.error('Error creating merchant:', error);
-      return new Response(JSON.stringify({ error: error.message }), {
+      return new Response(JSON.stringify({ 
+        error: 'Failed to create merchant profile', 
+        details: error.message 
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    console.log("Merchant record created successfully");
+    console.log("Merchant record created successfully:", merchant?.id);
     // Return the created merchant
     return new Response(JSON.stringify({ merchant }), {
       status: 200,
