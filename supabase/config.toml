@@ -17,15 +17,12 @@ port = 54324
 
 [auth]
 enabled = true
-port = 54325
 
 [storage]
 enabled = true
-port = 54326
 
 [realtime]
 enabled = true
-port = 54327
 
 [functions.create-merchant]
 verify_jwt = false
