@@ -54,7 +54,7 @@ enabled = true
 enabled = true
 port = 54328
 
-# Define the create-merchant function
+# Function definitions using the correct TOML array-of-tables syntax
 [[functions.function]]
 name = "create-merchant"
 verify_jwt = false
