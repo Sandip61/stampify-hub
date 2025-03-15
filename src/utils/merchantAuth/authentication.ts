@@ -72,6 +72,15 @@ export const registerMerchant = async (
   businessColor: string = "#3B82F6"
 ): Promise<Merchant> => {
   try {
+    // First check if the user is currently logged in
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (sessionData && sessionData.session) {
+      throw new AppError(
+        ErrorType.PERMISSION_DENIED,
+        "You're currently logged in. Please log out before creating a merchant account."
+      );
+    }
+
     // Check if merchant already exists
     const { data: existingMerchant, error: existingError } = await supabase
       .from('merchants')
@@ -96,17 +105,6 @@ export const registerMerchant = async (
       throw new AppError(
         ErrorType.AUTH_EMAIL_IN_USE,
         "This email is already registered as a customer. Please use a different email for your merchant account."
-      );
-    }
-
-    // Check if there's a logged-in user that may conflict with merchant creation
-    // This should happen before any registration attempts
-    const currentUser = await getCurrentUser();
-    if (currentUser) {
-      // The user is already logged in, we need to log them out first
-      throw new AppError(
-        ErrorType.PERMISSION_DENIED,
-        "You're currently logged in as a customer. Please log out before creating a merchant account."
       );
     }
 
@@ -154,7 +152,7 @@ export const registerMerchant = async (
       if (merchantError.code === "42501" || merchantError.message?.includes("violates row-level security policy")) {
         throw new AppError(
           ErrorType.PERMISSION_DENIED,
-          "You may be logged in as a customer. Please log out before creating a merchant account."
+          "Unable to create merchant account due to permission restrictions. If you're logged in elsewhere, please log out and try again."
         );
       }
       

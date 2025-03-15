@@ -22,6 +22,9 @@ const MerchantRegister = () => {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
+    // Dismiss any existing toasts when the component mounts
+    toast.dismiss();
+    
     const checkAuth = async () => {
       try {
         const merchant = await getCurrentMerchant();
@@ -71,12 +74,15 @@ const MerchantRegister = () => {
     
     if (!validateForm()) return;
     
+    // Clear any previous errors
+    setErrors({});
+    
+    // Dismiss any existing toasts to prevent duplicates
+    toast.dismiss();
+    
     setIsLoading(true);
     
     try {
-      // Clear any previous toasts to prevent duplicates
-      toast.dismiss();
-      
       const merchant = await registerMerchant(
         email,
         password,
@@ -91,11 +97,11 @@ const MerchantRegister = () => {
       const errorMessage = error instanceof Error ? error.message : "Registration failed";
       toast.error(errorMessage);
       
-      // If the error relates to being logged in as a customer, offer to log them out
-      if (errorMessage.includes("logged in as a customer")) {
+      // If the error relates to being logged in, offer to log them out
+      if (errorMessage.includes("logged in")) {
         toast.info(
           <div className="flex flex-col gap-2">
-            <p>Do you want to log out from your customer account?</p>
+            <p>Do you want to log out from your current account?</p>
             <button 
               onClick={async () => {
                 await logoutUser();
