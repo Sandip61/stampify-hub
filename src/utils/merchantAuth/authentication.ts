@@ -72,16 +72,7 @@ export const registerMerchant = async (
   businessColor: string = "#3B82F6"
 ): Promise<Merchant> => {
   try {
-    // First check if the user is currently logged in
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (sessionData && sessionData.session) {
-      throw new AppError(
-        ErrorType.PERMISSION_DENIED,
-        "You're currently logged in. Please log out before creating a merchant account."
-      );
-    }
-
-    // Check if merchant already exists
+    // Check if merchant already exists with this email
     const { data: existingMerchant, error: existingError } = await supabase
       .from('merchants')
       .select('email')
@@ -107,6 +98,10 @@ export const registerMerchant = async (
         "This email is already registered as a customer. Please use a different email for your merchant account."
       );
     }
+
+    // Important: Sign out from any existing session before creating a new account
+    // This ensures we don't have session conflicts
+    await supabase.auth.signOut();
 
     // Register the merchant with Supabase
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -152,7 +147,7 @@ export const registerMerchant = async (
       if (merchantError.code === "42501" || merchantError.message?.includes("violates row-level security policy")) {
         throw new AppError(
           ErrorType.PERMISSION_DENIED,
-          "Unable to create merchant account due to permission restrictions. If you're logged in elsewhere, please log out and try again."
+          "Permission error when creating merchant profile. Please ensure you're completely logged out and try again."
         );
       }
       
@@ -181,6 +176,10 @@ export const loginMerchant = async (
   password: string
 ): Promise<Merchant> => {
   try {
+    // Sign out from any existing session before attempting login
+    // This ensures clean authentication state
+    await supabase.auth.signOut();
+    
     // Login the merchant with Supabase
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,

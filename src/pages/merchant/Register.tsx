@@ -27,10 +27,13 @@ const MerchantRegister = () => {
     
     const checkAuth = async () => {
       try {
+        // First check if already logged in as merchant
         const merchant = await getCurrentMerchant();
         if (merchant) {
           navigate("/merchant");
         } else {
+          // Not logged in as merchant, ensure we're completely logged out
+          await logoutUser();
           setIsCheckingAuth(false);
         }
       } catch (error) {
@@ -83,6 +86,9 @@ const MerchantRegister = () => {
     setIsLoading(true);
     
     try {
+      // Make sure we're completely logged out before registration
+      await logoutUser();
+      
       const merchant = await registerMerchant(
         email,
         password,
@@ -97,21 +103,21 @@ const MerchantRegister = () => {
       const errorMessage = error instanceof Error ? error.message : "Registration failed";
       toast.error(errorMessage);
       
-      // If the error relates to being logged in, offer to log them out
-      if (errorMessage.includes("logged in")) {
+      // If there's any permission or authentication issue, offer the logout option
+      if (errorMessage.includes("Permission") || errorMessage.includes("logged in")) {
         toast.info(
           <div className="flex flex-col gap-2">
-            <p>Do you want to log out from your current account?</p>
+            <p>Would you like to completely log out and try again?</p>
             <button 
               onClick={async () => {
                 await logoutUser();
-                toast.success("Logged out successfully. You can now register as a merchant.");
-                // Refresh the page after a short delay
-                setTimeout(() => window.location.reload(), 1000);
+                toast.success("Logged out successfully. Please try registering again.");
+                // Short delay before reloading to allow the toast to be seen
+                setTimeout(() => window.location.reload(), 1500);
               }}
               className="bg-teal-600 text-white rounded px-3 py-1.5 text-sm"
             >
-              Log out
+              Log out and try again
             </button>
           </div>,
           { duration: 10000 }

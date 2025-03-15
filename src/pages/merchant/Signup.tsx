@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { isValidEmail, registerMerchant, getCurrentMerchant } from "@/utils/merchantAuth";
+import { logoutUser } from "@/utils/auth";
 import PasswordInput from "@/components/PasswordInput";
 
 const MerchantSignup = () => {
@@ -23,11 +24,22 @@ const MerchantSignup = () => {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
+    // Clear all existing toast notifications when component mounts
+    toast.dismiss();
+    
     const checkAuth = async () => {
-      const merchant = await getCurrentMerchant();
-      if (merchant) {
-        navigate("/merchant");
-      } else {
+      try {
+        // Attempt to get merchant profile if already logged in as merchant
+        const merchant = await getCurrentMerchant();
+        if (merchant) {
+          navigate("/merchant");
+        } else {
+          // No merchant session, clear any existing session just to be safe
+          await logoutUser();
+          setIsCheckingAuth(false);
+        }
+      } catch (error) {
+        console.error("Error checking auth:", error);
         setIsCheckingAuth(false);
       }
     };
@@ -72,14 +84,52 @@ const MerchantSignup = () => {
     
     if (!validateForm()) return;
     
+    // Clear any previous errors
+    setErrors({});
+    
+    // Clear all existing toast notifications
+    toast.dismiss();
+    
     setIsLoading(true);
     
     try {
-      await registerMerchant(email, password, businessName, businessLogo, businessColor);
+      // First ensure we're completely logged out to prevent any issues
+      await logoutUser();
+      
+      const merchant = await registerMerchant(
+        email, 
+        password, 
+        businessName, 
+        businessLogo, 
+        businessColor
+      );
+      
       toast.success("Merchant account created! Welcome to Stampify.");
       navigate("/merchant");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Signup failed");
+      const errorMessage = error instanceof Error ? error.message : "Signup failed";
+      toast.error(errorMessage);
+      
+      // If there's a permission error or authentication conflict, offer the logout option
+      if (errorMessage.includes("Permission") || errorMessage.includes("logged in")) {
+        toast.info(
+          <div className="flex flex-col gap-2">
+            <p>Would you like to completely log out and try again?</p>
+            <button 
+              onClick={async () => {
+                await logoutUser();
+                toast.success("Logged out successfully. Please try registering again.");
+                // Short delay before reloading to allow the toast to be seen
+                setTimeout(() => window.location.reload(), 1500);
+              }}
+              className="bg-primary text-white rounded px-3 py-1.5 text-sm"
+            >
+              Log out and try again
+            </button>
+          </div>,
+          { duration: 10000 }
+        );
+      }
     } finally {
       setIsLoading(false);
     }
