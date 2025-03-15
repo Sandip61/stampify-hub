@@ -228,6 +228,18 @@ export type Database = {
           },
         ]
       }
+      users: {
+        Row: {
+          id: string
+        }
+        Insert: {
+          id: string
+        }
+        Update: {
+          id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
