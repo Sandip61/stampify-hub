@@ -29,7 +29,7 @@ serve(async (req) => {
       })
     }
     
-    // Use the service role key which bypasses RLS
+    // Use the service role key which explicitly bypasses RLS
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
     console.log("Supabase client created with service role key");
 

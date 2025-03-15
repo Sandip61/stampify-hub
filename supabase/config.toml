@@ -54,6 +54,6 @@ enabled = true
 enabled = true
 port = 54328
 
-[[functions.function]]
+[[functions.functions]]
 name = "create-merchant"
 verify_jwt = false
