@@ -79,23 +79,58 @@ export const registerMerchant = async (
 
     // Create the merchant profile using direct API call to our Edge Function
     // This is more reliable than using RLS policies which may have timing issues
-    const response = await fetch(`${window.location.origin}/api/create-merchant`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        id: authData.user.id,
-        business_name: businessName,
-        business_logo: businessLogo,
-        business_color: businessColor,
-        email: email
-      })
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Error from create-merchant endpoint:", errorData);
+    try {
+      const response = await fetch(`${window.location.origin}/api/create-merchant`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: authData.user.id,
+          business_name: businessName,
+          business_logo: businessLogo,
+          business_color: businessColor,
+          email: email
+        })
+      });
+      
+      if (!response.ok) {
+        let errorData;
+        let errorMessage = "Failed to create merchant profile.";
+        
+        try {
+          if (response.status !== 204) { // Check for non-empty response
+            errorData = await response.json();
+            console.error("Error from create-merchant endpoint:", errorData);
+            errorMessage = errorData.error || errorMessage;
+          }
+        } catch (jsonError) {
+          console.error("Error parsing response from create-merchant endpoint:", jsonError);
+          errorMessage += " Invalid response format.";
+        }
+        
+        throw new AppError(
+          ErrorType.MERCHANT_UPDATE_FAILED,
+          errorMessage
+        );
+      }
+      
+      // Parse the response data
+      let responseData;
+      try {
+        if (response.status !== 204) { // Check if there's content to parse
+          responseData = await response.json();
+        }
+      } catch (jsonError) {
+        console.error("Error parsing successful response from create-merchant endpoint:", jsonError);
+        // Continue without the response data, we'll fall back to getting the profile
+      }
+      
+      if (responseData?.merchant) {
+        return dbMerchantToMerchant(responseData.merchant);
+      }
+    } catch (edgeFunctionError) {
+      console.error("Edge function error:", edgeFunctionError);
       
       // Try alternative approach - signing in first
       console.log("Trying alternative approach with sign-in first");
