@@ -50,7 +50,7 @@ enabled = true
 [storage]
 enabled = true
 
-[functions]
+[functions.settings]
 enabled = true
 port = 54328
 

@@ -24,7 +24,7 @@ export interface CustomDatabase extends Database {
       stamp_cards: Database["public"]["Tables"]["stamp_cards"];
       stamp_qr_codes: Database["public"]["Tables"]["stamp_qr_codes"];
       stamp_transactions: Database["public"]["Tables"]["stamp_transactions"];
-      users: Database["public"]["Tables"]["users"]; // Added the users table reference to fix the error
+      users: Database["public"]["Tables"]["users"];
     };
     Views: Database["public"]["Views"];
     Functions: Database["public"]["Functions"];
