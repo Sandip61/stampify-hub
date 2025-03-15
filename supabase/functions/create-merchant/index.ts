@@ -37,15 +37,50 @@ serve(async (req) => {
       })
     }
 
-    // Use the service role key to bypass RLS
+    // First, verify that the user exists in auth.users
+    const { data: userExists, error: userCheckError } = await supabase.auth.admin.getUserById(id)
+    
+    if (userCheckError || !userExists) {
+      // Add small delay to allow auth system to finish processing
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Check again after the delay
+      const { data: userAfterDelay, error: userDelayError } = await supabase.auth.admin.getUserById(id)
+      
+      if (userDelayError || !userAfterDelay) {
+        console.error('User does not exist in auth system:', id)
+        return new Response(JSON.stringify({ 
+          error: 'User not found in authentication system. Please try again.' 
+        }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+    }
+
+    // Since we're using the service role, we need to directly insert into the users table as well
+    // to ensure the foreign key constraint is satisfied
+    const { error: userInsertError } = await supabase
+      .from('users')
+      .upsert({ id: id })
+      .select()
+
+    if (userInsertError) {
+      console.warn('Failed to insert user record, continuing with merchant creation:', userInsertError)
+      // Continue anyway, as the user may already exist
+    }
+
+    // Now create the merchant record
     const { data: merchant, error } = await supabase
       .from('merchants')
-      .insert({
+      .upsert({
         id,
         business_name,
         business_logo: business_logo || '🏪',
         business_color: business_color || '#3B82F6',
         email,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
       .select()
       .single()

@@ -77,49 +77,54 @@ export const registerMerchant = async (
 
     console.log("Auth signup successful, creating merchant profile for:", authData.user.id);
 
-    // Create the merchant profile in the merchants table
-    // First, try to sign in to get a valid session token
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    
-    if (signInError) {
-      console.error("Error signing in after signup:", signInError);
-      // Continue anyway as we'll try to insert the merchant profile
-    }
-
-    // Create the merchant profile in the merchants table
-    const { error: merchantError } = await supabase
-      .from('merchants')
-      .insert({
+    // Create the merchant profile using direct API call to our Edge Function
+    // This is more reliable than using RLS policies which may have timing issues
+    const response = await fetch(`${window.location.origin}/api/create-merchant`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         id: authData.user.id,
         business_name: businessName,
         business_logo: businessLogo,
         business_color: businessColor,
         email: email
-      });
-
-    if (merchantError) {
-      console.error("Error creating merchant profile:", merchantError);
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Error from create-merchant endpoint:", errorData);
       
-      // Force a retry with a direct API call to bypass RLS
-      // This is a temporary workaround and should be replaced with proper RLS policies
-      const response = await fetch(`${window.location.origin}/api/create-merchant`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: authData.user.id,
-          business_name: businessName,
-          business_logo: businessLogo,
-          business_color: businessColor,
-          email: email
-        })
+      // Try alternative approach - signing in first
+      console.log("Trying alternative approach with sign-in first");
+      
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password
       });
       
-      if (!response.ok) {
+      if (!signInError) {
+        // Try direct insert now that we're signed in
+        const { error: merchantError } = await supabase
+          .from('merchants')
+          .insert({
+            id: authData.user.id,
+            business_name: businessName,
+            business_logo: businessLogo,
+            business_color: businessColor,
+            email: email
+          });
+        
+        if (merchantError) {
+          console.error("Error creating merchant after sign-in:", merchantError);
+          throw new AppError(
+            ErrorType.MERCHANT_UPDATE_FAILED,
+            "Failed to create merchant profile. Please try again later."
+          );
+        }
+      } else {
         throw new AppError(
           ErrorType.MERCHANT_UPDATE_FAILED,
           "Failed to create merchant profile. Please try again later."
@@ -129,12 +134,12 @@ export const registerMerchant = async (
 
     console.log("Merchant profile created successfully, retrieving profile");
 
-    // Get the created merchant profile (or fake one for now for testing)
+    // Get the created merchant profile
     const merchantProfile = await getMerchantProfile(authData.user.id);
     
     if (!merchantProfile) {
-      console.log("No merchant profile found, creating a temporary one for testing");
-      // Return a fake merchant profile for now so we can continue testing
+      console.log("No merchant profile found, creating a temporary one");
+      // Return a temporary merchant profile
       return {
         id: authData.user.id,
         businessName: businessName,

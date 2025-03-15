@@ -100,6 +100,7 @@ const MerchantRegister = () => {
       // Force complete logout one more time right before registration
       console.log("Forcing final logout before registration attempt");
       await supabase.auth.signOut();
+      await logoutUser(); // Additional logout to ensure all sessions are cleared
       
       // Make multiple attempts to ensure we're logged out
       for (let i = 0; i < 3; i++) {
@@ -107,6 +108,7 @@ const MerchantRegister = () => {
         if (data.session) {
           console.log(`Still have a session after ${i+1} pre-registration logout attempts, trying again`);
           await supabase.auth.signOut();
+          await logoutUser();
           // Short delay between attempts
           await new Promise(resolve => setTimeout(resolve, 500));
         } else {
@@ -131,22 +133,27 @@ const MerchantRegister = () => {
       console.error("Registration error:", error);
       toast.error(errorMessage);
       
-      // If there's any permission or authentication issue, offer the logout option
-      if (errorMessage.includes("Permission") || errorMessage.includes("logged in")) {
+      // If there's any permission or authentication issue, offer the complete reset option
+      if (errorMessage.includes("Permission") || 
+          errorMessage.includes("failed") || 
+          errorMessage.includes("logged in")) {
         toast.info(
           <div className="flex flex-col gap-2">
-            <p>Would you like to completely log out and try again?</p>
+            <p>Would you like to completely reset and try again?</p>
             <button 
               onClick={async () => {
+                // Complete reset - sign out, clear local storage, and reload
                 await supabase.auth.signOut();
                 await logoutUser();
-                toast.success("Logged out successfully. Please try registering again.");
-                // Short delay before reloading to allow the toast to be seen
-                setTimeout(() => window.location.reload(), 1500);
+                localStorage.clear();
+                sessionStorage.clear();
+                toast.success("App state reset. Please try registering again.");
+                // Reload after a short delay
+                setTimeout(() => window.location.reload(), 1000);
               }}
               className="bg-teal-600 text-white rounded px-3 py-1.5 text-sm"
             >
-              Log out and try again
+              Reset and try again
             </button>
           </div>,
           { duration: 10000 }
