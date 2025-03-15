@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -34,12 +33,14 @@ const MerchantSignup = () => {
         if (merchant) {
           navigate("/merchant");
         } else {
-          // No merchant session, clear any existing session just to be safe
+          // Force logout to ensure clean state (temporary solution)
           await logoutUser();
           setIsCheckingAuth(false);
         }
       } catch (error) {
         console.error("Error checking auth:", error);
+        // Force logout on any error to ensure clean state
+        await logoutUser();
         setIsCheckingAuth(false);
       }
     };
@@ -93,7 +94,7 @@ const MerchantSignup = () => {
     setIsLoading(true);
     
     try {
-      // First ensure we're completely logged out to prevent any issues
+      // Force logout before registration attempt
       await logoutUser();
       
       const merchant = await registerMerchant(

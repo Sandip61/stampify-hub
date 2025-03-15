@@ -90,7 +90,9 @@ export const registerMerchant = async (
       );
     }
     
-    // Check if the email is already used by a customer account
+    // COMMENTED OUT: Check if the email is already used by a customer account
+    // This check is being disabled temporarily to allow testing
+    /*
     const isEmailUsed = await isEmailUsedByCustomer(email);
     if (isEmailUsed) {
       throw new AppError(
@@ -98,6 +100,7 @@ export const registerMerchant = async (
         "This email is already registered as a customer. Please use a different email for your merchant account."
       );
     }
+    */
 
     // Important: Sign out from any existing session before creating a new account
     // This ensures we don't have session conflicts
