@@ -58,62 +58,25 @@ serve(async (req) => {
       })
     }
 
-    // First, verify that the user exists in auth.users
-    console.log("Checking if user exists in auth system:", id);
-    const { data: userExists, error: userCheckError } = await supabase.auth.admin.getUserById(id)
-    
-    if (userCheckError || !userExists) {
-      // Add small delay to allow auth system to finish processing
-      console.log("User not found initially, waiting 1 second and trying again");
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Check again after the delay
-      const { data: userAfterDelay, error: userDelayError } = await supabase.auth.admin.getUserById(id)
-      
-      if (userDelayError || !userAfterDelay) {
-        console.error('User does not exist in auth system after delay:', id, userDelayError);
-        return new Response(JSON.stringify({ 
-          error: 'User not found in authentication system. Please try again.' 
-        }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-      
-      console.log("User found after delay:", userAfterDelay.user.id);
-    } else {
-      console.log("User found immediately:", userExists.user.id);
-    }
-
-    // Since we're using the service role, we need to directly insert into the users table as well
-    // to ensure the foreign key constraint is satisfied
-    console.log("Checking if user record exists in public.users table");
-    const { data: existingUser, error: checkError } = await supabase
+    // First, create entry in users table if it doesn't exist
+    console.log("Creating entry in users table if it doesn't exist:", id);
+    const { data: userRecord, error: userInsertError } = await supabase
       .from('users')
-      .select('id')
-      .eq('id', id)
+      .upsert({ id })
+      .select()
       .single();
 
-    if (checkError && !checkError.message.includes('No rows found')) {
-      console.error("Error checking for existing user:", checkError);
+    if (userInsertError) {
+      console.error('Failed to create user record:', userInsertError);
+      return new Response(JSON.stringify({ 
+        error: 'Failed to initialize user record: ' + userInsertError.message 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
-    if (!existingUser) {
-      console.log("User record doesn't exist in public.users table, creating it");
-      const { error: userInsertError } = await supabase
-        .from('users')
-        .upsert({ id })
-
-      if (userInsertError) {
-        console.error('Failed to insert user record:', userInsertError);
-        // Continue anyway, as insertion might have failed due to a race condition
-        // where the user was created between our check and insert
-      } else {
-        console.log("Successfully created user record in public.users table");
-      }
-    } else {
-      console.log("User record already exists in public.users table");
-    }
+    console.log("Successfully initialized user record:", userRecord);
 
     // Now create the merchant record
     console.log("Creating merchant record");

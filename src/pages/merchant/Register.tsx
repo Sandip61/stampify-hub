@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerMerchant, isValidEmail } from "@/utils/merchantAuth";
@@ -28,22 +27,17 @@ const MerchantRegister = () => {
     
     const checkAuth = async () => {
       try {
+        console.log("Checking auth state and logging out if needed");
         // Force complete logout to ensure clean state
-        console.log("Forcing logout on Register page load");
         await supabase.auth.signOut();
+        await logoutUser();
         
-        // Make multiple attempts to ensure we're logged out
-        for (let i = 0; i < 3; i++) {
-          const { data } = await supabase.auth.getSession();
-          if (data.session) {
-            console.log(`Still have a session after ${i+1} logout attempts, trying again`);
-            await supabase.auth.signOut();
-            // Short delay between attempts
-            await new Promise(resolve => setTimeout(resolve, 500));
-          } else {
-            console.log("Successfully logged out after", i+1, "attempts");
-            break;
-          }
+        // Double check we're logged out
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          console.log("Still have a session after logout attempts, trying again");
+          await supabase.auth.signOut();
+          await logoutUser();
         }
         
         setIsCheckingAuth(false);
@@ -98,24 +92,12 @@ const MerchantRegister = () => {
     
     try {
       // Force complete logout one more time right before registration
-      console.log("Forcing final logout before registration attempt");
+      console.log("Final logout before registration attempt");
       await supabase.auth.signOut();
-      await logoutUser(); // Additional logout to ensure all sessions are cleared
+      await logoutUser();
       
-      // Make multiple attempts to ensure we're logged out
-      for (let i = 0; i < 3; i++) {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          console.log(`Still have a session after ${i+1} pre-registration logout attempts, trying again`);
-          await supabase.auth.signOut();
-          await logoutUser();
-          // Short delay between attempts
-          await new Promise(resolve => setTimeout(resolve, 500));
-        } else {
-          console.log("Successfully logged out before registration after", i+1, "attempts");
-          break;
-        }
-      }
+      // Add a small delay after logout to ensure clean state
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       console.log("Proceeding with registration for:", email);
       const merchant = await registerMerchant(
