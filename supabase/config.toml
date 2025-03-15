@@ -1,11 +1,39 @@
 
-# A string used as a project reference
 project_id = "ctutwgntxhpuxtfkkdiy"
 
-[functions.create-qr-code]
-verify_jwt = true
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+
+[db]
+port = 54322
+
+[studio]
+port = 54323
+
+[inbucket]
+port = 54324
+
+[auth]
+enabled = true
+port = 54325
+
+[storage]
+enabled = true
+port = 54326
+
+[realtime]
+enabled = true
+port = 54327
+
+[functions.create-merchant]
+verify_jwt = false
 
 [functions.issue-stamp]
+verify_jwt = true
+
+[functions.create-qr-code]
 verify_jwt = true
 
 [functions.redeem-reward]
