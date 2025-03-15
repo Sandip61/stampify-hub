@@ -50,13 +50,12 @@ enabled = true
 [storage]
 enabled = true
 
-# Configure Edge Functions
 [functions]
 enabled = true
-# Port to use for Edge Functions.
 port = 54328
 
-# Define functions
+# Define functions separately as individual entries
 [[functions.function]]
 name = "create-merchant"
 verify_jwt = false
+
