@@ -1,6 +1,5 @@
-
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { 
   BarChart3, 
   CreditCard, 
@@ -10,19 +9,23 @@ import {
   PlusCircle,
   ArrowUpRight
 } from "lucide-react";
-import { getCurrentMerchant, Merchant } from "@/utils/merchantAuth";
 import { 
-  getMerchantStampCards, 
-  getMerchantCustomers, 
-  getMerchantTransactions,
   getMerchantAnalytics,
   initializeDemoMerchantDataForLogin,
-  MerchantTransaction
+  MerchantTransaction,
+  getMerchantTransactions
 } from "@/utils/merchantData";
 
+// Mock merchant data
+const mockMerchant = {
+  id: "demo-merchant-id",
+  businessName: "Demo Business",
+  email: "demo@example.com",
+  businessLogo: "🏪",
+  businessColor: "#3B82F6"
+};
+
 const MerchantDashboard = () => {
-  const navigate = useNavigate();
-  const [merchant, setMerchant] = useState<Merchant | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [analytics, setAnalytics] = useState<any>(null);
   const [recentTransactions, setRecentTransactions] = useState<MerchantTransaction[]>([]);
@@ -30,16 +33,8 @@ const MerchantDashboard = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const currentMerchant = await getCurrentMerchant();
-        if (!currentMerchant) {
-          navigate("/merchant/login");
-          return;
-        }
-        
-        setMerchant(currentMerchant);
-
-        // Initialize demo data for this merchant
-        initializeDemoMerchantDataForLogin(currentMerchant.id);
+        // Initialize demo data with our mock merchant ID
+        initializeDemoMerchantDataForLogin(mockMerchant.id);
         
         // Load data
         setAnalytics(getMerchantAnalytics());
@@ -47,12 +42,12 @@ const MerchantDashboard = () => {
         setIsLoading(false);
       } catch (error) {
         console.error("Error loading merchant data:", error);
-        navigate("/merchant/login");
+        setIsLoading(false);
       }
     };
     
     loadData();
-  }, [navigate]);
+  }, []);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

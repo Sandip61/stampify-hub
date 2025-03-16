@@ -16,14 +16,11 @@ import ScanQR from "./pages/ScanQR";
 import History from "./pages/History";
 
 // Merchant Pages
-import MerchantLogin from "./pages/merchant/Login";
-import MerchantRegister from "./pages/merchant/Register";
 import MerchantDashboard from "./pages/merchant/Dashboard";
 import MerchantCards from "./pages/merchant/Cards";
 import MerchantCustomers from "./pages/merchant/Customers";
 import MerchantSettings from "./pages/merchant/Settings";
 import MerchantCardForm from "./pages/merchant/CardForm";
-import MerchantResetPassword from "./pages/merchant/ResetPassword";
 import StampManagement from "./pages/merchant/StampManagement";
 
 // Layouts
@@ -119,23 +116,7 @@ const router = createBrowserRouter([
       </MainLayout>
     ),
   },
-  // Merchant routes
-  {
-    path: "/merchant/login",
-    element: <MerchantLogin />,
-  },
-  {
-    path: "/merchant/register",
-    element: <MerchantRegister />,
-  },
-  {
-    path: "/merchant/signup", // Adding this route to handle /merchant/signup
-    element: <MerchantRegister />,
-  },
-  {
-    path: "/merchant/reset-password",
-    element: <MerchantResetPassword />,
-  },
+  // Merchant routes - removing authentication requirements
   {
     path: "/merchant",
     element: (

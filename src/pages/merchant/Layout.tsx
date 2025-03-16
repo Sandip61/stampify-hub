@@ -1,6 +1,6 @@
 
-import { useEffect, useState } from "react";
-import { Outlet, useNavigate, Link } from "react-router-dom";
+import { useState } from "react";
+import { Outlet, Link } from "react-router-dom";
 import { 
   BarChart3, 
   CreditCard, 
@@ -12,31 +12,18 @@ import {
   X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getCurrentMerchant, logoutMerchant } from "@/utils/merchantAuth";
-import { toast } from "sonner";
+
+// Mock merchant data for direct access
+const mockMerchant = {
+  id: "demo-merchant-id",
+  businessName: "Demo Business",
+  email: "demo@example.com",
+  businessLogo: "🏪",
+  businessColor: "#3B82F6"
+};
 
 const MerchantLayout = () => {
-  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [merchant, setMerchant] = useState<any>(null);
-  
-  useEffect(() => {
-    const currentMerchant = getCurrentMerchant();
-    if (!currentMerchant) {
-      navigate("/merchant/login");
-      return;
-    }
-    
-    setMerchant(currentMerchant);
-  }, [navigate]);
-  
-  const handleLogout = () => {
-    logoutMerchant();
-    navigate("/merchant/login");
-    toast.success("Logged out successfully");
-  };
-  
-  if (!merchant) return null;
   
   return (
     <div className="flex min-h-screen">
@@ -106,15 +93,15 @@ const MerchantLayout = () => {
           <div className="border-t px-4 py-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">{merchant.businessName}</p>
-                <p className="text-xs text-muted-foreground">{merchant.email}</p>
+                <p className="text-sm font-medium">{mockMerchant.businessName}</p>
+                <p className="text-xs text-muted-foreground">{mockMerchant.email}</p>
               </div>
-              <button
-                onClick={handleLogout}
+              <Link
+                to="/"
                 className="p-2 rounded-md hover:bg-muted transition-colors"
               >
                 <LogOut className="h-5 w-5" />
-              </button>
+              </Link>
             </div>
           </div>
         </div>
