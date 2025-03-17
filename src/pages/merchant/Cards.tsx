@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -18,15 +17,7 @@ import {
   updateMerchantStampCard,
   initializeDemoMerchantDataForLogin
 } from "@/utils/merchantData";
-
-// Mock merchant data (same as in MerchantLayout)
-const mockMerchant = {
-  id: "demo-merchant-id",
-  businessName: "Demo Business",
-  email: "demo@example.com",
-  businessLogo: "🏪",
-  businessColor: "#3B82F6"
-};
+import { mockMerchant } from "@/utils/mockMerchantData";
 
 const MerchantCards = () => {
   const navigate = useNavigate();

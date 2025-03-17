@@ -5,7 +5,9 @@ export const mockMerchant = {
   businessName: "Demo Business",
   email: "demo@example.com",
   businessLogo: "🏪",
-  businessColor: "#3B82F6"
+  businessColor: "#3B82F6",
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString()
 };
 
 // Initialize merchant data for the mock merchant

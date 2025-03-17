@@ -1,5 +1,4 @@
-
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
@@ -8,20 +7,12 @@ import {
   createMerchantStampCard,
   updateMerchantStampCard
 } from "@/utils/merchantData";
-
-// Mock merchant data (same as in MerchantLayout)
-const mockMerchant = {
-  id: "demo-merchant-id",
-  businessName: "Demo Business",
-  email: "demo@example.com",
-  businessLogo: "🏪",
-  businessColor: "#3B82F6"
-};
+import { mockMerchant } from "@/utils/mockMerchantData";
 
 const MerchantCardForm = () => {
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
-  const isEditMode = !!id;
+  const { id } = useParams();
+  const isEditMode = Boolean(id);
   
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -43,24 +34,24 @@ const MerchantCardForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // No need to check authentication - always proceed
     if (isEditMode && id) {
       setIsLoading(true);
       const card = getMerchantStampCard(id);
-      if (!card) {
+      
+      if (card) {
+        setName(card.name);
+        setDescription(card.description);
+        setTotalStamps(card.totalStamps);
+        setReward(card.reward);
+        setLogo(card.logo);
+        setColor(card.color);
+        setIsActive(card.isActive);
+        setExpiryDays(card.expiryDays || 0);
+      } else {
         toast.error("Stamp card not found");
         navigate("/merchant/cards");
-        return;
       }
       
-      setName(card.name);
-      setDescription(card.description);
-      setTotalStamps(card.totalStamps);
-      setReward(card.reward);
-      setColor(card.color);
-      setLogo(card.logo);
-      setIsActive(card.isActive);
-      setExpiryDays(card.expiryDays);
       setIsLoading(false);
     }
   }, [id, isEditMode, navigate]);
@@ -134,10 +125,8 @@ const MerchantCardForm = () => {
     }
   };
 
-  // Logo options
   const logoOptions = ["🏪", "☕", "🍔", "🍕", "🍦", "🥪", "🛍️", "📚", "👕", "💇", "🛒", "🧁"];
   
-  // Color options
   const colorOptions = [
     "#3B82F6", // Blue
     "#10B981", // Green
@@ -417,3 +406,4 @@ const MerchantCardForm = () => {
 };
 
 export default MerchantCardForm;
+
