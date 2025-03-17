@@ -1,10 +1,12 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { 
   Save,
   Store,
-  PaintBucket
+  PaintBucket,
+  LogOut
 } from "lucide-react";
 import { updateMerchantProfile, type Merchant } from "@/utils/merchantAuth";
 import { mockMerchant } from "@/utils/mockMerchantData";
@@ -54,6 +56,12 @@ const MerchantSettings = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleLogout = () => {
+    // For now this just navigates to home page since we don't have real auth
+    navigate("/");
+    toast.success("You have been logged out successfully");
   };
 
   const logoOptions = ["🏪", "☕", "🍔", "🍕", "🍦", "🥪", "🛍️", "📚", "👕", "💇", "🛒", "🧁"];
@@ -195,12 +203,20 @@ const MerchantSettings = () => {
             </p>
           </div>
           
-          <div className="pt-4 border-t">
+          <div className="space-y-4 pt-4 border-t">
             <button
               className="text-sm text-destructive hover:underline"
               onClick={() => navigate("/merchant/change-password")}
             >
               Change Password
+            </button>
+            
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 p-2 mt-4 text-sm font-medium rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
             </button>
           </div>
         </div>
