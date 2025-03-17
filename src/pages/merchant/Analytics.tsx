@@ -1,6 +1,4 @@
-
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { 
   BarChart3, 
   Users, 
@@ -9,43 +7,37 @@ import {
   Calendar,
   CreditCard
 } from "lucide-react";
-import { getCurrentMerchant, Merchant } from "@/utils/merchantAuth";
+import { Merchant } from "@/utils/merchantAuth";
 import { 
   getMerchantAnalytics,
   initializeDemoMerchantDataForLogin
 } from "@/utils/merchantData";
+import { mockMerchant } from "@/utils/mockMerchantData";
 
 const MerchantAnalytics = () => {
-  const navigate = useNavigate();
-  const [merchant, setMerchant] = useState<Merchant | null>(null);
+  const [merchant, setMerchant] = useState<Merchant | null>(mockMerchant);
   const [isLoading, setIsLoading] = useState(true);
   const [analytics, setAnalytics] = useState<any>(null);
   
   useEffect(() => {
     const loadData = async () => {
       try {
-        const currentMerchant = await getCurrentMerchant();
-        if (!currentMerchant) {
-          navigate("/merchant/login");
-          return;
-        }
-        
-        setMerchant(currentMerchant);
+        // Set the mock merchant directly instead of fetching
+        setMerchant(mockMerchant);
 
         // Initialize demo data for this merchant
-        initializeDemoMerchantDataForLogin(currentMerchant.id);
+        initializeDemoMerchantDataForLogin(mockMerchant.id);
         
         // Load analytics data
         setAnalytics(getMerchantAnalytics());
         setIsLoading(false);
       } catch (error) {
         console.error("Error loading merchant data:", error);
-        navigate("/merchant/login");
       }
     };
     
     loadData();
-  }, [navigate]);
+  }, []);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

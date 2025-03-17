@@ -1,6 +1,4 @@
-
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { 
   UserPlus, 
@@ -11,7 +9,7 @@ import {
   ChevronDown,
   Filter
 } from "lucide-react";
-import { getCurrentMerchant, Merchant } from "@/utils/merchantAuth";
+import { Merchant } from "@/utils/merchantAuth";
 import { 
   getMerchantCustomers, 
   getMerchantTransactions,
@@ -20,10 +18,10 @@ import {
   MerchantTransaction,
   initializeDemoMerchantDataForLogin
 } from "@/utils/merchantData";
+import { mockMerchant } from "@/utils/mockMerchantData";
 
 const MerchantCustomers = () => {
-  const navigate = useNavigate();
-  const [merchant, setMerchant] = useState<Merchant | null>(null);
+  const [merchant, setMerchant] = useState<Merchant | null>(mockMerchant);
   const [customers, setCustomers] = useState<MerchantCustomer[]>([]);
   const [transactions, setTransactions] = useState<MerchantTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,29 +36,23 @@ const MerchantCustomers = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const currentMerchant = await getCurrentMerchant();
-        if (!currentMerchant) {
-          navigate("/merchant/login");
-          return;
-        }
-        
-        setMerchant(currentMerchant);
+        // Set the mock merchant directly
+        setMerchant(mockMerchant);
 
         // Initialize demo data for this merchant
-        initializeDemoMerchantDataForLogin(currentMerchant.id);
+        initializeDemoMerchantDataForLogin(mockMerchant.id);
         
         // Load data
-        loadData();
+        loadCustomersAndTransactions();
       } catch (error) {
         console.error("Error loading merchant data:", error);
-        navigate("/merchant/login");
       }
     };
     
     loadData();
-  }, [navigate]);
+  }, []);
 
-  const loadData = () => {
+  const loadCustomersAndTransactions = () => {
     setIsLoading(true);
     const customers = getMerchantCustomers();
     const transactions = getMerchantTransactions();
@@ -95,7 +87,7 @@ const MerchantCustomers = () => {
       await addMerchantCustomer(newCustomer.name, newCustomer.email);
       toast.success("Customer added successfully");
       setNewCustomer({ name: "", email: "" });
-      loadData();
+      loadCustomersAndTransactions();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to add customer");
     } finally {
@@ -103,19 +95,16 @@ const MerchantCustomers = () => {
     }
   };
 
-  // Format date
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Filter customers based on search term
   const filteredCustomers = customers.filter(customer => 
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Filter transactions
   const filteredTransactions = transactions.filter(transaction => {
     if (transactionFilter !== "all" && transaction.type !== transactionFilter) {
       return false;
@@ -269,7 +258,6 @@ const MerchantCustomers = () => {
           <div className="w-8 h-8 border-t-2 border-primary rounded-full animate-spin"></div>
         </div>
       ) : viewMode === "customers" ? (
-        // Customers view
         filteredCustomers.length === 0 ? (
           <div className="flex flex-col items-center justify-center border rounded-xl p-12">
             <div className="rounded-full bg-muted p-3 mb-4">
@@ -349,7 +337,6 @@ const MerchantCustomers = () => {
           </div>
         )
       ) : (
-        // Transactions view
         filteredTransactions.length === 0 ? (
           <div className="flex flex-col items-center justify-center border rounded-xl p-12">
             <div className="rounded-full bg-muted p-3 mb-4">

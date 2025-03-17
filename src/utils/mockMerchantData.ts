@@ -1,5 +1,7 @@
 
 // Mock merchant data for direct access across all merchant pages
+import { initializeDemoMerchantDataForLogin } from "@/utils/merchantData";
+
 export const mockMerchant = {
   id: "demo-merchant-id",
   businessName: "Demo Business",
@@ -13,8 +15,9 @@ export const mockMerchant = {
 // Initialize merchant data for the mock merchant
 export const initMockMerchantData = () => {
   try {
-    const { initializeDemoMerchantDataForLogin } = require('./merchantData');
+    // Direct import instead of require
     initializeDemoMerchantDataForLogin(mockMerchant.id);
+    console.log("Demo merchant data initialized for merchant", mockMerchant.id);
     return true;
   } catch (error) {
     console.error("Failed to initialize mock merchant data:", error);

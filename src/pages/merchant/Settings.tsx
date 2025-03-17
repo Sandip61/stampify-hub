@@ -1,17 +1,15 @@
-
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { 
   Save,
   Store,
   PaintBucket
 } from "lucide-react";
-import { getCurrentMerchant, updateMerchantProfile, type Merchant } from "@/utils/merchantAuth";
+import { updateMerchantProfile, type Merchant } from "@/utils/merchantAuth";
+import { mockMerchant } from "@/utils/mockMerchantData";
 
 const MerchantSettings = () => {
-  const navigate = useNavigate();
-  const [merchant, setMerchant] = useState<Merchant | null>(null);
+  const [merchant, setMerchant] = useState<Merchant | null>(mockMerchant);
   const [businessName, setBusinessName] = useState("");
   const [businessLogo, setBusinessLogo] = useState("");
   const [businessColor, setBusinessColor] = useState("");
@@ -21,26 +19,22 @@ const MerchantSettings = () => {
   useEffect(() => {
     const loadMerchantData = async () => {
       try {
-        const currentMerchant = await getCurrentMerchant();
-        if (!currentMerchant) {
-          navigate("/merchant/login");
-          return;
-        }
+        // Set the mock merchant directly
+        setMerchant(mockMerchant);
         
-        setMerchant(currentMerchant);
-        setBusinessName(currentMerchant.businessName);
-        setBusinessLogo(currentMerchant.businessLogo);
-        setBusinessColor(currentMerchant.businessColor);
+        // Initialize form fields with merchant data
+        setBusinessName(mockMerchant.businessName);
+        setBusinessLogo(mockMerchant.businessLogo);
+        setBusinessColor(mockMerchant.businessColor);
         setIsLoading(false);
       } catch (error) {
         console.error("Error loading merchant data:", error);
         toast.error("Failed to load merchant profile");
-        navigate("/merchant/login");
       }
     };
     
     loadMerchantData();
-  }, [navigate]);
+  }, []);
 
   const handleSave = async () => {
     if (!merchant) return;
