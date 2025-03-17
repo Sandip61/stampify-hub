@@ -1,5 +1,5 @@
 
-import { useState, ReactNode } from "react";
+import { useState, ReactNode, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
   BarChart3, 
@@ -12,15 +12,7 @@ import {
   X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// Mock merchant data for direct access
-const mockMerchant = {
-  id: "demo-merchant-id",
-  businessName: "Demo Business",
-  email: "demo@example.com",
-  businessLogo: "🏪",
-  businessColor: "#3B82F6"
-};
+import { mockMerchant, initMockMerchantData } from "@/utils/mockMerchantData";
 
 interface MerchantLayoutProps {
   children: ReactNode;
@@ -28,6 +20,11 @@ interface MerchantLayoutProps {
 
 const MerchantLayout = ({ children }: MerchantLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Initialize mock merchant data on component mount
+  useEffect(() => {
+    initMockMerchantData();
+  }, []);
   
   return (
     <div className="flex min-h-screen">

@@ -3,12 +3,20 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
-import { getCurrentMerchant } from "@/utils/merchantAuth";
 import { 
   getMerchantStampCard, 
   createMerchantStampCard,
   updateMerchantStampCard
 } from "@/utils/merchantData";
+
+// Mock merchant data (same as in MerchantLayout)
+const mockMerchant = {
+  id: "demo-merchant-id",
+  businessName: "Demo Business",
+  email: "demo@example.com",
+  businessLogo: "🏪",
+  businessColor: "#3B82F6"
+};
 
 const MerchantCardForm = () => {
   const navigate = useNavigate();
@@ -35,12 +43,7 @@ const MerchantCardForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const merchant = getCurrentMerchant();
-    if (!merchant) {
-      navigate("/merchant/login");
-      return;
-    }
-
+    // No need to check authentication - always proceed
     if (isEditMode && id) {
       setIsLoading(true);
       const card = getMerchantStampCard(id);

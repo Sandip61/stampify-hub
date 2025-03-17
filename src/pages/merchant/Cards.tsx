@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -9,7 +10,7 @@ import {
   CheckCircle,
   XCircle
 } from "lucide-react";
-import { getCurrentMerchant, Merchant } from "@/utils/merchantAuth";
+import { Merchant } from "@/utils/merchantAuth";
 import { 
   getMerchantStampCards, 
   MerchantStampCard,
@@ -18,9 +19,18 @@ import {
   initializeDemoMerchantDataForLogin
 } from "@/utils/merchantData";
 
+// Mock merchant data (same as in MerchantLayout)
+const mockMerchant = {
+  id: "demo-merchant-id",
+  businessName: "Demo Business",
+  email: "demo@example.com",
+  businessLogo: "🏪",
+  businessColor: "#3B82F6"
+};
+
 const MerchantCards = () => {
   const navigate = useNavigate();
-  const [merchant, setMerchant] = useState<Merchant | null>(null);
+  const [merchant, setMerchant] = useState<Merchant | null>(mockMerchant);
   const [cards, setCards] = useState<MerchantStampCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,22 +38,16 @@ const MerchantCards = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const currentMerchant = await getCurrentMerchant();
-        if (!currentMerchant) {
-          navigate("/merchant/login");
-          return;
-        }
-        
-        setMerchant(currentMerchant);
+        // Set the mock merchant directly instead of fetching
+        setMerchant(mockMerchant);
 
         // Initialize demo data for this merchant
-        initializeDemoMerchantDataForLogin(currentMerchant.id);
+        initializeDemoMerchantDataForLogin(mockMerchant.id);
         
         // Load cards
         loadCards();
       } catch (error) {
         console.error("Error loading merchant data:", error);
-        navigate("/merchant/login");
       }
     };
     
