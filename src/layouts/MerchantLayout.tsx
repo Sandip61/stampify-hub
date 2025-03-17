@@ -1,76 +1,120 @@
 
-import React from "react";
-import { Link, useLocation } from "react-router-dom";
-import { logoutMerchant } from "@/utils/merchantAuth";
-import { Store, CreditCard, Users, Settings, LogOut } from "lucide-react";
+import { useState } from "react";
+import { Outlet, Link } from "react-router-dom";
+import { 
+  BarChart3, 
+  CreditCard, 
+  Settings, 
+  Users, 
+  Home, 
+  LogOut,
+  Menu,
+  X
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
-const MerchantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const location = useLocation();
-  const currentPath = location.pathname;
+// Mock merchant data for direct access
+const mockMerchant = {
+  id: "demo-merchant-id",
+  businessName: "Demo Business",
+  email: "demo@example.com",
+  businessLogo: "🏪",
+  businessColor: "#3B82F6"
+};
 
-  const handleLogout = async () => {
-    await logoutMerchant();
-    window.location.href = "/merchant/login";
-  };
-
-  const menuItems = [
-    { path: "/merchant", name: "Dashboard", icon: <Store className="w-5 h-5" /> },
-    { path: "/merchant/cards", name: "Stamp Cards", icon: <CreditCard className="w-5 h-5" /> },
-    { path: "/merchant/customers", name: "Customers", icon: <Users className="w-5 h-5" /> },
-    { path: "/merchant/settings", name: "Settings", icon: <Settings className="w-5 h-5" /> },
-  ];
-
+const MerchantLayout = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen">
+      {/* Mobile sidebar toggle */}
+      <button
+        className="fixed z-50 bottom-4 right-4 md:hidden bg-primary text-white p-3 rounded-full shadow-lg"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+      
       {/* Sidebar */}
-      <div className="w-64 bg-white border-r shadow-sm hidden md:block">
-        <div className="p-4 border-b">
-          <h2 className="text-xl font-bold">Merchant Portal</h2>
-        </div>
-        
-        <nav className="p-2">
-          <ul className="space-y-1">
-            {menuItems.map((item) => (
-              <li key={item.path}>
-                <Link
-                  to={item.path}
-                  className={`flex items-center px-4 py-2 rounded-md transition-colors ${
-                    currentPath === item.path
-                      ? "bg-blue-100 text-blue-600"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  {item.icon}
-                  <span className="ml-3">{item.name}</span>
-                </Link>
-              </li>
-            ))}
-            <li className="mt-4 pt-4 border-t">
-              <button
-                onClick={handleLogout}
-                className="flex items-center px-4 py-2 rounded-md text-red-600 hover:bg-red-50 transition-colors w-full text-left"
+      <div 
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 w-64 bg-card border-r transform transition-transform duration-200 ease-in-out md:translate-x-0",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <div className="flex flex-col h-full">
+          <div className="flex items-center h-16 px-6 border-b">
+            <h1 className="text-xl font-bold">Merchant Dashboard</h1>
+          </div>
+          
+          <nav className="flex-1 px-4 py-4 space-y-1">
+            <Link
+              to="/merchant"
+              className="flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-muted transition-colors"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <Home className="mr-3 h-5 w-5" />
+              Dashboard
+            </Link>
+            <Link
+              to="/merchant/cards"
+              className="flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-muted transition-colors"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <CreditCard className="mr-3 h-5 w-5" />
+              Stamp Cards
+            </Link>
+            <Link
+              to="/merchant/customers"
+              className="flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-muted transition-colors"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <Users className="mr-3 h-5 w-5" />
+              Customers
+            </Link>
+            <Link
+              to="/merchant/analytics"
+              className="flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-muted transition-colors"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <BarChart3 className="mr-3 h-5 w-5" />
+              Analytics
+            </Link>
+            <Link
+              to="/merchant/settings"
+              className="flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-muted transition-colors"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <Settings className="mr-3 h-5 w-5" />
+              Settings
+            </Link>
+          </nav>
+          
+          <div className="border-t px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">{mockMerchant.businessName}</p>
+                <p className="text-xs text-muted-foreground">{mockMerchant.email}</p>
+              </div>
+              <Link
+                to="/"
+                className="p-2 rounded-md hover:bg-muted transition-colors"
               >
-                <LogOut className="w-5 h-5" />
-                <span className="ml-3">Logout</span>
-              </button>
-            </li>
-          </ul>
-        </nav>
-      </div>
-
-      {/* Mobile header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b z-10 p-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold">Merchant Portal</h2>
-          {/* Mobile menu button would go here */}
+                <LogOut className="h-5 w-5" />
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* Content */}
-      <div className="flex-1 md:py-6 md:px-8 p-4 pt-16 md:pt-6">
-        <div className="max-w-5xl mx-auto">
-          {children}
-        </div>
+      
+      {/* Main content */}
+      <div className={cn(
+        "flex-1 transition-all duration-200",
+        "md:ml-64" // Always shifted on medium screens and above
+      )}>
+        <main className="p-6">
+          <Outlet />
+        </main>
       </div>
     </div>
   );

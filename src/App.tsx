@@ -22,6 +22,11 @@ import MerchantCustomers from "./pages/merchant/Customers";
 import MerchantSettings from "./pages/merchant/Settings";
 import MerchantCardForm from "./pages/merchant/CardForm";
 import StampManagement from "./pages/merchant/StampManagement";
+import MerchantLogin from "./pages/merchant/Login";
+import MerchantRegister from "./pages/merchant/Register";
+import MerchantSignup from "./pages/merchant/Signup";
+import MerchantResetPassword from "./pages/merchant/ResetPassword";
+import MerchantAnalytics from "./pages/merchant/Analytics";
 
 // Layouts
 import MainLayout from "./layouts/MainLayout";
@@ -116,12 +121,52 @@ const router = createBrowserRouter([
       </MainLayout>
     ),
   },
-  // Merchant routes - removing authentication requirements
+  // Merchant routes - all authentication requirements removed
   {
     path: "/merchant",
     element: (
       <MerchantLayout>
         <MerchantDashboard />
+      </MerchantLayout>
+    ),
+  },
+  {
+    path: "/merchant/login",
+    element: (
+      <MainLayout hideNav>
+        <MerchantLogin />
+      </MainLayout>
+    ),
+  },
+  {
+    path: "/merchant/register",
+    element: (
+      <MainLayout hideNav>
+        <MerchantRegister />
+      </MainLayout>
+    ),
+  },
+  {
+    path: "/merchant/signup",
+    element: (
+      <MainLayout hideNav>
+        <MerchantSignup />
+      </MainLayout>
+    ),
+  },
+  {
+    path: "/merchant/reset-password",
+    element: (
+      <MainLayout hideNav>
+        <MerchantResetPassword />
+      </MainLayout>
+    ),
+  },
+  {
+    path: "/merchant/analytics",
+    element: (
+      <MerchantLayout>
+        <MerchantAnalytics />
       </MerchantLayout>
     ),
   },
