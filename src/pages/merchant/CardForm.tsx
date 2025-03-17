@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -8,6 +9,8 @@ import {
   updateMerchantStampCard
 } from "@/utils/merchantData";
 import { mockMerchant } from "@/utils/mockMerchantData";
+import { supabase } from "@/integrations/supabase/client";
+import { getCurrentMerchant } from "@/utils/merchantAuth";
 
 const MerchantCardForm = () => {
   const navigate = useNavigate();
@@ -92,7 +95,45 @@ const MerchantCardForm = () => {
     setIsSubmitting(true);
     
     try {
+      // Get the current merchant profile
+      const merchant = await getCurrentMerchant();
+      
+      if (!merchant) {
+        toast.error("You must be logged in as a merchant to create stamp cards");
+        navigate("/merchant/login");
+        return;
+      }
+      
+      // Prepare the stamp card data
+      const stampCardData = {
+        name,
+        description,
+        totalStamps,
+        reward,
+        color,
+        logo,
+        isActive,
+        expiryDays,
+        merchant_id: merchant.id,
+        business_logo: logo,
+        business_color: color
+      };
+      
+      console.log("Saving stamp card:", stampCardData);
+      
       if (isEditMode && id) {
+        // Update existing stamp card in Supabase
+        const { error } = await supabase
+          .from('stamp_cards')
+          .update(stampCardData)
+          .eq('id', id);
+          
+        if (error) {
+          console.error("Error updating stamp card:", error);
+          throw new Error(error.message);
+        }
+        
+        // Also update in mock data for UI preview
         await updateMerchantStampCard(id, {
           name,
           description,
@@ -103,8 +144,24 @@ const MerchantCardForm = () => {
           isActive,
           expiryDays
         });
+        
         toast.success("Stamp card updated successfully");
       } else {
+        // Create new stamp card in Supabase
+        const { data, error } = await supabase
+          .from('stamp_cards')
+          .insert(stampCardData)
+          .select()
+          .single();
+          
+        if (error) {
+          console.error("Error creating stamp card:", error);
+          throw new Error(error.message);
+        }
+        
+        console.log("Created stamp card in database:", data);
+        
+        // Also create in mock data for UI preview
         await createMerchantStampCard({
           name,
           description,
@@ -115,8 +172,10 @@ const MerchantCardForm = () => {
           isActive,
           expiryDays
         });
+        
         toast.success("Stamp card created successfully");
       }
+      
       navigate("/merchant/cards");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to save stamp card");
@@ -406,4 +465,3 @@ const MerchantCardForm = () => {
 };
 
 export default MerchantCardForm;
-

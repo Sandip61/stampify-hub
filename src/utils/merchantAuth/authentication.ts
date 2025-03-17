@@ -1,4 +1,3 @@
-
 import { 
   supabase, 
   type Merchant, 
@@ -77,136 +76,20 @@ export const registerMerchant = async (
 
     console.log("Auth signup successful, creating merchant profile for:", authData.user.id);
 
-    // Create the merchant profile using direct API call to our Edge Function
+    // Create the merchant profile directly in the database thanks to our updated RLS policies
     try {
-      // First, create the user record to prevent foreign key constraint failures
+      // First, create the user record
       const { error: userInsertError } = await supabase
-        .from('users')
-        .upsert({ id: authData.user.id })
-      
-      if (userInsertError) {
-        console.warn("Could not create users record directly:", userInsertError);
-        // Continue with edge function which will retry this
-      } else {
-        console.log("Created users record directly");
-      }
-      
-      // Call the edge function (with full URL to work around 404 issues)
-      const response = await fetch(`${window.location.origin}/functions/create-merchant`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: authData.user.id,
-          business_name: businessName,
-          business_logo: businessLogo,
-          business_color: businessColor,
-          email: email
-        })
-      });
-      
-      if (!response.ok) {
-        let errorData;
-        let errorMessage = "Failed to create merchant profile.";
-        
-        try {
-          const responseText = await response.text();
-          console.log("Error response text:", responseText);
-          
-          if (responseText) {
-            try {
-              errorData = JSON.parse(responseText);
-              console.error("Error from create-merchant endpoint:", errorData);
-              errorMessage = errorData.error || errorMessage;
-            } catch (jsonError) {
-              console.error("Error parsing JSON from response:", jsonError);
-              errorMessage += " Invalid response format.";
-            }
-          } else {
-            console.error("Empty response from create-merchant endpoint");
-            errorMessage += " Empty response from server.";
-          }
-        } catch (textError) {
-          console.error("Error reading response text:", textError);
-          errorMessage += " Could not read response.";
-        }
-        
-        // Despite the error, try direct database insert as a fallback
-        console.log("Trying direct database insert as fallback");
-        const { error: merchantError } = await supabase
-          .from('merchants')
-          .upsert({
-            id: authData.user.id,
-            business_name: businessName,
-            business_logo: businessLogo,
-            business_color: businessColor,
-            email: email,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-        
-        if (merchantError) {
-          console.error("Direct database insert also failed:", merchantError);
-          throw new AppError(
-            ErrorType.MERCHANT_UPDATE_FAILED,
-            errorMessage
-          );
-        } else {
-          console.log("Direct database insert succeeded!");
-          // Continue execution without throwing an error
-        }
-      }
-      
-      // Parse the response data if we got a successful response
-      let responseData;
-      try {
-        if (response.ok && response.status !== 204) {
-          const responseText = await response.text();
-          if (responseText) {
-            responseData = JSON.parse(responseText);
-          }
-        }
-      } catch (jsonError) {
-        console.error("Error parsing successful response from create-merchant endpoint:", jsonError);
-        // Continue without the response data, we'll fall back to getting the profile
-      }
-      
-      if (responseData?.merchant) {
-        return dbMerchantToMerchant(responseData.merchant);
-      }
-    } catch (edgeFunctionError) {
-      console.error("Edge function error:", edgeFunctionError);
-      
-      // Try direct insert now
-      console.log("Trying direct insert after edge function error");
-      
-      // First sign in to ensure we have a valid session
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      
-      if (signInError) {
-        console.error("Sign-in failed:", signInError);
-        throw new AppError(
-          ErrorType.AUTH_INVALID_CREDENTIALS,
-          "Authentication failed after registration. Please try logging in directly."
-        );
-      }
-      
-      // Try to create the user record first
-      const { error: userError } = await supabase
         .from('users')
         .upsert({ id: authData.user.id });
       
-      if (userError) {
-        console.error("Error creating user record:", userError);
+      if (userInsertError) {
+        console.error("Error creating user record:", userInsertError);
       } else {
         console.log("Successfully created user record");
       }
       
-      // Now try to create the merchant
+      // Now create the merchant record
       const { error: merchantError } = await supabase
         .from('merchants')
         .upsert({
@@ -220,14 +103,26 @@ export const registerMerchant = async (
         });
       
       if (merchantError) {
-        console.error("Error creating merchant after sign-in:", merchantError);
+        console.error("Error creating merchant directly:", merchantError);
+        
         throw new AppError(
           ErrorType.MERCHANT_UPDATE_FAILED,
-          "Failed to create merchant profile. Please try again later."
+          "Failed to create merchant profile."
         );
+      } else {
+        console.log("Successfully created merchant directly");
+      }
+    } catch (error) {
+      console.error("Error creating merchant profile:", error);
+      
+      if (error instanceof AppError) {
+        throw error;
       }
       
-      console.log("Successfully created merchant directly");
+      throw new AppError(
+        ErrorType.MERCHANT_UPDATE_FAILED,
+        "Failed to create merchant profile. Please try again later."
+      );
     }
 
     // Wait a short time to allow database operations to complete
