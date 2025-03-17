@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Outlet, Link } from "react-router-dom";
+import { useState, ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { 
   BarChart3, 
   CreditCard, 
@@ -22,7 +22,11 @@ const mockMerchant = {
   businessColor: "#3B82F6"
 };
 
-const MerchantLayout = () => {
+interface MerchantLayoutProps {
+  children: ReactNode;
+}
+
+const MerchantLayout = ({ children }: MerchantLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   return (
@@ -113,7 +117,7 @@ const MerchantLayout = () => {
         "md:ml-64" // Always shifted on medium screens and above
       )}>
         <main className="p-6">
-          <Outlet />
+          {children}
         </main>
       </div>
     </div>
