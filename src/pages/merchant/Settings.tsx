@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { 
   Save,
@@ -9,6 +10,7 @@ import { updateMerchantProfile, type Merchant } from "@/utils/merchantAuth";
 import { mockMerchant } from "@/utils/mockMerchantData";
 
 const MerchantSettings = () => {
+  const navigate = useNavigate();
   const [merchant, setMerchant] = useState<Merchant | null>(mockMerchant);
   const [businessName, setBusinessName] = useState("");
   const [businessLogo, setBusinessLogo] = useState("");
@@ -19,10 +21,7 @@ const MerchantSettings = () => {
   useEffect(() => {
     const loadMerchantData = async () => {
       try {
-        // Set the mock merchant directly
         setMerchant(mockMerchant);
-        
-        // Initialize form fields with merchant data
         setBusinessName(mockMerchant.businessName);
         setBusinessLogo(mockMerchant.businessLogo);
         setBusinessColor(mockMerchant.businessColor);
@@ -57,10 +56,8 @@ const MerchantSettings = () => {
     }
   };
 
-  // Logo options
   const logoOptions = ["🏪", "☕", "🍔", "🍕", "🍦", "🥪", "🛍️", "📚", "👕", "💇", "🛒", "🧁"];
   
-  // Color options
   const colorOptions = [
     "#3B82F6", // Blue
     "#10B981", // Green
