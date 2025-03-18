@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { 
@@ -19,6 +20,13 @@ import {
   initializeDemoMerchantDataForLogin
 } from "@/utils/merchantData";
 import { mockMerchant } from "@/utils/mockMerchantData";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const MerchantCustomers = () => {
   const [merchant, setMerchant] = useState<Merchant | null>(mockMerchant);
@@ -32,6 +40,7 @@ const MerchantCustomers = () => {
   
   const [viewMode, setViewMode] = useState<"customers" | "transactions">("customers");
   const [transactionFilter, setTransactionFilter] = useState<"all" | "stamp" | "redeem">("all");
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     const loadData = async () => {
@@ -125,7 +134,7 @@ const MerchantCustomers = () => {
           className="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
         >
           <UserPlus className="mr-2 h-4 w-4" />
-          Add Customer
+          {!isMobile && "Add Customer"}
         </button>
       </div>
 
@@ -211,7 +220,7 @@ const MerchantCustomers = () => {
               }`}
             >
               <Users className="h-4 w-4 inline mr-1" />
-              Customers
+              {!isMobile && "Customers"}
             </button>
             <button
               onClick={() => setViewMode("transactions")}
@@ -222,33 +231,41 @@ const MerchantCustomers = () => {
               }`}
             >
               <Stamp className="h-4 w-4 inline mr-1" />
-              Transactions
+              {!isMobile && "Transactions"}
             </button>
           </div>
           
           {viewMode === "transactions" && (
-            <div className="relative inline-block">
-              <button
-                onClick={() => {
-                  setTransactionFilter(
-                    transactionFilter === "all"
-                      ? "stamp"
-                      : transactionFilter === "stamp"
-                      ? "redeem"
-                      : "all"
-                  );
-                }}
-                className="px-3 py-2 text-sm font-medium rounded-md border inline-flex items-center"
-              >
-                <Filter className="h-4 w-4 mr-1" />
-                {transactionFilter === "all"
-                  ? "All"
-                  : transactionFilter === "stamp"
-                  ? "Stamps"
-                  : "Redemptions"}
-                <ChevronDown className="h-4 w-4 ml-1" />
-              </button>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="px-3 py-2 text-sm font-medium rounded-md border inline-flex items-center">
+                  <Filter className="h-4 w-4 mr-1" />
+                  {!isMobile ? (
+                    <>
+                      {transactionFilter === "all"
+                        ? "All"
+                        : transactionFilter === "stamp"
+                        ? "Stamps"
+                        : "Redemptions"}
+                      <ChevronDown className="h-4 w-4 ml-1" />
+                    </>
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-popover">
+                <DropdownMenuItem onClick={() => setTransactionFilter("all")}>
+                  All Transactions
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTransactionFilter("stamp")}>
+                  Stamps Only
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTransactionFilter("redeem")}>
+                  Redemptions Only
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
@@ -293,8 +310,8 @@ const MerchantCustomers = () => {
             )}
           </div>
         ) : (
-          <div className="bg-card border rounded-xl overflow-hidden">
-            <div className="overflow-x-auto">
+          <div className="bg-card border rounded-xl overflow-x-auto">
+            <div className="min-w-full">
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
@@ -368,8 +385,8 @@ const MerchantCustomers = () => {
             )}
           </div>
         ) : (
-          <div className="bg-card border rounded-xl overflow-hidden">
-            <div className="overflow-x-auto">
+          <div className="bg-card border rounded-xl overflow-x-auto">
+            <div className="min-w-full">
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
