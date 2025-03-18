@@ -6,12 +6,14 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { logoutUser } from "@/utils/auth";
 import { toast } from "sonner";
+import QRScannerModal from "./QRScannerModal";
 
 const Navigation = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
   const [visible, setVisible] = useState(true);
   const [lastScrollPosition, setLastScrollPosition] = useState(0);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -36,6 +38,11 @@ const Navigation = () => {
     logoutUser();
     window.location.href = "/login";
     toast.success("You have been logged out successfully");
+  };
+
+  const handleScanClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setScannerOpen(true);
   };
 
   if (isMobile === undefined) return null;
@@ -74,14 +81,12 @@ const Navigation = () => {
               >
                 History
               </NavLink>
-              <NavLink 
-                to="/scan" 
-                className={({isActive}) => 
-                  cn("nav-link", isActive && "nav-link-active")
-                }
+              <button 
+                onClick={handleScanClick}
+                className="nav-link"
               >
                 Scan QR
-              </NavLink>
+              </button>
             </div>
             <div className="flex items-center space-x-1">
               <NavLink 
@@ -131,16 +136,13 @@ const Navigation = () => {
               <CreditCard className="w-5 h-5" />
               <span className="text-xs">Cards</span>
             </NavLink>
-            <NavLink 
-              to="/scan" 
-              className={({isActive}) => 
-                cn("flex flex-col items-center space-y-1", 
-                isActive ? "text-foreground" : "text-muted-foreground")
-              }
+            <button 
+              onClick={handleScanClick}
+              className="flex flex-col items-center space-y-1 text-muted-foreground"
             >
               <ScanLine className="w-5 h-5" />
               <span className="text-xs">Scan</span>
-            </NavLink>
+            </button>
             <NavLink 
               to="/history" 
               className={({isActive}) => 
@@ -171,6 +173,8 @@ const Navigation = () => {
           </nav>
         </div>
       )}
+
+      <QRScannerModal open={scannerOpen} onOpenChange={setScannerOpen} />
     </>
   );
 };

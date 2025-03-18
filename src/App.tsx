@@ -12,7 +12,6 @@ import Profile from "./pages/Profile";
 import Transactions from "./pages/Transactions";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
-import ScanQR from "./pages/ScanQR";
 import History from "./pages/History";
 
 // Merchant Pages
@@ -78,14 +77,6 @@ const router = createBrowserRouter([
     element: (
       <MainLayout>
         <StampCardDetail />
-      </MainLayout>
-    ),
-  },
-  {
-    path: "/scan",
-    element: (
-      <MainLayout>
-        <ScanQR />
       </MainLayout>
     ),
   },
