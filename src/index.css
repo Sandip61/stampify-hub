@@ -5,7 +5,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
+    --background: 180 54% 97%;
     --foreground: 240 10% 3.9%;
 
     --card: 0 0% 100%;
@@ -14,73 +14,74 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
 
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 172 66% 50%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 240 4.8% 95.9%;
+    --secondary: 44 96% 89%;
     --secondary-foreground: 240 5.9% 10%;
 
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --accent: 44 96% 89%;
+    --accent-foreground: 24 9.8% 10%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 172 66% 40%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 174 100% 29%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 174 100% 29%;
+    --sidebar-accent: 173 80% 23%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 173 75% 39%;
+    --sidebar-ring: 180 100% 50%;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
+    --background: 174 59% 8%;
     --foreground: 0 0% 98%;
 
-    --card: 240 10% 3.9%;
+    --card: 174 35% 16%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 240 10% 3.9%;
+    --popover: 174 35% 16%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
+    --primary: 180 54% 60%;
+    --primary-foreground: 174 59% 8%;
 
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 42 96% 59%;
+    --secondary-foreground: 174 59% 8%;
 
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    --muted: 174 35% 16%;
+    --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 240 3.7% 15.9%;
+    --accent: 174 35% 16%;
     --accent-foreground: 0 0% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --border: 174 35% 24%;
+    --input: 174 35% 24%;
+    --ring: 180 54% 60%;
+
+    --sidebar-background: 174 59% 12%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 180 54% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 174 35% 24%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 174 35% 24%;
+    --sidebar-ring: 180 54% 60%;
   }
 }
 
@@ -90,7 +91,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-gradient-to-br from-teal-50 via-white to-amber-50 min-h-screen bg-fixed text-foreground;
   }
 }
 
@@ -129,5 +130,34 @@
 
   .nav-link-active {
     @apply text-foreground after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-foreground after:rounded-full;
+  }
+
+  /* New class for merchant layout */
+  .merchant-layout {
+    @apply bg-gradient-to-br from-teal-50 via-white to-amber-50;
+  }
+
+  .merchant-card {
+    @apply bg-white/80 backdrop-blur-sm border border-teal-100 rounded-xl shadow-md hover:shadow-lg transition-all duration-300;
+  }
+
+  .merchant-sidebar {
+    @apply bg-teal-600 text-white;
+  }
+
+  .merchant-nav-item {
+    @apply flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-teal-700/50 transition-colors;
+  }
+
+  .merchant-nav-item-active {
+    @apply bg-teal-700/70;
+  }
+
+  .merchant-mobile-nav {
+    @apply bg-white/90 backdrop-blur-md border-t border-teal-100 shadow-lg;
+  }
+
+  .gradient-border {
+    @apply relative after:absolute after:inset-0 after:p-px after:rounded-xl after:bg-gradient-to-r after:from-teal-300 after:to-amber-300 after:-z-10;
   }
 }

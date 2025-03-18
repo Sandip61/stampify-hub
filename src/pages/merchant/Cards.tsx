@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -85,10 +86,10 @@ const MerchantCards = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Stamp Cards</h1>
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-amber-600 bg-clip-text text-transparent">Stamp Cards</h1>
         <Link
           to="/merchant/cards/new"
-          className="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+          className="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-gradient-to-r from-teal-600 to-amber-600 text-white hover:from-teal-700 hover:to-amber-700 transition-colors"
         >
           <PlusCircle className="mr-2 h-4 w-4" />
           New Stamp Card
@@ -101,7 +102,7 @@ const MerchantCards = () => {
           <input
             type="text"
             placeholder="Search stamp cards..."
-            className="pl-9 h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="pl-9 h-10 w-full rounded-md border border-teal-100 bg-white/70 backdrop-blur-sm px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -110,12 +111,12 @@ const MerchantCards = () => {
 
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 border-t-2 border-primary rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-t-2 border-teal-600 rounded-full animate-spin"></div>
         </div>
       ) : filteredCards.length === 0 ? (
-        <div className="flex flex-col items-center justify-center border rounded-xl p-12">
-          <div className="rounded-full bg-muted p-3 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-credit-card text-muted-foreground"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+        <div className="flex flex-col items-center justify-center merchant-card p-12">
+          <div className="rounded-full bg-amber-50 p-3 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-credit-card text-amber-600"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
           </div>
           {searchTerm ? (
             <>
@@ -123,7 +124,7 @@ const MerchantCards = () => {
               <p className="text-muted-foreground mb-4">No stamp cards match your search criteria</p>
               <button
                 onClick={() => setSearchTerm("")}
-                className="text-sm text-primary"
+                className="text-sm text-teal-600 hover:text-teal-700"
               >
                 Clear search
               </button>
@@ -134,7 +135,7 @@ const MerchantCards = () => {
               <p className="text-muted-foreground mb-4">Start creating loyalty programs for your customers</p>
               <Link
                 to="/merchant/cards/new"
-                className="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                className="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-gradient-to-r from-teal-600 to-amber-600 text-white hover:from-teal-700 hover:to-amber-700 transition-colors"
               >
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Create your first card
@@ -147,12 +148,12 @@ const MerchantCards = () => {
           {filteredCards.map((card) => (
             <div 
               key={card.id} 
-              className="bg-card border rounded-xl overflow-hidden relative"
+              className="merchant-card overflow-hidden relative"
             >
               <div className="p-4 md:p-6 flex flex-col md:flex-row gap-4">
                 <div className="flex-shrink-0">
                   <div 
-                    className="w-16 h-16 md:w-20 md:h-20 rounded-lg flex items-center justify-center text-2xl md:text-3xl"
+                    className="w-16 h-16 md:w-20 md:h-20 rounded-lg flex items-center justify-center text-2xl md:text-3xl shadow-md"
                     style={{ backgroundColor: card.color }}
                   >
                     {card.logo}
@@ -169,7 +170,7 @@ const MerchantCards = () => {
                       }`}>
                         {card.isActive ? 'Active' : 'Inactive'}
                       </span>
-                      <h3 className="text-lg font-semibold mt-2">{card.name}</h3>
+                      <h3 className="text-lg font-semibold mt-2 bg-gradient-to-r from-teal-700 to-amber-700 bg-clip-text text-transparent">{card.name}</h3>
                     </div>
                     <div className="flex items-center space-x-2 mt-2 md:mt-0">
                       <Link
@@ -192,7 +193,7 @@ const MerchantCards = () => {
                       </button>
                       <Link
                         to={`/merchant/cards/edit/${card.id}`}
-                        className="p-2 rounded-md hover:bg-blue-100 text-blue-500"
+                        className="p-2 rounded-md hover:bg-teal-100 text-teal-600"
                       >
                         <Edit className="h-5 w-5" />
                       </Link>
@@ -208,21 +209,21 @@ const MerchantCards = () => {
                   <p className="text-muted-foreground">{card.description}</p>
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Stamps Required</p>
+                    <div className="bg-teal-50/70 rounded-md p-2">
+                      <p className="text-xs text-teal-700">Stamps Required</p>
                       <p className="text-sm font-medium">{card.totalStamps}</p>
                     </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Reward</p>
+                    <div className="bg-amber-50/70 rounded-md p-2">
+                      <p className="text-xs text-amber-700">Reward</p>
                       <p className="text-sm font-medium">{card.reward}</p>
                     </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Created</p>
+                    <div className="bg-teal-50/70 rounded-md p-2">
+                      <p className="text-xs text-teal-700">Created</p>
                       <p className="text-sm font-medium">{new Date(card.createdAt).toLocaleDateString()}</p>
                     </div>
                     {card.expiryDays && (
-                      <div>
-                        <p className="text-xs text-muted-foreground">Expiry</p>
+                      <div className="bg-amber-50/70 rounded-md p-2">
+                        <p className="text-xs text-amber-700">Expiry</p>
                         <p className="text-sm font-medium">{card.expiryDays} days</p>
                       </div>
                     )}
