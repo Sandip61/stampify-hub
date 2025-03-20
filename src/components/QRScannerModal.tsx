@@ -111,7 +111,7 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
               className="flex items-center"
             >
               <Upload className="mr-1 h-4 w-4" />
-              Scan Image
+              Upload Image
             </Button>
           </div>
         </div>
@@ -133,7 +133,7 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
               <div className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center mb-4">
                 <Upload className="h-8 w-8 text-teal-600" />
               </div>
-              <h3 className="text-lg font-medium mb-2">Upload QR Code Image</h3>
+              <h3 className="text-lg font-medium mb-2">Upload Image</h3>
               <p className="text-sm text-muted-foreground mb-4 text-center">
                 Select an image file containing a QR code
               </p>
