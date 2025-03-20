@@ -17,7 +17,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   useEffect(() => {
     let scanner: Html5QrcodeScanner | null = null;
 
-    const initializeScanner = () => {
+    const initializeScanner = async () => {
       // Clean up any existing HTML (to prevent duplicates)
       const qrReaderElement = document.getElementById("qr-reader");
       if (qrReaderElement) {
@@ -31,8 +31,10 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           qrbox: { width: 250, height: 250 },
           aspectRatio: 1,
           rememberLastUsedCamera: true,
+          showTorchButtonIfSupported: true,
+          showZoomSliderIfSupported: true,
         },
-        false
+        /* start scanning right away */ true
       );
 
       scanner.render(onScanSuccess, onScanFailure);
@@ -40,7 +42,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
 
     const onScanSuccess = async (decodedText: string) => {
       if (scanner) {
-        scanner.clear();
+        scanner.pause();
       }
       
       setScanResult(decodedText);
@@ -68,6 +70,11 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       } catch (error) {
         console.error("Error processing QR code:", error);
         toast.error(error instanceof Error ? error.message : "Failed to process QR code");
+        
+        // Reset scanner after error to allow another attempt
+        if (scanner) {
+          scanner.resume();
+        }
       } finally {
         setProcessing(false);
       }
@@ -78,13 +85,10 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       console.warn("QR Scan error:", error);
     };
 
-    // Initialize scanner after a short delay to ensure DOM is ready
-    const timeoutId = setTimeout(() => {
-      initializeScanner();
-    }, 100);
+    // Initialize scanner immediately
+    initializeScanner();
 
     return () => {
-      clearTimeout(timeoutId);
       if (scanner) {
         scanner.clear();
       }
