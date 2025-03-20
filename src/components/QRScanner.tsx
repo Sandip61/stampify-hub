@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { processScannedQRCode } from '@/utils/stamps';
 import { toast } from 'sonner';
@@ -13,36 +13,38 @@ interface QRScannerProps {
 const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const mountedRef = useRef(false);
 
   useEffect(() => {
-    let scanner: Html5QrcodeScanner | null = null;
+    mountedRef.current = true;
+    
+    // Clean up any existing HTML before creating scanner
+    const qrReaderElement = document.getElementById("qr-reader");
+    if (qrReaderElement) {
+      qrReaderElement.innerHTML = "";
+    }
+    
+    // Create and initialize scanner
+    scannerRef.current = new Html5QrcodeScanner(
+      "qr-reader",
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1,
+        rememberLastUsedCamera: true,
+        showTorchButtonIfSupported: true,
+        showZoomSliderIfSupported: true,
+      },
+      /* start scanning right away */ false // Initialize but don't start scanning yet
+    );
 
-    const initializeScanner = async () => {
-      // Clean up any existing HTML (to prevent duplicates)
-      const qrReaderElement = document.getElementById("qr-reader");
-      if (qrReaderElement) {
-        qrReaderElement.innerHTML = "";
-      }
-      
-      scanner = new Html5QrcodeScanner(
-        "qr-reader",
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1,
-          rememberLastUsedCamera: true,
-          showTorchButtonIfSupported: true,
-          showZoomSliderIfSupported: true,
-        },
-        /* start scanning right away */ true
-      );
-
-      scanner.render(onScanSuccess, onScanFailure);
-    };
-
+    // Define scan success handler
     const onScanSuccess = async (decodedText: string) => {
-      if (scanner) {
-        scanner.pause();
+      if (!mountedRef.current) return;
+      
+      if (scannerRef.current) {
+        scannerRef.current.pause(true);
       }
       
       setScanResult(decodedText);
@@ -64,36 +66,58 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           toast.success(`Added ${result.stampCard.current_stamps} stamps!`);
         }
         
-        if (onScanComplete) {
+        if (onScanComplete && mountedRef.current) {
           onScanComplete();
         }
       } catch (error) {
         console.error("Error processing QR code:", error);
-        toast.error(error instanceof Error ? error.message : "Failed to process QR code");
-        
-        // Reset scanner after error to allow another attempt
-        if (scanner) {
-          scanner.resume();
+        if (mountedRef.current) {
+          toast.error(error instanceof Error ? error.message : "Failed to process QR code");
+          
+          // Reset scanner after error to allow another attempt
+          if (scannerRef.current) {
+            scannerRef.current.resume();
+          }
         }
       } finally {
-        setProcessing(false);
+        if (mountedRef.current) {
+          setProcessing(false);
+        }
       }
     };
 
+    // Define scan failure handler
     const onScanFailure = (error: string) => {
       // Only log the error without showing an error message to the user
       console.warn("QR Scan error:", error);
     };
 
-    // Initialize scanner immediately
-    initializeScanner();
+    // Start the scanner with a slight delay to ensure the DOM is fully rendered
+    const timeoutId = setTimeout(() => {
+      if (mountedRef.current && scannerRef.current) {
+        scannerRef.current.render(onScanSuccess, onScanFailure);
+        // Force start scanning after render
+        const startScanningButton = document.getElementById("html5-qrcode-button-camera-start");
+        if (startScanningButton) {
+          (startScanningButton as HTMLButtonElement).click();
+        }
+      }
+    }, 300);
 
+    // Cleanup function to run when component unmounts or re-renders
     return () => {
-      if (scanner) {
-        scanner.clear();
+      mountedRef.current = false;
+      clearTimeout(timeoutId);
+      
+      if (scannerRef.current) {
+        try {
+          scannerRef.current.clear();
+        } catch (error) {
+          console.warn("Error clearing scanner:", error);
+        }
       }
     };
-  }, [onScanComplete]);
+  }, [onScanComplete]); // Only re-initialize when onScanComplete changes
 
   return (
     <div className="w-full bg-white">

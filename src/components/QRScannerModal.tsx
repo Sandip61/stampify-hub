@@ -18,7 +18,24 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
   const [mode, setMode] = useState<'live' | 'file'>('live');
   const [scanComplete, setScanComplete] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [scannerKey, setScannerKey] = useState(0); // Add key to force re-render
+  const [scannerKey, setScannerKey] = useState(0);
+  const [showScanner, setShowScanner] = useState(true);
+
+  useEffect(() => {
+    // When the modal opens, reset to default state
+    if (open) {
+      setMode('live');
+      setScanComplete(false);
+      setScannerKey(prev => prev + 1);
+      setShowScanner(true);
+    }
+  }, [open]);
+
+  // Force re-render of QRScanner when mode changes
+  useEffect(() => {
+    setScannerKey(prev => prev + 1);
+    setShowScanner(mode === 'live');
+  }, [mode]);
 
   const handleScanComplete = () => {
     setScanComplete(true);
@@ -29,16 +46,20 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
     }, 2000);
   };
 
+  const handleModeChange = (newMode: 'live' | 'file') => {
+    setMode(newMode);
+    if (newMode === 'file') {
+      setShowScanner(false);
+    } else {
+      setShowScanner(true);
+    }
+  };
+
   const triggerFileUpload = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
-
-  // Force re-render of QRScanner when mode changes
-  useEffect(() => {
-    setScannerKey(prev => prev + 1);
-  }, [mode]);
   
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -87,6 +108,11 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
     };
     
     fileReader.readAsDataURL(files[0]);
+    
+    // Clear the input value to allow selecting the same file again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   return (
@@ -111,7 +137,7 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
             <Button 
               variant={mode === 'live' ? "default" : "outline"} 
               size="sm"
-              onClick={() => setMode('live')}
+              onClick={() => handleModeChange('live')}
               className="flex items-center"
             >
               <Camera className="mr-1 h-4 w-4" />
@@ -120,7 +146,7 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
             <Button 
               variant={mode === 'file' ? "default" : "outline"} 
               size="sm"
-              onClick={() => setMode('file')}
+              onClick={() => handleModeChange('file')}
               className="flex items-center"
             >
               <Upload className="mr-1 h-4 w-4" />
@@ -130,13 +156,11 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
         </div>
         
         <div className="relative bg-white">
-          {mode === 'live' && (
+          {mode === 'live' && showScanner && !scanComplete && (
             <>
-              {!scanComplete && (
-                <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center">
-                  <div className="w-48 h-48 rounded-lg border-2 border-teal-400 border-dashed"></div>
-                </div>
-              )}
+              <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center">
+                <div className="w-48 h-48 rounded-lg border-2 border-teal-400 border-dashed"></div>
+              </div>
               <QRScanner key={scannerKey} onScanComplete={handleScanComplete} />
             </>
           )}
