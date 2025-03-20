@@ -6,11 +6,13 @@ import { getUserStampCards, StampCard as StampCardType, initializeDemoData } fro
 import StampCard from "@/components/StampCard";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Clock, Star, Scan, TrendingUp } from "lucide-react";
+import QRScannerModal from "@/components/QRScannerModal";
 
 const Home = () => {
   const [user, setUser] = useState<User | null>(null);
   const [cards, setCards] = useState<StampCardType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -75,19 +77,21 @@ const Home = () => {
       
       {/* Quick actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-        <Link to="/scan">
-          <Button variant="outline" className="w-full h-16 justify-start">
-            <div className="flex flex-col items-start">
-              <div className="flex items-center text-primary">
-                <Scan className="w-4 h-4 mr-2" />
-                <span className="font-medium whitespace-normal text-left">Scan QR</span>
-              </div>
-              <span className="text-xs text-muted-foreground mt-1 whitespace-normal text-left">
-                Add stamps to your card
-              </span>
+        <Button 
+          variant="outline" 
+          className="w-full h-16 justify-start"
+          onClick={() => setScannerOpen(true)}
+        >
+          <div className="flex flex-col items-start">
+            <div className="flex items-center text-primary">
+              <Scan className="w-4 h-4 mr-2" />
+              <span className="font-medium whitespace-normal text-left">Scan QR</span>
             </div>
-          </Button>
-        </Link>
+            <span className="text-xs text-muted-foreground mt-1 whitespace-normal text-left">
+              Add stamps to your card
+            </span>
+          </div>
+        </Button>
         <Link to="/cards">
           <Button variant="outline" className="w-full h-16 justify-start">
             <div className="flex flex-col items-start">
@@ -189,11 +193,11 @@ const Home = () => {
           <p className="text-muted-foreground mb-4">
             Add your first loyalty card by scanning a QR code at participating businesses
           </p>
-          <Link to="/scan">
-            <Button>Scan QR Code</Button>
-          </Link>
+          <Button onClick={() => setScannerOpen(true)}>Scan QR Code</Button>
         </div>
       )}
+
+      <QRScannerModal open={scannerOpen} onOpenChange={setScannerOpen} />
     </div>
   );
 };
