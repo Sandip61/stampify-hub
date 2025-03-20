@@ -17,6 +17,7 @@ interface QRScannerModalProps {
 const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) => {
   const [mode, setMode] = useState<'live' | 'file'>('live');
   const [scanComplete, setScanComplete] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleScanComplete = () => {
     setScanComplete(true);
@@ -25,6 +26,12 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
       onOpenChange(false);
       setScanComplete(false);
     }, 2000);
+  };
+
+  const triggerFileUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -130,24 +137,25 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
           
           {mode === 'file' && (
             <div className="p-8 flex flex-col items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center mb-4">
+              <button 
+                onClick={triggerFileUpload}
+                className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center mb-4 hover:bg-teal-200 transition-colors cursor-pointer"
+                aria-label="Upload image file"
+              >
                 <Upload className="h-8 w-8 text-teal-600" />
-              </div>
+              </button>
               <h3 className="text-lg font-medium mb-2">Upload Image</h3>
               <p className="text-sm text-muted-foreground mb-4 text-center">
-                Select an image file containing a QR code
+                Click the icon above to select an image with a QR code
               </p>
               <div id="qr-reader-file" style={{ display: 'none' }}></div>
               <input
+                ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 onChange={handleFileUpload}
-                className="block w-full text-sm text-slate-500
-                  file:mr-4 file:py-2 file:px-4
-                  file:rounded-md file:border-0
-                  file:text-sm file:font-semibold
-                  file:bg-teal-50 file:text-teal-700
-                  hover:file:bg-teal-100"
+                className="hidden"
+                aria-hidden="true"
               />
             </div>
           )}
