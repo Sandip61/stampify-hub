@@ -27,10 +27,25 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
   useEffect(() => {
     console.log("Modal open state changed:", open);
     if (open) {
+      // Reset to live mode when modal opens
       setMode('live');
       setScanComplete(false);
       setScannerKey(prev => prev + 1);
       setShowScanner(true);
+      
+      // Request camera permissions when the modal opens
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(stream => {
+            console.log("Camera permission granted");
+            // Stop the stream immediately, we just needed the permission
+            stream.getTracks().forEach(track => track.stop());
+          })
+          .catch(err => {
+            console.error("Camera permission error:", err);
+            toast.error("Camera access denied. Please allow camera access to scan QR codes.");
+          });
+      }
     }
   }, [open]);
 

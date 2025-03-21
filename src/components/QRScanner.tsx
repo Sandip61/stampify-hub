@@ -75,44 +75,63 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
     console.log("QRScanner useEffect: Initializing scanner");
     mountedRef.current = true;
     
-    // Clean up any existing HTML before creating scanner
-    const qrReaderElement = document.getElementById("qr-reader");
-    if (qrReaderElement) {
-      qrReaderElement.innerHTML = "";
-      console.log("Cleared qr-reader element");
-    } else {
-      console.warn("qr-reader element not found in the DOM");
-    }
-    
-    // Create scanner configuration
-    const config = {
-      fps: 10,
-      qrbox: { width: 250, height: 250 },
-      aspectRatio: 1,
-      rememberLastUsedCamera: true,
-      showTorchButtonIfSupported: true,
-      showZoomSliderIfSupported: true,
-    };
-    
-    try {
-      // Create and initialize scanner
-      console.log("Creating new Html5QrcodeScanner instance");
-      scannerRef.current = new Html5QrcodeScanner("qr-reader", config, false);
-      
-      // Directly render the scanner with our callbacks instead of trying to click buttons
-      if (scannerRef.current) {
-        console.log("QRScanner: Rendering scanner with callbacks");
-        scannerRef.current.render(onScanSuccess, onScanFailure);
-        console.log("Scanner render method called successfully");
+    // Give browser time to initialize camera permissions properly
+    const initializeScanner = setTimeout(() => {
+      // Clean up any existing HTML before creating scanner
+      const qrReaderElement = document.getElementById("qr-reader");
+      if (qrReaderElement) {
+        qrReaderElement.innerHTML = "";
+        console.log("Cleared qr-reader element");
+      } else {
+        console.warn("qr-reader element not found in the DOM");
       }
-    } catch (error) {
-      console.error("Error initializing QR scanner:", error);
-      toast.error("Failed to initialize camera scanner");
-    }
+      
+      // Create scanner configuration
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1,
+        rememberLastUsedCamera: true,
+        showTorchButtonIfSupported: true,
+        showZoomSliderIfSupported: true,
+        formatsToSupport: [Html5QrcodeScanner.FORMATS.QR_CODE],
+      };
+      
+      try {
+        // Create and initialize scanner
+        console.log("Creating new Html5QrcodeScanner instance");
+        scannerRef.current = new Html5QrcodeScanner("qr-reader", config, /* verbose */ true);
+        
+        // Directly render the scanner with our callbacks
+        if (scannerRef.current) {
+          console.log("QRScanner: Rendering scanner with callbacks");
+          scannerRef.current.render(onScanSuccess, onScanFailure);
+          console.log("Scanner render method called successfully");
+          
+          // Attempt to force camera selection if possible
+          setTimeout(() => {
+            try {
+              // Try to click the start button if it exists (backup method)
+              const startButton = document.getElementById("html5-qrcode-button-camera-start");
+              if (startButton) {
+                console.log("Found start button, clicking it as backup method");
+                (startButton as HTMLButtonElement).click();
+              }
+            } catch (err) {
+              console.warn("Could not find or click camera start button:", err);
+            }
+          }, 500);
+        }
+      } catch (error) {
+        console.error("Error initializing QR scanner:", error);
+        toast.error("Failed to initialize camera scanner");
+      }
+    }, 300); // Short delay to ensure DOM is ready
 
     // Cleanup function
     return () => {
       console.log("QRScanner useEffect: Cleaning up scanner");
+      clearTimeout(initializeScanner);
       mountedRef.current = false;
       
       if (scannerRef.current) {
