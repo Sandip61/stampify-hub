@@ -25,6 +25,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
     }
     
     setScanResult(decodedText);
+    console.log("QR code scanned successfully:", decodedText);
 
     try {
       setProcessing(true);
@@ -78,6 +79,9 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
     const qrReaderElement = document.getElementById("qr-reader");
     if (qrReaderElement) {
       qrReaderElement.innerHTML = "";
+      console.log("Cleared qr-reader element");
+    } else {
+      console.warn("qr-reader element not found in the DOM");
     }
     
     // Create scanner configuration
@@ -92,12 +96,14 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
     
     try {
       // Create and initialize scanner
+      console.log("Creating new Html5QrcodeScanner instance");
       scannerRef.current = new Html5QrcodeScanner("qr-reader", config, false);
       
       // Directly render the scanner with our callbacks instead of trying to click buttons
       if (scannerRef.current) {
         console.log("QRScanner: Rendering scanner with callbacks");
         scannerRef.current.render(onScanSuccess, onScanFailure);
+        console.log("Scanner render method called successfully");
       }
     } catch (error) {
       console.error("Error initializing QR scanner:", error);
@@ -111,6 +117,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       
       if (scannerRef.current) {
         try {
+          console.log("Attempting to clear scanner");
           scannerRef.current.clear();
           console.log("QRScanner: Scanner cleared successfully");
         } catch (error) {

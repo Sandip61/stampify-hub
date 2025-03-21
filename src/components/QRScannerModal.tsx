@@ -36,7 +36,7 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
 
   // Memoized mode change handler to prevent unnecessary re-renders
   const handleModeChange = useCallback((newMode: 'live' | 'file') => {
-    console.log("Changing mode to:", newMode);
+    console.log("Changing mode to:", newMode, "Button clicked!");
     setMode(newMode);
     
     if (newMode === 'file') {
@@ -45,8 +45,9 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
       // For live mode, increment the key to force complete re-initialization
       setScannerKey(prev => prev + 1);
       setShowScanner(true);
+      console.log("Scanner key updated to:", scannerKey + 1, "showScanner set to true");
     }
-  }, []);
+  }, [scannerKey]);
 
   const handleScanComplete = useCallback(() => {
     console.log("Scan complete");
@@ -140,7 +141,10 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
             <Button 
               variant={mode === 'live' ? "default" : "outline"} 
               size="sm"
-              onClick={() => handleModeChange('live')}
+              onClick={() => {
+                console.log("Use Camera button clicked directly");
+                handleModeChange('live');
+              }}
               className="flex items-center"
             >
               <Camera className="mr-1 h-4 w-4" />
