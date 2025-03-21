@@ -16,7 +16,62 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const mountedRef = useRef(false);
 
+  // Function to handle successful QR code scan
+  const onScanSuccess = async (decodedText: string) => {
+    if (!mountedRef.current) return;
+    
+    if (scannerRef.current) {
+      scannerRef.current.pause(true);
+    }
+    
+    setScanResult(decodedText);
+
+    try {
+      setProcessing(true);
+      const user = await getCurrentUser();
+      
+      if (!user) {
+        toast.error("Please log in to collect stamps");
+        return;
+      }
+
+      const result = await processScannedQRCode(decodedText, user.id);
+      
+      if (result.rewardEarned) {
+        toast.success(`Congratulations! You've earned a reward: ${result.stampCard.card.reward}`);
+      } else {
+        toast.success(`Added ${result.stampCard.current_stamps} stamps!`);
+      }
+      
+      if (onScanComplete && mountedRef.current) {
+        onScanComplete();
+      }
+    } catch (error) {
+      console.error("Error processing QR code:", error);
+      if (mountedRef.current) {
+        toast.error(error instanceof Error ? error.message : "Failed to process QR code");
+        
+        // Reset scanner after error to allow another attempt
+        if (scannerRef.current) {
+          scannerRef.current.resume();
+        }
+      }
+    } finally {
+      if (mountedRef.current) {
+        setProcessing(false);
+      }
+    }
+  };
+
+  // Function to handle scanning failures
+  const onScanFailure = (error: string) => {
+    // Only log the error without showing an error message to the user
+    console.warn("QR Scan error:", error);
+  };
+
+  // Initialize and clean up scanner
   useEffect(() => {
+    console.log("QRScanner useEffect: Initializing scanner");
     mountedRef.current = true;
     
     // Clean up any existing HTML before creating scanner
@@ -25,99 +80,45 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       qrReaderElement.innerHTML = "";
     }
     
-    // Create and initialize scanner
-    scannerRef.current = new Html5QrcodeScanner(
-      "qr-reader",
-      {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1,
-        rememberLastUsedCamera: true,
-        showTorchButtonIfSupported: true,
-        showZoomSliderIfSupported: true,
-      },
-      /* start scanning right away */ false // Initialize but don't start scanning yet
-    );
-
-    // Define scan success handler
-    const onScanSuccess = async (decodedText: string) => {
-      if (!mountedRef.current) return;
+    // Create scanner configuration
+    const config = {
+      fps: 10,
+      qrbox: { width: 250, height: 250 },
+      aspectRatio: 1,
+      rememberLastUsedCamera: true,
+      showTorchButtonIfSupported: true,
+      showZoomSliderIfSupported: true,
+    };
+    
+    try {
+      // Create and initialize scanner
+      scannerRef.current = new Html5QrcodeScanner("qr-reader", config, false);
       
+      // Directly render the scanner with our callbacks instead of trying to click buttons
       if (scannerRef.current) {
-        scannerRef.current.pause(true);
-      }
-      
-      setScanResult(decodedText);
-
-      try {
-        setProcessing(true);
-        const user = await getCurrentUser();
-        
-        if (!user) {
-          toast.error("Please log in to collect stamps");
-          return;
-        }
-
-        const result = await processScannedQRCode(decodedText, user.id);
-        
-        if (result.rewardEarned) {
-          toast.success(`Congratulations! You've earned a reward: ${result.stampCard.card.reward}`);
-        } else {
-          toast.success(`Added ${result.stampCard.current_stamps} stamps!`);
-        }
-        
-        if (onScanComplete && mountedRef.current) {
-          onScanComplete();
-        }
-      } catch (error) {
-        console.error("Error processing QR code:", error);
-        if (mountedRef.current) {
-          toast.error(error instanceof Error ? error.message : "Failed to process QR code");
-          
-          // Reset scanner after error to allow another attempt
-          if (scannerRef.current) {
-            scannerRef.current.resume();
-          }
-        }
-      } finally {
-        if (mountedRef.current) {
-          setProcessing(false);
-        }
-      }
-    };
-
-    // Define scan failure handler
-    const onScanFailure = (error: string) => {
-      // Only log the error without showing an error message to the user
-      console.warn("QR Scan error:", error);
-    };
-
-    // Start the scanner with a slight delay to ensure the DOM is fully rendered
-    const timeoutId = setTimeout(() => {
-      if (mountedRef.current && scannerRef.current) {
+        console.log("QRScanner: Rendering scanner with callbacks");
         scannerRef.current.render(onScanSuccess, onScanFailure);
-        // Force start scanning after render
-        const startScanningButton = document.getElementById("html5-qrcode-button-camera-start");
-        if (startScanningButton) {
-          (startScanningButton as HTMLButtonElement).click();
-        }
       }
-    }, 300);
+    } catch (error) {
+      console.error("Error initializing QR scanner:", error);
+      toast.error("Failed to initialize camera scanner");
+    }
 
-    // Cleanup function to run when component unmounts or re-renders
+    // Cleanup function
     return () => {
+      console.log("QRScanner useEffect: Cleaning up scanner");
       mountedRef.current = false;
-      clearTimeout(timeoutId);
       
       if (scannerRef.current) {
         try {
           scannerRef.current.clear();
+          console.log("QRScanner: Scanner cleared successfully");
         } catch (error) {
           console.warn("Error clearing scanner:", error);
         }
       }
     };
-  }, [onScanComplete]); // Only re-initialize when onScanComplete changes
+  }, []); // We only want to initialize once on mount
 
   return (
     <div className="w-full bg-white">

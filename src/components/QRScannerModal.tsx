@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Camera, Upload, X } from 'lucide-react';
@@ -18,11 +18,14 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
   const [mode, setMode] = useState<'live' | 'file'>('live');
   const [scanComplete, setScanComplete] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  
+  // Use proper key management for forcing re-renders
   const [scannerKey, setScannerKey] = useState(0);
   const [showScanner, setShowScanner] = useState(true);
 
+  // Reset state when modal opens
   useEffect(() => {
-    // When the modal opens, reset to default state
+    console.log("Modal open state changed:", open);
     if (open) {
       setMode('live');
       setScanComplete(false);
@@ -31,29 +34,29 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
     }
   }, [open]);
 
-  // Force re-render of QRScanner when mode changes
-  useEffect(() => {
-    setScannerKey(prev => prev + 1);
-    setShowScanner(mode === 'live');
-  }, [mode]);
+  // Memoized mode change handler to prevent unnecessary re-renders
+  const handleModeChange = useCallback((newMode: 'live' | 'file') => {
+    console.log("Changing mode to:", newMode);
+    setMode(newMode);
+    
+    if (newMode === 'file') {
+      setShowScanner(false);
+    } else {
+      // For live mode, increment the key to force complete re-initialization
+      setScannerKey(prev => prev + 1);
+      setShowScanner(true);
+    }
+  }, []);
 
-  const handleScanComplete = () => {
+  const handleScanComplete = useCallback(() => {
+    console.log("Scan complete");
     setScanComplete(true);
     // Close the dialog after a short delay
     setTimeout(() => {
       onOpenChange(false);
       setScanComplete(false);
     }, 2000);
-  };
-
-  const handleModeChange = (newMode: 'live' | 'file') => {
-    setMode(newMode);
-    if (newMode === 'file') {
-      setShowScanner(false);
-    } else {
-      setShowScanner(true);
-    }
-  };
+  }, [onOpenChange]);
 
   const triggerFileUpload = () => {
     if (fileInputRef.current) {
@@ -66,7 +69,7 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
     if (!files || files.length === 0) return;
 
     const fileReader = new FileReader();
-    fileReader.onload = async (e) => {
+    fileReader.onload = async () => {
       try {
         const html5QrCode = new Html5Qrcode("qr-reader-file");
         const user = await getCurrentUser();
