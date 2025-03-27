@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 import { processScannedQRCode } from '@/utils/stamps';
 import { toast } from 'sonner';
 import { CheckCircle } from 'lucide-react';
@@ -74,9 +74,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       const qrReaderElement = document.getElementById("qr-reader");
       if (qrReaderElement) {
         qrReaderElement.innerHTML = "";
-        console.log("Cleared qr-reader element");
-      } else {
-        console.warn("qr-reader element not found in the DOM");
       }
       
       const config = {
@@ -84,11 +81,9 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         qrbox: { width: 250, height: 250 },
         aspectRatio: 1,
         rememberLastUsedCamera: true,
-        // Always use back camera
         videoConstraints: {
           facingMode: { exact: "environment" }
         },
-        // Hide all UI controls
         showTorchButtonIfSupported: false,
         showZoomSliderIfSupported: false,
         formatsToSupport: [0],
@@ -97,13 +92,10 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       };
       
       try {
-        console.log("Creating new Html5QrcodeScanner instance");
-        scannerRef.current = new Html5QrcodeScanner("qr-reader", config, /* verbose */ true);
+        scannerRef.current = new Html5QrcodeScanner("qr-reader", config, /* verbose */ false);
         
         if (scannerRef.current) {
-          console.log("QRScanner: Rendering scanner with callbacks");
           scannerRef.current.render(onScanSuccess, onScanFailure);
-          console.log("Scanner render method called successfully");
           
           // Apply custom CSS to hide all unwanted scanner UI elements
           setTimeout(() => {
@@ -120,36 +112,29 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
                 #html5-qrcode-button-torch,
                 #html5-qrcode-button-flash,
                 #html5-qrcode-torch-button,
-                #html5-qrcode-zoom-slider {
+                #html5-qrcode-zoom-slider,
+                #html5-qrcode-button-file-selection,
+                .html5-qrcode-header,
+                #qr-reader__dashboard_section_csr,
+                #qr-reader__dashboard_section_swaplink,
+                #qr-reader__dashboard_section_fsr,
+                #qr-reader__status_span,
+                #qr-reader__dashboard_section {
                   display: none !important;
                 }
                 
                 /* Clean up the scanner container */
-                .html5-qrcode-header {
-                  display: none !important;
-                }
-                
                 #qr-reader {
                   border: none !important;
                   padding: 0 !important;
                   box-shadow: none !important;
-                  background: #fff !important;
-                }
-                
-                #qr-reader__dashboard_section_csr {
-                  display: none !important;
-                }
-                
-                #qr-reader__dashboard_section_swaplink {
-                  display: none !important;
-                }
-                
-                #qr-reader__dashboard_section_fsr {
-                  display: none !important;
+                  background: transparent !important;
+                  margin: 0 !important;
                 }
                 
                 #qr-reader__scan_region {
                   padding: 0 !important;
+                  background: transparent !important;
                 }
                 
                 #qr-reader__scan_region img {
@@ -160,20 +145,19 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
                 video {
                   width: 100% !important;
                   height: auto !important;
-                  border-radius: 0 !important;
+                  border-radius: 8px !important;
                 }
               `;
               document.head.appendChild(style);
               
               const startButton = document.getElementById("html5-qrcode-button-camera-start");
               if (startButton) {
-                console.log("Found start button, clicking it as backup method");
                 (startButton as HTMLButtonElement).click();
               }
             } catch (err) {
               console.warn("Could not find or click camera start button:", err);
             }
-          }, 500);
+          }, 300);
         }
       } catch (error) {
         console.error("Error initializing QR scanner:", error);
@@ -187,9 +171,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       
       if (scannerRef.current) {
         try {
-          console.log("Attempting to clear scanner");
           scannerRef.current.clear();
-          console.log("QRScanner: Scanner cleared successfully");
         } catch (error) {
           console.warn("Error clearing scanner:", error);
         }
@@ -198,7 +180,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   }, []);
 
   return (
-    <div className="w-full bg-white">
+    <div className="w-full rounded-lg overflow-hidden">
       <div id="qr-reader" className="w-full"></div>
       
       {processing && (
@@ -209,7 +191,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       )}
       
       {scanResult && !processing && (
-        <div className="p-4 bg-green-50 border-t border-green-200 flex items-start">
+        <div className="p-4 bg-green-50 border-t border-green-200 flex items-start rounded-b-lg">
           <CheckCircle className="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-green-800 font-medium">QR Code Scanned!</p>

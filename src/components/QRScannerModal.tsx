@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Camera, Upload, X } from 'lucide-react';
 import QRScanner from '@/components/QRScanner';
@@ -16,15 +17,12 @@ interface QRScannerModalProps {
 const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) => {
   const [mode, setMode] = useState<'live' | 'file'>('live');
   const [scanComplete, setScanComplete] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  
-  // Use proper key management for forcing re-renders
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [scannerKey, setScannerKey] = useState(0);
   const [showScanner, setShowScanner] = useState(true);
 
   // Reset state when modal opens
   useEffect(() => {
-    console.log("Modal open state changed:", open);
     if (open) {
       // Reset to live mode when modal opens
       setMode('live');
@@ -50,7 +48,6 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
 
   // Memoized mode change handler to prevent unnecessary re-renders
   const handleModeChange = useCallback((newMode: 'live' | 'file') => {
-    console.log("Changing mode to:", newMode, "Button clicked!");
     setMode(newMode);
     
     if (newMode === 'file') {
@@ -59,12 +56,10 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
       // For live mode, increment the key to force complete re-initialization
       setScannerKey(prev => prev + 1);
       setShowScanner(true);
-      console.log("Scanner key updated to:", scannerKey + 1, "showScanner set to true");
     }
   }, [scannerKey]);
 
   const handleScanComplete = useCallback(() => {
-    console.log("Scan complete");
     setScanComplete(true);
     // Close the dialog after a short delay
     setTimeout(() => {
@@ -136,50 +131,48 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md mx-auto p-0 overflow-hidden rounded-lg">
-        <div className="p-6 bg-gradient-to-r from-teal-50 to-amber-50">
+        <div className="bg-white p-6">
           <div className="flex items-center justify-between mb-4">
             <DialogTitle className="text-xl font-bold bg-gradient-to-r from-teal-600 to-amber-600 bg-clip-text text-transparent">
               Scan QR Code
             </DialogTitle>
-            <DialogClose asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <X className="h-4 w-4" />
-              </Button>
-            </DialogClose>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOpenChange(false)}>
+              <X className="h-4 w-4" />
+            </Button>
           </div>
           <DialogDescription className="text-muted-foreground mb-6">
             Scan a merchant's QR code to collect stamps
           </DialogDescription>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 mb-6">
             <Button 
               variant={mode === 'live' ? "default" : "outline"} 
               size="lg"
               onClick={() => handleModeChange('live')}
-              className="h-auto py-4 px-4 flex flex-col items-center gap-2 transition-all"
+              className="h-auto py-6 px-4 flex flex-col items-center gap-3 transition-all"
             >
-              <Camera className="h-8 w-8" />
-              <span>Use Camera</span>
+              <Camera className="h-10 w-10" />
+              <span className="font-medium">Use Camera</span>
             </Button>
             <Button 
               variant={mode === 'file' ? "default" : "outline"} 
               size="lg"
               onClick={() => handleModeChange('file')}
-              className="h-auto py-4 px-4 flex flex-col items-center gap-2 transition-all"
+              className="h-auto py-6 px-4 flex flex-col items-center gap-3 transition-all"
             >
-              <Upload className="h-8 w-8" />
-              <span>Upload Image</span>
+              <Upload className="h-10 w-10" />
+              <span className="font-medium">Upload Image</span>
             </Button>
           </div>
-        </div>
-        
-        <div className="bg-white">
+          
           {mode === 'live' && showScanner && !scanComplete && (
-            <QRScanner key={scannerKey} onScanComplete={handleScanComplete} />
+            <div className="mt-4">
+              <QRScanner key={scannerKey} onScanComplete={handleScanComplete} />
+            </div>
           )}
           
           {mode === 'file' && (
-            <div className="p-10 flex flex-col items-center justify-center">
+            <div className="p-10 flex flex-col items-center justify-center bg-gray-50 rounded-lg">
               <button 
                 onClick={triggerFileUpload}
                 className="w-20 h-20 rounded-full bg-teal-100 flex items-center justify-center mb-6 hover:bg-teal-200 transition-colors cursor-pointer"
@@ -204,7 +197,7 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
           )}
           
           {scanComplete && (
-            <div className="bg-green-50 p-10 flex flex-col items-center justify-center text-center">
+            <div className="bg-green-50 p-10 flex flex-col items-center justify-center text-center rounded-lg">
               <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
