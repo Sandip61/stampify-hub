@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -137,8 +136,8 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md mx-auto p-0 overflow-hidden rounded-lg">
-        <div className="p-4 bg-gradient-to-r from-teal-50 to-amber-50 border-b">
-          <div className="flex items-center justify-between">
+        <div className="p-6 bg-gradient-to-r from-teal-50 to-amber-50">
+          <div className="flex items-center justify-between mb-4">
             <DialogTitle className="text-xl font-bold bg-gradient-to-r from-teal-600 to-amber-600 bg-clip-text text-transparent">
               Scan QR Code
             </DialogTitle>
@@ -148,52 +147,49 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
               </Button>
             </DialogClose>
           </div>
-          <DialogDescription className="text-muted-foreground mt-1">
+          <DialogDescription className="text-muted-foreground mb-6">
             Scan a merchant's QR code to collect stamps
           </DialogDescription>
           
-          <div className="flex space-x-2 mt-3">
+          <div className="grid grid-cols-2 gap-4">
             <Button 
               variant={mode === 'live' ? "default" : "outline"} 
-              size="sm"
-              onClick={() => {
-                console.log("Use Camera button clicked directly");
-                handleModeChange('live');
-              }}
-              className="flex items-center"
+              size="lg"
+              onClick={() => handleModeChange('live')}
+              className="h-auto py-4 px-4 flex flex-col items-center gap-2 transition-all"
             >
-              <Camera className="mr-1 h-4 w-4" />
-              Use Camera
+              <Camera className="h-8 w-8" />
+              <span>Use Camera</span>
             </Button>
             <Button 
               variant={mode === 'file' ? "default" : "outline"} 
-              size="sm"
+              size="lg"
               onClick={() => handleModeChange('file')}
-              className="flex items-center"
+              className="h-auto py-4 px-4 flex flex-col items-center gap-2 transition-all"
             >
-              <Upload className="mr-1 h-4 w-4" />
-              Upload Image
+              <Upload className="h-8 w-8" />
+              <span>Upload Image</span>
             </Button>
           </div>
         </div>
         
-        <div className="relative bg-white">
+        <div className="bg-white">
           {mode === 'live' && showScanner && !scanComplete && (
             <QRScanner key={scannerKey} onScanComplete={handleScanComplete} />
           )}
           
           {mode === 'file' && (
-            <div className="p-8 flex flex-col items-center justify-center">
+            <div className="p-10 flex flex-col items-center justify-center">
               <button 
                 onClick={triggerFileUpload}
-                className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center mb-4 hover:bg-teal-200 transition-colors cursor-pointer"
+                className="w-20 h-20 rounded-full bg-teal-100 flex items-center justify-center mb-6 hover:bg-teal-200 transition-colors cursor-pointer"
                 aria-label="Upload image file"
               >
-                <Upload className="h-8 w-8 text-teal-600" />
+                <Upload className="h-10 w-10 text-teal-600" />
               </button>
               <h3 className="text-lg font-medium mb-2">Upload Image</h3>
-              <p className="text-sm text-muted-foreground mb-4 text-center">
-                Click the icon above to select an image with a QR code
+              <p className="text-sm text-muted-foreground text-center">
+                Select an image containing a QR code
               </p>
               <div id="qr-reader-file" style={{ display: 'none' }}></div>
               <input
@@ -208,13 +204,13 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
           )}
           
           {scanComplete && (
-            <div className="bg-green-50 p-8 flex flex-col items-center justify-center text-center">
-              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="bg-green-50 p-10 flex flex-col items-center justify-center text-center">
+              <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-green-800 mb-2">Scan Complete!</h3>
+              <h3 className="text-xl font-semibold text-green-800 mb-2">Success!</h3>
               <p className="text-green-600">Your stamps have been collected</p>
             </div>
           )}

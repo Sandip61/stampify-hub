@@ -84,19 +84,16 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         qrbox: { width: 250, height: 250 },
         aspectRatio: 1,
         rememberLastUsedCamera: true,
-        showTorchButtonIfSupported: true,
-        showZoomSliderIfSupported: true,
-        formatsToSupport: [0],
-        // Force rear camera
+        // Always use back camera
         videoConstraints: {
           facingMode: { exact: "environment" }
         },
-        // Hide the camera selection UI
+        // Hide all UI controls
+        showTorchButtonIfSupported: false,
+        showZoomSliderIfSupported: false,
+        formatsToSupport: [0],
         showCameraSelectButton: false,
-        // Remove additional UI elements
         helpButtonText: "",
-        qrboxFunction: undefined,
-        visualScanRatio: 0
       };
       
       try {
@@ -108,33 +105,62 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           scannerRef.current.render(onScanSuccess, onScanFailure);
           console.log("Scanner render method called successfully");
           
-          // Apply custom CSS to hide unwanted elements
+          // Apply custom CSS to hide all unwanted scanner UI elements
           setTimeout(() => {
             try {
-              // Hide camera selection UI and other elements
               const style = document.createElement('style');
               style.textContent = `
+                /* Hide all scanner UI elements except the video stream */
                 #html5-qrcode-anchor-scan-type-change,
                 #html5-qrcode-button-camera-permission,
                 #html5-qrcode-button-camera-stop,
                 #html5-qrcode-anchor-scan-type-change,
                 .html5-qrcode-element:not(#html5-qrcode-camera-start),
-                #html5-qrcode-select-camera {
+                #html5-qrcode-select-camera,
+                #html5-qrcode-button-torch,
+                #html5-qrcode-button-flash,
+                #html5-qrcode-torch-button,
+                #html5-qrcode-zoom-slider {
                   display: none !important;
                 }
+                
+                /* Clean up the scanner container */
                 .html5-qrcode-header {
-                  padding: 0 !important;
+                  display: none !important;
                 }
+                
                 #qr-reader {
                   border: none !important;
                   padding: 0 !important;
                   box-shadow: none !important;
+                  background: #fff !important;
                 }
-                #qr-reader__dashboard_section_csr span {
+                
+                #qr-reader__dashboard_section_csr {
                   display: none !important;
                 }
+                
+                #qr-reader__dashboard_section_swaplink {
+                  display: none !important;
+                }
+                
+                #qr-reader__dashboard_section_fsr {
+                  display: none !important;
+                }
+                
+                #qr-reader__scan_region {
+                  padding: 0 !important;
+                }
+                
                 #qr-reader__scan_region img {
                   display: none !important;
+                }
+                
+                /* Make the video fill the container nicely */
+                video {
+                  width: 100% !important;
+                  height: auto !important;
+                  border-radius: 0 !important;
                 }
               `;
               document.head.appendChild(style);
