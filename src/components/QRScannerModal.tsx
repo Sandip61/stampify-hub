@@ -35,7 +35,7 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
       
       // Request camera permissions when the modal opens
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: true })
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } })
           .then(stream => {
             console.log("Camera permission granted");
             // Stop the stream immediately, we just needed the permission
@@ -179,12 +179,7 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
         
         <div className="relative bg-white">
           {mode === 'live' && showScanner && !scanComplete && (
-            <>
-              <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center">
-                <div className="w-48 h-48 rounded-lg border-2 border-teal-400 border-dashed"></div>
-              </div>
-              <QRScanner key={scannerKey} onScanComplete={handleScanComplete} />
-            </>
+            <QRScanner key={scannerKey} onScanComplete={handleScanComplete} />
           )}
           
           {mode === 'file' && (

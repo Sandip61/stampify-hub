@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
 import { processScannedQRCode } from '@/utils/stamps';
@@ -86,6 +87,16 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         showTorchButtonIfSupported: true,
         showZoomSliderIfSupported: true,
         formatsToSupport: [0],
+        // Force rear camera
+        videoConstraints: {
+          facingMode: { exact: "environment" }
+        },
+        // Hide the camera selection UI
+        showCameraSelectButton: false,
+        // Remove additional UI elements
+        helpButtonText: "",
+        qrboxFunction: undefined,
+        visualScanRatio: 0
       };
       
       try {
@@ -97,8 +108,37 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           scannerRef.current.render(onScanSuccess, onScanFailure);
           console.log("Scanner render method called successfully");
           
+          // Apply custom CSS to hide unwanted elements
           setTimeout(() => {
             try {
+              // Hide camera selection UI and other elements
+              const style = document.createElement('style');
+              style.textContent = `
+                #html5-qrcode-anchor-scan-type-change,
+                #html5-qrcode-button-camera-permission,
+                #html5-qrcode-button-camera-stop,
+                #html5-qrcode-anchor-scan-type-change,
+                .html5-qrcode-element:not(#html5-qrcode-camera-start),
+                #html5-qrcode-select-camera {
+                  display: none !important;
+                }
+                .html5-qrcode-header {
+                  padding: 0 !important;
+                }
+                #qr-reader {
+                  border: none !important;
+                  padding: 0 !important;
+                  box-shadow: none !important;
+                }
+                #qr-reader__dashboard_section_csr span {
+                  display: none !important;
+                }
+                #qr-reader__scan_region img {
+                  display: none !important;
+                }
+              `;
+              document.head.appendChild(style);
+              
               const startButton = document.getElementById("html5-qrcode-button-camera-start");
               if (startButton) {
                 console.log("Found start button, clicking it as backup method");
