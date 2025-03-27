@@ -71,38 +71,43 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
     mountedRef.current = true;
     
     const initializeScanner = setTimeout(() => {
-      const qrReaderElement = document.getElementById("qr-reader");
-      if (qrReaderElement) {
-        qrReaderElement.innerHTML = "";
-      }
-      
-      const config = {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1,
-        rememberLastUsedCamera: true,
-        videoConstraints: {
-          facingMode: { exact: "environment" }
-        },
-        showTorchButtonIfSupported: false,
-        showZoomSliderIfSupported: false,
-        formatsToSupport: [0],
-        showCameraSelectButton: false,
-        helpButtonText: "",
-      };
-      
+      if (!mountedRef.current) return;
+
       try {
+        // Clear the qr-reader element first
+        const qrReaderElement = document.getElementById("qr-reader");
+        if (qrReaderElement) {
+          qrReaderElement.innerHTML = "";
+        }
+        
+        // Configure the scanner
+        const config = {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1,
+          rememberLastUsedCamera: true,
+          videoConstraints: {
+            facingMode: { exact: "environment" }
+          },
+          showTorchButtonIfSupported: false,
+          formatsToSupport: [0], // QR code only
+        };
+        
+        // Create and render the scanner
         scannerRef.current = new Html5QrcodeScanner("qr-reader", config, /* verbose */ false);
         
-        if (scannerRef.current) {
+        if (scannerRef.current && mountedRef.current) {
           scannerRef.current.render(onScanSuccess, onScanFailure);
           
-          // Apply custom CSS to hide all unwanted scanner UI elements
+          // Apply custom styling after a short delay
           setTimeout(() => {
+            if (!mountedRef.current) return;
+            
             try {
+              // Add custom styles to clean up the scanner UI
               const style = document.createElement('style');
               style.textContent = `
-                /* Hide all scanner UI elements except the video stream */
+                /* Hide scanner UI elements we don't want */
                 #html5-qrcode-anchor-scan-type-change,
                 #html5-qrcode-button-camera-permission,
                 #html5-qrcode-button-camera-stop,
@@ -141,21 +146,24 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
                   display: none !important;
                 }
                 
-                /* Make the video fill the container nicely */
+                /* Style the video element */
                 video {
                   width: 100% !important;
                   height: auto !important;
                   border-radius: 8px !important;
+                  max-height: 300px !important;
+                  object-fit: cover !important;
                 }
               `;
               document.head.appendChild(style);
               
+              // Auto-click the camera start button to begin scanning
               const startButton = document.getElementById("html5-qrcode-button-camera-start");
               if (startButton) {
                 (startButton as HTMLButtonElement).click();
               }
             } catch (err) {
-              console.warn("Could not find or click camera start button:", err);
+              console.warn("Could not apply custom styling or start camera:", err);
             }
           }, 300);
         }
@@ -165,6 +173,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       }
     }, 300);
 
+    // Cleanup function
     return () => {
       clearTimeout(initializeScanner);
       mountedRef.current = false;
@@ -177,12 +186,20 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         }
       }
     };
-  }, []);
+  }, [onScanSuccess, onScanFailure]);
 
   return (
-    <div className="w-full rounded-lg overflow-hidden">
+    <div className="w-full rounded-lg overflow-hidden relative">
+      {/* Transparent scan overlay with animation */}
+      <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center">
+        <div className="w-64 h-64 rounded-lg border-2 border-teal-400 border-dashed"></div>
+        <div className="absolute w-64 h-1 bg-teal-500/50 top-1/2 transform -translate-y-1/2 animate-pulse"></div>
+      </div>
+      
+      {/* The scanner element */}
       <div id="qr-reader" className="w-full"></div>
       
+      {/* Processing indicator */}
       {processing && (
         <div className="p-4 flex items-center justify-center text-teal-600">
           <div className="mr-2 h-5 w-5 rounded-full border-2 border-teal-600 border-t-transparent animate-spin"></div>
@@ -190,6 +207,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         </div>
       )}
       
+      {/* Success message */}
       {scanResult && !processing && (
         <div className="p-4 bg-green-50 border-t border-green-200 flex items-start rounded-b-lg">
           <CheckCircle className="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" />
@@ -199,6 +217,13 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           </div>
         </div>
       )}
+      
+      {/* Helper message */}
+      <div className="p-3 bg-gradient-to-r from-teal-50 to-amber-50 border-t border-teal-100 text-center">
+        <p className="text-sm text-muted-foreground">
+          Position QR code within the frame to scan
+        </p>
+      </div>
     </div>
   );
 };
