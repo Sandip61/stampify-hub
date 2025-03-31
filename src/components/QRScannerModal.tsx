@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -15,21 +14,17 @@ interface QRScannerModalProps {
 }
 
 const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) => {
-  const [mode, setMode] = useState<'live' | 'file'>('live');
   const [scanComplete, setScanComplete] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Reset state when modal opens
   useEffect(() => {
     if (open) {
-      setMode('live');
       setScanComplete(false);
     }
   }, [open]);
 
   const handleScanComplete = useCallback(() => {
     setScanComplete(true);
-    // Close the dialog after a short delay
     setTimeout(() => {
       onOpenChange(false);
       setScanComplete(false);
@@ -75,22 +70,15 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
 
         await html5QrCode.scanFile(files[0], true)
           .then(qrCodeSuccessCallback)
-          .catch((err) => {
-            toast.error("Unable to read QR code from image");
-            console.error("QR code scan error:", err);
-          });
+          .catch(() => toast.error("Unable to read QR code from image"));
         
-        // Always clear the html5QrCode instance
         html5QrCode.clear();
       } catch (error) {
         toast.error("Error scanning QR code from file");
-        console.error("File processing error:", error);
       }
     };
     
     fileReader.readAsDataURL(files[0]);
-    
-    // Clear the input value to allow selecting the same file again
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -113,57 +101,33 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
           </DialogDescription>
           
           {!scanComplete ? (
-            <>
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <Button 
-                  variant={mode === 'live' ? "default" : "outline"} 
-                  size="lg"
-                  onClick={() => setMode('live')}
-                  className="h-auto py-6 px-4 flex flex-col items-center gap-3 transition-all"
-                >
-                  <Camera className="h-10 w-10" />
-                  <span className="font-medium">Use Camera</span>
-                </Button>
-                <Button 
-                  variant={mode === 'file' ? "default" : "outline"} 
-                  size="lg"
-                  onClick={() => setMode('file')}
-                  className="h-auto py-6 px-4 flex flex-col items-center gap-3 transition-all"
-                >
-                  <Upload className="h-10 w-10" />
-                  <span className="font-medium">Upload Image</span>
-                </Button>
-              </div>
-              
-              {mode === 'live' ? (
-                <div className="mt-4 rounded-lg overflow-hidden">
-                  <QRScanner onScanComplete={handleScanComplete} />
-                </div>
-              ) : (
-                <div className="mt-4 p-10 flex flex-col items-center justify-center bg-gray-50 rounded-lg">
-                  <button 
-                    onClick={triggerFileUpload}
-                    className="w-20 h-20 rounded-full bg-teal-100 flex items-center justify-center mb-6 hover:bg-teal-200 transition-colors cursor-pointer"
-                    aria-label="Upload image file"
-                  >
-                    <Upload className="h-10 w-10 text-teal-600" />
-                  </button>
-                  <h3 className="text-lg font-medium mb-2">Upload Image</h3>
-                  <p className="text-sm text-muted-foreground text-center">
-                    Select an image containing a QR code
-                  </p>
-                  <div id="qr-reader-file" style={{ display: 'none' }}></div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    aria-hidden="true"
-                  />
-                </div>
-              )}
-            </>
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <Button 
+                variant="default"
+                size="lg"
+                onClick={() => setScanComplete(true)}
+                className="h-auto py-6 px-4 flex flex-col items-center gap-3 transition-all"
+              >
+                <Camera className="h-10 w-10" />
+                <span className="font-medium">Use Camera</span>
+              </Button>
+              <Button 
+                variant="default"
+                size="lg"
+                onClick={triggerFileUpload}
+                className="h-auto py-6 px-4 flex flex-col items-center gap-3 transition-all"
+              >
+                <Upload className="h-10 w-10" />
+                <span className="font-medium">Upload Image</span>
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </div>
           ) : (
             <div className="bg-green-50 p-10 flex flex-col items-center justify-center text-center rounded-lg">
               <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
