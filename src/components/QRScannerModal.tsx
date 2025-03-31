@@ -15,11 +15,13 @@ interface QRScannerModalProps {
 
 const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) => {
   const [scanComplete, setScanComplete] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
     if (open) {
       setScanComplete(false);
+      setIsScanning(false);
     }
   }, [open]);
 
@@ -28,6 +30,7 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
     setTimeout(() => {
       onOpenChange(false);
       setScanComplete(false);
+      setIsScanning(false);
     }, 2000);
   }, [onOpenChange]);
 
@@ -100,12 +103,12 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
             Scan a merchant's QR code to collect stamps
           </DialogDescription>
           
-          {!scanComplete ? (
+          {!scanComplete && !isScanning ? (
             <div className="grid grid-cols-2 gap-4 mb-6">
               <Button 
                 variant="default"
                 size="lg"
-                onClick={() => setScanComplete(true)}
+                onClick={() => setIsScanning(true)}
                 className="h-auto py-6 px-4 flex flex-col items-center gap-3 transition-all"
               >
                 <Camera className="h-10 w-10" />
@@ -128,6 +131,8 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
                 className="hidden"
               />
             </div>
+          ) : isScanning ? (
+            <QRScanner onScanComplete={handleScanComplete} />
           ) : (
             <div className="bg-green-50 p-10 flex flex-col items-center justify-center text-center rounded-lg">
               <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
