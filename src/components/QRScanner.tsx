@@ -135,6 +135,8 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
                   box-shadow: none !important;
                   background: transparent !important;
                   margin: 0 !important;
+                  width: 100% !important;
+                  height: 100% !important;
                 }
                 
                 #qr-reader__scan_region {
@@ -149,10 +151,21 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
                 /* Style the video element */
                 video {
                   width: 100% !important;
-                  height: auto !important;
-                  border-radius: 8px !important;
-                  max-height: 300px !important;
+                  height: 100vh !important;
                   object-fit: cover !important;
+                  position: absolute !important;
+                  top: 0 !important;
+                  left: 0 !important;
+                  z-index: 0 !important;
+                }
+                
+                /* Remove any horizontal/vertical lines */
+                #qr-shaded-region {
+                  display: none !important;
+                }
+                
+                .code-finder-row, .code-finder-column {
+                  display: none !important;
                 }
               `;
               document.head.appendChild(style);
@@ -186,30 +199,24 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         }
       }
     };
-  }, [onScanSuccess, onScanFailure]);
+  }, []);
 
   return (
-    <div className="w-full rounded-lg overflow-hidden relative">
-      {/* Transparent scan overlay with animation */}
-      <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center">
-        <div className="w-64 h-64 rounded-lg border-2 border-teal-400 border-dashed"></div>
-        <div className="absolute w-64 h-1 bg-teal-500/50 top-1/2 transform -translate-y-1/2 animate-pulse"></div>
-      </div>
-      
+    <div className="w-full h-full">
       {/* The scanner element */}
-      <div id="qr-reader" className="w-full"></div>
+      <div id="qr-reader" className="w-full h-full absolute inset-0"></div>
       
       {/* Processing indicator */}
       {processing && (
-        <div className="p-4 flex items-center justify-center text-teal-600">
-          <div className="mr-2 h-5 w-5 rounded-full border-2 border-teal-600 border-t-transparent animate-spin"></div>
+        <div className="absolute bottom-24 left-0 right-0 p-4 flex items-center justify-center text-white z-30">
+          <div className="mr-2 h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
           <span>Processing stamp...</span>
         </div>
       )}
       
       {/* Success message */}
       {scanResult && !processing && (
-        <div className="p-4 bg-green-50 border-t border-green-200 flex items-start rounded-b-lg">
+        <div className="absolute bottom-24 left-0 right-0 p-4 bg-green-50 mx-4 border-t border-green-200 flex items-start rounded-lg z-30">
           <CheckCircle className="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-green-800 font-medium">QR Code Scanned!</p>
@@ -217,13 +224,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           </div>
         </div>
       )}
-      
-      {/* Helper message */}
-      <div className="p-3 bg-gradient-to-r from-teal-50 to-amber-50 border-t border-teal-100 text-center">
-        <p className="text-sm text-muted-foreground">
-          Position QR code within the frame to scan
-        </p>
-      </div>
     </div>
   );
 };
