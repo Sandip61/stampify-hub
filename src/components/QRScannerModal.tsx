@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Camera, Upload, X, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -99,9 +99,6 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <DialogDescription className="text-muted-foreground mb-6">
-            Scan a merchant's QR code to collect stamps
-          </DialogDescription>
           
           {!scanComplete && !isScanning ? (
             <div className="grid grid-cols-2 gap-4 mb-6">
@@ -132,7 +129,17 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
               />
             </div>
           ) : isScanning ? (
-            <QRScanner onScanComplete={handleScanComplete} />
+            <div className="relative w-full h-64 flex items-center justify-center bg-black">
+              <QRScanner onScanComplete={handleScanComplete} />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="border-4 border-transparent w-48 h-48 relative">
+                  <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-white"></div>
+                  <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-white"></div>
+                  <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-white"></div>
+                  <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-white"></div>
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="bg-green-50 p-10 flex flex-col items-center justify-center text-center rounded-lg">
               <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
