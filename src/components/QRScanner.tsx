@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeScanner } from 'html5-qrcode';
 import { processScannedQRCode } from '@/utils/stamps';
 import { toast } from 'sonner';
 import { CheckCircle, Camera } from 'lucide-react';
@@ -19,21 +20,14 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   const mountedRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
 
   const onScanSuccess = async (decodedText: string) => {
-    if (!mountedRef.current) return;
+    if (!mountedRef.current || scanResult) return;
     
-    if (scannerRef.current) {
-      scannerRef.current.pause(true);
-    }
-    
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-    }
-    
-    setScanResult(decodedText);
     console.log("QR code scanned successfully:", decodedText);
-
+    setScanResult(decodedText);
+    
     try {
       setProcessing(true);
       const user = await getCurrentUser();
@@ -58,10 +52,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       console.error("Error processing QR code:", error);
       if (mountedRef.current) {
         toast.error(error instanceof Error ? error.message : "Failed to process QR code");
-        
-        if (scannerRef.current) {
-          scannerRef.current.resume();
-        }
+        setScanResult(null);
       }
     } finally {
       if (mountedRef.current) {
@@ -71,7 +62,10 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   };
 
   const onScanFailure = (error: string) => {
-    console.warn("QR Scan error:", error);
+    // Don't log every frame failure as it's too noisy
+    if (error && !error.includes("No QR code found")) {
+      console.warn("QR Scan error:", error);
+    }
   };
 
   const initializeDirectCamera = async () => {
@@ -97,6 +91,14 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         },
         audio: false
       };
+      
+      // Explicitly request permissions first
+      const permissionResult = await navigator.permissions.query({ name: 'camera' as PermissionName });
+      if (permissionResult.state === 'denied') {
+        setPermissionError(true);
+        toast.error("Camera access denied. Please allow camera permissions and try again.");
+        return;
+      }
       
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
@@ -124,24 +126,47 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
               console.log("Camera started successfully");
               setCameraInitialized(true);
               
-              try {
-                scannerRef.current.clear();
-              } catch (e) {
-                console.warn("Error clearing existing scanner:", e);
+              // Initialize the QR scanner using the direct approach with Html5Qrcode
+              if (html5QrCodeRef.current) {
+                try {
+                  html5QrCodeRef.current.stop();
+                } catch (e) {
+                  console.warn("Error stopping existing scanner:", e);
+                }
               }
               
-              const config = {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0,
-                videoConstraints: constraints.video,
-                formatsToSupport: [0], // QR code only
-              };
+              const qrCodeId = "qr-reader-direct";
+              const qrContainer = document.getElementById(qrCodeId);
               
-              scannerRef.current = new Html5QrcodeScanner("qr-reader", config, false);
-              scannerRef.current.render(onScanSuccess, onScanFailure);
+              if (!qrContainer) {
+                console.error("QR code container not found!");
+                return;
+              }
               
-              setTimeout(applyCustomStyling, 300);
+              try {
+                html5QrCodeRef.current = new Html5Qrcode(qrCodeId);
+                
+                html5QrCodeRef.current.start(
+                  { facingMode: "environment" },
+                  {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0,
+                    disableFlip: false,
+                    formatsToSupport: [Html5Qrcode.FORMATS.QR_CODE]
+                  },
+                  onScanSuccess,
+                  onScanFailure
+                ).catch(err => {
+                  console.error("Failed to start QR scanner:", err);
+                  toast.error("Failed to initialize QR scanner");
+                });
+                
+                console.log("QR scanner started successfully");
+              } catch (error) {
+                console.error("Error initializing direct QR scanner:", error);
+                toast.error("Failed to initialize QR scanner");
+              }
             })
             .catch(err => {
               console.error("Error playing video:", err);
@@ -152,143 +177,14 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       }
     } catch (error) {
       console.error("Error with direct camera access:", error);
-      initializeScannerLibrary();
-    }
-  };
-
-  const initializeScannerLibrary = async () => {
-    try {
-      console.log("Falling back to scanner library...");
-      
-      const config = {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0,
-        rememberLastUsedCamera: true,
-        videoConstraints: {
-          facingMode: { exact: "environment" }
-        },
-        formatsToSupport: [0], // QR code only
-      };
-      
-      if (scannerRef.current) {
-        try {
-          scannerRef.current.clear();
-        } catch (e) {
-          console.warn("Error clearing existing scanner:", e);
-        }
-      }
-      
-      const qrReaderElement = document.getElementById("qr-reader");
-      if (qrReaderElement) {
-        qrReaderElement.innerHTML = "";
-        
-        scannerRef.current = new Html5QrcodeScanner("qr-reader", config, false);
-        scannerRef.current.render(onScanSuccess, onScanFailure);
-        
-        setTimeout(applyCustomStyling, 300);
-      }
-    } catch (error) {
-      console.error("Error initializing scanner library:", error);
       setPermissionError(true);
-      toast.error("Camera access denied. Please allow camera permissions and try again.");
-    }
-  };
-
-  const applyCustomStyling = () => {
-    if (!mountedRef.current) return;
-    
-    try {
-      const existingStyle = document.getElementById("qr-scanner-styles");
-      if (existingStyle) {
-        existingStyle.remove();
-      }
-      
-      const style = document.createElement('style');
-      style.id = "qr-scanner-styles";
-      style.textContent = `
-        #html5-qrcode-anchor-scan-type-change,
-        #html5-qrcode-button-camera-permission,
-        #html5-qrcode-button-camera-stop,
-        #html5-qrcode-anchor-scan-type-change,
-        #html5-qrcode-select-camera,
-        #html5-qrcode-button-torch,
-        #html5-qrcode-button-flash,
-        #html5-qrcode-torch-button,
-        #html5-qrcode-zoom-slider,
-        #html5-qrcode-button-file-selection,
-        .html5-qrcode-header,
-        #qr-reader__dashboard_section_csr,
-        #qr-reader__dashboard_section_swaplink,
-        #qr-reader__dashboard_section_fsr,
-        #qr-reader__status_span,
-        #qr-reader__dashboard_section {
-          display: none !important;
-        }
-        
-        #qr-reader {
-          border: none !important;
-          padding: 0 !important;
-          box-shadow: none !important;
-          background: transparent !important;
-          margin: 0 !important;
-          width: 100% !important;
-          max-width: 100% !important;
-          height: 100% !important;
-          position: absolute !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          bottom: 0 !important;
-        }
-        
-        #qr-reader__scan_region {
-          padding: 0 !important;
-          margin: 0 !important;
-          background: transparent !important;
-          border: none !important;
-        }
-        
-        #qr-reader__scan_region img {
-          display: none !important;
-        }
-        
-        video {
-          width: 100vw !important;
-          height: 100vh !important;
-          object-fit: cover !important;
-          position: fixed !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          bottom: 0 !important;
-          display: block !important;
-          z-index: 1 !important;
-          background-color: #000 !important;
-        }
-        
-        #qr-shaded-region {
-          display: none !important;
-        }
-        
-        .code-finder-row, .code-finder-column {
-          display: none !important;
-        }
-      `;
-      document.head.appendChild(style);
-      
-      const startButton = document.getElementById("html5-qrcode-button-camera-start");
-      if (startButton) {
-        (startButton as HTMLButtonElement).click();
-        console.log("Camera start button clicked automatically");
-      }
-    } catch (err) {
-      console.warn("Could not apply custom styling or start camera:", err);
+      toast.error("Camera access failed. Please check your browser permissions.");
     }
   };
 
   const retryInitialization = () => {
     setPermissionError(false);
+    setScanResult(null);
     toast.info("Trying to initialize camera...");
     initializeDirectCamera();
   };
@@ -310,6 +206,14 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         streamRef.current = null;
       }
       
+      if (html5QrCodeRef.current) {
+        try {
+          html5QrCodeRef.current.stop();
+        } catch (error) {
+          console.warn("Error stopping QR scanner:", error);
+        }
+      }
+      
       if (scannerRef.current) {
         try {
           scannerRef.current.clear();
@@ -323,7 +227,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   return (
     <div className="w-full h-full fixed inset-0 bg-black z-0">
       <div id="direct-camera-feed" className="absolute inset-0 w-full h-full z-0"></div>
-      <div id="qr-reader" className="absolute inset-0 w-full h-full z-1"></div>
+      <div id="qr-reader-direct" className="absolute inset-0 w-full h-full z-10"></div>
       
       {permissionError && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-30">

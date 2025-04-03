@@ -16,6 +16,7 @@ const ScanQR = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleScanComplete = useCallback(() => {
+    console.log("Scan complete callback triggered");
     setScanComplete(true);
     setTimeout(() => {
       navigate('/');
@@ -49,6 +50,7 @@ const ScanQR = () => {
 
         const qrCodeSuccessCallback = async (decodedText: string) => {
           try {
+            console.log("Processing QR code from file:", decodedText);
             const result = await processScannedQRCode(decodedText, user.id);
             
             if (result.rewardEarned) {
@@ -59,16 +61,21 @@ const ScanQR = () => {
             
             handleScanComplete();
           } catch (error) {
+            console.error("Error processing QR code from file:", error);
             toast.error(error instanceof Error ? error.message : "Failed to process QR code");
           }
         };
 
         await html5QrCode.scanFile(files[0], true)
           .then(qrCodeSuccessCallback)
-          .catch(() => toast.error("Unable to read QR code from image"));
+          .catch((error) => {
+            console.error("Error scanning QR code from file:", error);
+            toast.error("Unable to read QR code from image");
+          });
         
         html5QrCode.clear();
       } catch (error) {
+        console.error("Error in file upload handler:", error);
         toast.error("Error scanning QR code from file");
       }
     };
@@ -78,6 +85,8 @@ const ScanQR = () => {
       fileInputRef.current.value = '';
     }
   };
+
+  console.log("ScanQR render, scanComplete:", scanComplete);
 
   return (
     <MainLayout hideNav={true}>
@@ -106,7 +115,7 @@ const ScanQR = () => {
               </div>
               
               {/* Scan area overlay with just the corners */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-15">
                 <div className="relative w-64 h-64">
                   <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white"></div>
                   <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white"></div>
