@@ -94,11 +94,13 @@ const ScanQR = () => {
           <p className="text-white font-medium">Point camera at QR code</p>
         </div>
 
+        {/* Hidden container for file upload */}
+        <div id="qr-reader-file" className="hidden"></div>
+
         {/* Camera view with QR scanner */}
         <div className="flex-1 w-full flex items-center justify-center relative">
           {!scanComplete ? (
             <>
-              <div id="qr-reader-file" className="hidden"></div>
               <QRScanner onScanComplete={handleScanComplete} />
               
               {/* Scan area overlay with just the corners */}
