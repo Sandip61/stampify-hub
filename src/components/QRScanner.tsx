@@ -70,6 +70,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
     console.log("QRScanner useEffect: Initializing scanner");
     mountedRef.current = true;
     
+    // Use a shorter delay to set up the scanner
     const initializeScanner = setTimeout(() => {
       if (!mountedRef.current) return;
 
@@ -80,12 +81,13 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           qrReaderElement.innerHTML = "";
         }
         
-        // Configure the scanner
+        // Configure the scanner with simplified settings
         const config = {
           fps: 10,
           qrbox: { width: 250, height: 250 },
           aspectRatio: 1,
           rememberLastUsedCamera: true,
+          // Ensure we're using the back camera on mobile devices
           videoConstraints: {
             facingMode: { exact: "environment" }
           },
@@ -99,7 +101,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         if (scannerRef.current && mountedRef.current) {
           scannerRef.current.render(onScanSuccess, onScanFailure);
           
-          // Apply custom styling after a short delay
+          // Apply custom styling after a short delay to ensure elements exist
           setTimeout(() => {
             if (!mountedRef.current) return;
             
@@ -136,12 +138,16 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
                   background: transparent !important;
                   margin: 0 !important;
                   width: 100% !important;
+                  max-width: 100% !important;
                   height: 100% !important;
+                  position: absolute !important;
                 }
                 
                 #qr-reader__scan_region {
                   padding: 0 !important;
+                  margin: 0 !important;
                   background: transparent !important;
+                  border: none !important;
                 }
                 
                 #qr-reader__scan_region img {
@@ -152,10 +158,14 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
                 video {
                   width: 100% !important;
                   height: 100vh !important;
+                  min-height: 100vh !important;
                   object-fit: cover !important;
                   position: absolute !important;
                   top: 0 !important;
                   left: 0 !important;
+                  right: 0 !important;
+                  bottom: 0 !important;
+                  display: block !important;
                   z-index: 0 !important;
                 }
                 
@@ -174,6 +184,9 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
               const startButton = document.getElementById("html5-qrcode-button-camera-start");
               if (startButton) {
                 (startButton as HTMLButtonElement).click();
+                console.log("Camera start button clicked automatically");
+              } else {
+                console.warn("Camera start button not found");
               }
             } catch (err) {
               console.warn("Could not apply custom styling or start camera:", err);
@@ -202,9 +215,9 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   }, []);
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full fixed inset-0 bg-black">
       {/* The scanner element */}
-      <div id="qr-reader" className="w-full h-full absolute inset-0"></div>
+      <div id="qr-reader" className="absolute inset-0 w-full h-full"></div>
       
       {/* Processing indicator */}
       {processing && (
