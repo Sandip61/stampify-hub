@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { processScannedQRCode } from '@/utils/stamps';
 import { toast } from 'sonner';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Camera } from 'lucide-react';
 import { getCurrentUser } from '@/utils/auth';
+import { Button } from '@/components/ui/button';
 
 interface QRScannerProps {
   onScanComplete?: () => void;
@@ -14,14 +14,21 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [permissionError, setPermissionError] = useState(false);
+  const [cameraInitialized, setCameraInitialized] = useState(false);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const mountedRef = useRef(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const onScanSuccess = async (decodedText: string) => {
     if (!mountedRef.current) return;
     
     if (scannerRef.current) {
       scannerRef.current.pause(true);
+    }
+    
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
     }
     
     setScanResult(decodedText);
@@ -67,62 +74,122 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
     console.warn("QR Scan error:", error);
   };
 
-  // Direct camera access - more reliable than using the scanner library's UI
-  const initializeCamera = async () => {
+  const initializeDirectCamera = async () => {
     try {
-      console.log("Requesting camera permissions directly...");
+      console.log("Attempting direct camera initialization...");
       
-      // Explicitly request camera permissions
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+      }
+      
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      
+      const constraints = { 
         video: { 
-          facingMode: { exact: "environment" },
+          facingMode: { ideal: "environment" },
           width: { ideal: window.innerWidth },
           height: { ideal: window.innerHeight }
-        } 
-      });
+        },
+        audio: false
+      };
       
-      // Verify we got the stream
-      if (stream) {
-        console.log("Camera permission granted, stream obtained:", stream.getVideoTracks().length > 0);
-        
-        // Stop the direct stream since the scanner will use its own
-        stream.getTracks().forEach(track => track.stop());
-        
-        // Now initialize the scanner with permissions already granted
-        const config = {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-          rememberLastUsedCamera: true,
-          videoConstraints: {
-            facingMode: { exact: "environment" }
-          },
-          formatsToSupport: [0], // QR code only
-        };
-        
-        // Clear any existing scanner
-        if (scannerRef.current) {
-          try {
-            scannerRef.current.clear();
-          } catch (e) {
-            console.warn("Error clearing existing scanner:", e);
-          }
-        }
-        
-        // Create new scanner
-        const qrReaderElement = document.getElementById("qr-reader");
-        if (qrReaderElement) {
-          qrReaderElement.innerHTML = "";
-          
-          scannerRef.current = new Html5QrcodeScanner("qr-reader", config, /* verbose */ false);
-          scannerRef.current.render(onScanSuccess, onScanFailure);
-          
-          // Apply styling after a short delay
-          setTimeout(applyCustomStyling, 300);
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+      
+      if (!videoRef.current) {
+        const videoContainer = document.getElementById('direct-camera-feed');
+        if (videoContainer) {
+          videoContainer.innerHTML = '';
+          const video = document.createElement('video');
+          video.id = 'qr-video';
+          video.className = 'w-full h-full object-cover';
+          video.playsInline = true;
+          video.autoplay = true;
+          video.muted = true;
+          videoContainer.appendChild(video);
+          videoRef.current = video;
         }
       }
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play()
+            .then(() => {
+              console.log("Camera started successfully");
+              setCameraInitialized(true);
+              
+              try {
+                scannerRef.current.clear();
+              } catch (e) {
+                console.warn("Error clearing existing scanner:", e);
+              }
+              
+              const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0,
+                videoConstraints: constraints.video,
+                formatsToSupport: [0], // QR code only
+              };
+              
+              scannerRef.current = new Html5QrcodeScanner("qr-reader", config, false);
+              scannerRef.current.render(onScanSuccess, onScanFailure);
+              
+              setTimeout(applyCustomStyling, 300);
+            })
+            .catch(err => {
+              console.error("Error playing video:", err);
+              setPermissionError(true);
+              toast.error("Could not start camera. Please try again.");
+            });
+        };
+      }
     } catch (error) {
-      console.error("Error accessing camera:", error);
+      console.error("Error with direct camera access:", error);
+      initializeScannerLibrary();
+    }
+  };
+
+  const initializeScannerLibrary = async () => {
+    try {
+      console.log("Falling back to scanner library...");
+      
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+        rememberLastUsedCamera: true,
+        videoConstraints: {
+          facingMode: { exact: "environment" }
+        },
+        formatsToSupport: [0], // QR code only
+      };
+      
+      if (scannerRef.current) {
+        try {
+          scannerRef.current.clear();
+        } catch (e) {
+          console.warn("Error clearing existing scanner:", e);
+        }
+      }
+      
+      const qrReaderElement = document.getElementById("qr-reader");
+      if (qrReaderElement) {
+        qrReaderElement.innerHTML = "";
+        
+        scannerRef.current = new Html5QrcodeScanner("qr-reader", config, false);
+        scannerRef.current.render(onScanSuccess, onScanFailure);
+        
+        setTimeout(applyCustomStyling, 300);
+      }
+    } catch (error) {
+      console.error("Error initializing scanner library:", error);
       setPermissionError(true);
       toast.error("Camera access denied. Please allow camera permissions and try again.");
     }
@@ -132,7 +199,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
     if (!mountedRef.current) return;
     
     try {
-      // Add custom styles to clean up the scanner UI
       const existingStyle = document.getElementById("qr-scanner-styles");
       if (existingStyle) {
         existingStyle.remove();
@@ -141,7 +207,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       const style = document.createElement('style');
       style.id = "qr-scanner-styles";
       style.textContent = `
-        /* Hide scanner UI elements we don't want */
         #html5-qrcode-anchor-scan-type-change,
         #html5-qrcode-button-camera-permission,
         #html5-qrcode-button-camera-stop,
@@ -161,7 +226,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           display: none !important;
         }
         
-        /* Clean up the scanner container */
         #qr-reader {
           border: none !important;
           padding: 0 !important;
@@ -172,6 +236,10 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           max-width: 100% !important;
           height: 100% !important;
           position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
         }
         
         #qr-reader__scan_region {
@@ -185,22 +253,20 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           display: none !important;
         }
         
-        /* Style the video element */
         video {
-          width: 100% !important;
+          width: 100vw !important;
           height: 100vh !important;
-          min-height: 100vh !important;
           object-fit: cover !important;
-          position: absolute !important;
+          position: fixed !important;
           top: 0 !important;
           left: 0 !important;
           right: 0 !important;
           bottom: 0 !important;
           display: block !important;
-          z-index: 0 !important;
+          z-index: 1 !important;
+          background-color: #000 !important;
         }
         
-        /* Remove any horizontal/vertical lines */
         #qr-shaded-region {
           display: none !important;
         }
@@ -211,44 +277,38 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       `;
       document.head.appendChild(style);
       
-      // Force click the camera start button
       const startButton = document.getElementById("html5-qrcode-button-camera-start");
       if (startButton) {
         (startButton as HTMLButtonElement).click();
         console.log("Camera start button clicked automatically");
-      } else {
-        console.warn("Camera start button not found, trying alternative methods");
-        
-        // Try to manually trigger the camera if button not found
-        const scanTypeInput = document.getElementById("html5-qrcode-scan-type-input");
-        if (scanTypeInput) {
-          (scanTypeInput as HTMLInputElement).click();
-          console.log("Scan type input clicked");
-        }
-        
-        setTimeout(() => {
-          const permissionButton = document.getElementById("html5-qrcode-button-camera-permission");
-          if (permissionButton) {
-            (permissionButton as HTMLButtonElement).click();
-            console.log("Permission button clicked");
-          }
-        }, 300);
       }
     } catch (err) {
       console.warn("Could not apply custom styling or start camera:", err);
     }
   };
 
+  const retryInitialization = () => {
+    setPermissionError(false);
+    toast.info("Trying to initialize camera...");
+    initializeDirectCamera();
+  };
+
   useEffect(() => {
     console.log("QRScanner useEffect: Initializing scanner");
     mountedRef.current = true;
     
-    // Initialize camera
-    initializeCamera();
+    const timer = setTimeout(() => {
+      initializeDirectCamera();
+    }, 500);
 
-    // Cleanup function
     return () => {
       mountedRef.current = false;
+      clearTimeout(timer);
+      
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
       
       if (scannerRef.current) {
         try {
@@ -261,30 +321,26 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   }, []);
 
   return (
-    <div className="w-full h-full fixed inset-0 bg-black">
-      {/* The scanner element */}
-      <div id="qr-reader" className="absolute inset-0 w-full h-full"></div>
+    <div className="w-full h-full fixed inset-0 bg-black z-0">
+      <div id="direct-camera-feed" className="absolute inset-0 w-full h-full z-0"></div>
+      <div id="qr-reader" className="absolute inset-0 w-full h-full z-1"></div>
       
-      {/* Permission error */}
       {permissionError && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-30">
           <div className="bg-white p-4 rounded-lg max-w-xs text-center">
             <p className="text-red-600 font-medium mb-3">Camera access denied</p>
             <p className="text-gray-700 mb-4">Please allow camera permissions in your browser settings and try again.</p>
-            <button 
-              className="bg-blue-500 text-white px-4 py-2 rounded"
-              onClick={() => {
-                setPermissionError(false);
-                initializeCamera();
-              }}
+            <Button 
+              className="bg-blue-500 text-white"
+              onClick={retryInitialization}
             >
-              Retry
-            </button>
+              <Camera className="h-4 w-4 mr-2" />
+              Retry Camera
+            </Button>
           </div>
         </div>
       )}
       
-      {/* Processing indicator */}
       {processing && (
         <div className="absolute bottom-24 left-0 right-0 p-4 flex items-center justify-center text-white z-30">
           <div className="mr-2 h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
@@ -292,13 +348,22 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         </div>
       )}
       
-      {/* Success message */}
       {scanResult && !processing && (
         <div className="absolute bottom-24 left-0 right-0 p-4 bg-green-50 mx-4 border-t border-green-200 flex items-start rounded-lg z-30">
           <CheckCircle className="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-green-800 font-medium">QR Code Scanned!</p>
             <p className="text-sm text-green-600">Processing your stamps...</p>
+          </div>
+        </div>
+      )}
+      
+      {!cameraInitialized && !permissionError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
+          <div className="text-center text-white">
+            <div className="mx-auto mb-4 h-12 w-12 rounded-full border-4 border-white border-t-transparent animate-spin"></div>
+            <p className="text-xl font-medium">Initializing camera...</p>
+            <p className="text-sm opacity-80 mt-2">Please wait or grant permission if prompted</p>
           </div>
         </div>
       )}

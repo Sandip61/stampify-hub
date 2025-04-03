@@ -101,7 +101,9 @@ const ScanQR = () => {
         <div className="flex-1 w-full flex items-center justify-center relative">
           {!scanComplete ? (
             <>
-              <QRScanner onScanComplete={handleScanComplete} />
+              <div className="absolute inset-0 z-10">
+                <QRScanner onScanComplete={handleScanComplete} />
+              </div>
               
               {/* Scan area overlay with just the corners */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
