@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getCurrentUser, User } from "@/utils/auth";
@@ -195,7 +196,7 @@ const Home = () => {
           <p className="text-muted-foreground mb-4">
             Add your first loyalty card by scanning a QR code at participating businesses
           </p>
-          <Button onClick={() => setScannerOpen(true)}>Scan QR Code</Button>
+          <Button onClick={handleScanClick}>Scan QR Code</Button>
         </div>
       )}
     </div>
