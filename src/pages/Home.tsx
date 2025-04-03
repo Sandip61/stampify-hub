@@ -1,18 +1,16 @@
-
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { getCurrentUser, User } from "@/utils/auth";
 import { getUserStampCards, StampCard as StampCardType, initializeDemoData } from "@/utils/data";
 import StampCard from "@/components/StampCard";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Clock, Star, Scan, TrendingUp } from "lucide-react";
-import QRScannerModal from "@/components/QRScannerModal";
 
 const Home = () => {
   const [user, setUser] = useState<User | null>(null);
   const [cards, setCards] = useState<StampCardType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [scannerOpen, setScannerOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -54,6 +52,10 @@ const Home = () => {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 3);
 
+  const handleScanClick = () => {
+    navigate('/scan-qr');
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
@@ -80,7 +82,7 @@ const Home = () => {
         <Button 
           variant="outline" 
           className="w-full h-16 justify-start"
-          onClick={() => setScannerOpen(true)}
+          onClick={handleScanClick}
         >
           <div className="flex flex-col items-start">
             <div className="flex items-center text-primary">
@@ -196,8 +198,6 @@ const Home = () => {
           <Button onClick={() => setScannerOpen(true)}>Scan QR Code</Button>
         </div>
       )}
-
-      <QRScannerModal open={scannerOpen} onOpenChange={setScannerOpen} />
     </div>
   );
 };

@@ -13,6 +13,7 @@ import Transactions from "./pages/Transactions";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import History from "./pages/History";
+import ScanQR from "./pages/ScanQR";
 
 // Merchant Pages
 import MerchantDashboard from "./pages/merchant/Dashboard";
@@ -39,6 +40,10 @@ const router = createBrowserRouter([
         <Home />
       </MainLayout>
     ),
+  },
+  {
+    path: "/scan-qr",
+    element: <ScanQR />,
   },
   {
     path: "/login",

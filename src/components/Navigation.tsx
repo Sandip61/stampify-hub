@@ -1,19 +1,18 @@
 
 import { useState, useEffect } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Home, CreditCard, History, User, LogOut, ScanLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { logoutUser } from "@/utils/auth";
 import { toast } from "sonner";
-import QRScannerModal from "./QRScannerModal";
 
 const Navigation = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [visible, setVisible] = useState(true);
   const [lastScrollPosition, setLastScrollPosition] = useState(0);
-  const [scannerOpen, setScannerOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -42,7 +41,7 @@ const Navigation = () => {
 
   const handleScanClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    setScannerOpen(true);
+    navigate('/scan-qr');
   };
 
   if (isMobile === undefined) return null;
@@ -173,8 +172,6 @@ const Navigation = () => {
           </nav>
         </div>
       )}
-
-      <QRScannerModal open={scannerOpen} onOpenChange={setScannerOpen} />
     </>
   );
 };

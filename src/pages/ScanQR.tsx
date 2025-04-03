@@ -1,65 +1,140 @@
 
-import React, { useState } from 'react';
-import QRScanner from '@/components/QRScanner';
+import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Camera } from 'lucide-react';
+import { ArrowLeft, Upload, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { Html5Qrcode } from 'html5-qrcode';
+import { processScannedQRCode } from '@/utils/stamps';
+import { getCurrentUser } from '@/utils/auth';
+import QRScanner from '@/components/QRScanner';
 import MainLayout from '@/layouts/MainLayout';
 
 const ScanQR = () => {
   const navigate = useNavigate();
   const [scanComplete, setScanComplete] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleScanComplete = () => {
+  const handleScanComplete = useCallback(() => {
     setScanComplete(true);
-    // Navigate to home after successful scan
     setTimeout(() => {
       navigate('/');
     }, 2000);
+  }, [navigate]);
+
+  const handleBack = () => {
+    navigate(-1);
+  };
+
+  const triggerFileUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileReader = new FileReader();
+    fileReader.onload = async () => {
+      try {
+        const html5QrCode = new Html5Qrcode("qr-reader-file");
+        const user = await getCurrentUser();
+        
+        if (!user) {
+          toast.error("Please log in to collect stamps");
+          return;
+        }
+
+        const qrCodeSuccessCallback = async (decodedText: string) => {
+          try {
+            const result = await processScannedQRCode(decodedText, user.id);
+            
+            if (result.rewardEarned) {
+              toast.success(`Congratulations! You've earned a reward: ${result.stampCard.card.reward}`);
+            } else {
+              toast.success(`Added ${result.stampCard.current_stamps} stamps!`);
+            }
+            
+            handleScanComplete();
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Failed to process QR code");
+          }
+        };
+
+        await html5QrCode.scanFile(files[0], true)
+          .then(qrCodeSuccessCallback)
+          .catch(() => toast.error("Unable to read QR code from image"));
+        
+        html5QrCode.clear();
+      } catch (error) {
+        toast.error("Error scanning QR code from file");
+      }
+    };
+    
+    fileReader.readAsDataURL(files[0]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   return (
     <MainLayout hideNav={true}>
-      <div className="min-h-screen flex flex-col animate-fade-in px-4 py-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center mb-8 text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="mr-2 h-5 w-5" />
-          Back
-        </button>
+      <div className="relative min-h-screen bg-black flex flex-col">
+        {/* Back button */}
+        <div className="absolute top-6 left-6 z-20">
+          <Button variant="ghost" onClick={handleBack} className="text-white hover:bg-black/20">
+            <ArrowLeft className="h-6 w-6" />
+          </Button>
+        </div>
 
-        <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-teal-100 to-amber-100 border border-teal-200 mb-4">
-              <Camera className="h-8 w-8 text-teal-600" />
-            </div>
-            <h1 className="text-2xl font-bold mb-2 bg-gradient-to-r from-teal-600 to-amber-600 bg-clip-text text-transparent">Scan QR Code</h1>
-            <p className="text-muted-foreground">
-              Point your camera at a merchant's QR code to collect stamps
-            </p>
-          </div>
-          
-          <div className="relative w-full rounded-xl overflow-hidden shadow-lg border border-teal-100">
-            {!scanComplete ? (
+        {/* Instruction text */}
+        <div className="absolute top-6 left-0 right-0 z-20 text-center">
+          <p className="text-white font-medium">Point camera at QR code</p>
+        </div>
+
+        {/* Camera view with QR scanner */}
+        <div className="flex-1 w-full flex items-center justify-center relative">
+          {!scanComplete ? (
+            <>
+              <div id="qr-reader-file" className="hidden"></div>
               <QRScanner onScanComplete={handleScanComplete} />
-            ) : (
-              <div className="bg-green-50 p-8 flex flex-col items-center justify-center text-center">
-                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+              
+              {/* Scan area overlay with just the corners */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="relative w-64 h-64">
+                  <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white"></div>
+                  <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white"></div>
+                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white"></div>
+                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white"></div>
                 </div>
-                <h2 className="text-xl font-semibold text-green-800 mb-2">Scan Complete!</h2>
-                <p className="text-green-600">Your stamps have been collected</p>
               </div>
-            )}
-          </div>
-          
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Having trouble? Ask the merchant to help position the QR code
-            </p>
-          </div>
+
+              {/* Upload Image button at the bottom */}
+              <div className="absolute bottom-12 w-full flex flex-col items-center z-20">
+                <Button onClick={triggerFileUpload} className="flex items-center gap-2 bg-white hover:bg-white/90 text-black px-6 py-6 rounded-full shadow">
+                  <Upload className="h-5 w-5" />
+                  <span className="font-medium">Upload Image</span>
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </div>
+            </>
+          ) : (
+            <div className="bg-green-50 p-10 flex flex-col items-center justify-center text-center rounded-lg m-4">
+              <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
+                <CheckCircle className="h-10 w-10 text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-green-800 mb-2">Success!</h3>
+              <p className="text-green-600">Your stamps have been collected</p>
+            </div>
+          )}
         </div>
       </div>
     </MainLayout>
