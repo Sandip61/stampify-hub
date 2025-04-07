@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { processScannedQRCode } from '@/utils/stamps';
@@ -164,7 +165,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
                   { facingMode: "environment" },
                   {
                     fps: 10,
-                    qrbox: { width: 250, height: 250 },
+                    qrbox: 250, // Using a fixed size of 250px for the QR scanning box
                     aspectRatio: 1.0,
                     disableFlip: false,
                   },
