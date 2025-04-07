@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Html5Qrcode, Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import { processScannedQRCode } from '@/utils/stamps';
 import { toast } from 'sonner';
 import { CheckCircle, Camera } from 'lucide-react';
@@ -16,11 +16,10 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   const [processing, setProcessing] = useState(false);
   const [permissionError, setPermissionError] = useState(false);
   const [cameraInitialized, setCameraInitialized] = useState(false);
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
-  const mountedRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
+  const mountedRef = useRef(false);
 
   const onScanSuccess = async (decodedText: string) => {
     if (!mountedRef.current || scanResult) return;
@@ -153,7 +152,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
                     qrbox: { width: 250, height: 250 },
                     aspectRatio: 1.0,
                     disableFlip: false,
-                    formatsToSupport: [Html5Qrcode.FORMATS.QR_CODE]
                   },
                   onScanSuccess,
                   onScanFailure
@@ -211,14 +209,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           html5QrCodeRef.current.stop();
         } catch (error) {
           console.warn("Error stopping QR scanner:", error);
-        }
-      }
-      
-      if (scannerRef.current) {
-        try {
-          scannerRef.current.clear();
-        } catch (error) {
-          console.warn("Error clearing scanner:", error);
         }
       }
     };
