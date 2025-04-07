@@ -114,9 +114,9 @@ const ScanQR = () => {
                 <QRScanner onScanComplete={handleScanComplete} />
               </div>
               
-              {/* Scan area overlay with just the corners - fixed size */}
+              {/* Scan area overlay with just the corners - using a smaller fixed size */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-15">
-                <div className="relative w-64 h-64">
+                <div className="relative w-52 h-52">
                   <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white"></div>
                   <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white"></div>
                   <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white"></div>
