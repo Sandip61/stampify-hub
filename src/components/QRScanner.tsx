@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { processScannedQRCode } from '@/utils/stamps';
@@ -29,10 +28,26 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
     
     try {
       setProcessing(true);
+      
+      try {
+        const parsedData = JSON.parse(decodedText);
+        if (!parsedData.type || parsedData.type !== 'stamp' || !parsedData.code || !parsedData.card_id) {
+          throw new Error("Invalid QR code format. This QR code is not a valid stamp card QR code.");
+        }
+      } catch (parseError) {
+        console.error("QR code format validation error:", parseError);
+        toast.error("Invalid QR code format. Please scan a valid stamp card QR code.");
+        setScanResult(null);
+        setProcessing(false);
+        return;
+      }
+      
       const user = await getCurrentUser();
       
       if (!user) {
         toast.error("Please log in to collect stamps");
+        setProcessing(false);
+        setScanResult(null);
         return;
       }
 

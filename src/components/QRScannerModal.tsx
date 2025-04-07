@@ -57,6 +57,17 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
 
         const qrCodeSuccessCallback = async (decodedText: string) => {
           try {
+            try {
+              const parsedData = JSON.parse(decodedText);
+              if (!parsedData.type || parsedData.type !== 'stamp' || !parsedData.code || !parsedData.card_id) {
+                throw new Error("Invalid QR code format. This QR code is not a valid stamp card QR code.");
+              }
+            } catch (parseError) {
+              console.error("QR code format validation error:", parseError);
+              toast.error("Invalid QR code format. Please scan a valid stamp card QR code.");
+              return;
+            }
+            
             const result = await processScannedQRCode(decodedText, user.id);
             
             if (result.rewardEarned) {
