@@ -88,7 +88,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
                 { facingMode: "environment" }, // Try rear camera first
                 {
                   fps: 10,
-                  qrbox: isMobile ? { width: 250, height: 250 } : { width: 300, height: 300 },
+                  qrbox: undefined, // No QR box overlay
                   aspectRatio: 1,
                 },
                 onScanSuccess,
@@ -103,7 +103,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
                   { facingMode: "user" }, // Fall back to front camera
                   {
                     fps: 10,
-                    qrbox: isMobile ? { width: 250, height: 250 } : { width: 300, height: 300 },
+                    qrbox: undefined, // No QR box overlay
                     aspectRatio: 1,
                   },
                   onScanSuccess,
@@ -144,17 +144,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       {/* QR scanner container - we're making this a single full-sized element */}
       <div id="qr-reader" className="w-full h-full overflow-hidden" />
       
-      {/* Single scan overlay with corner markers */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="relative w-64 h-64 border-0">
-          {/* Corner markers only */}
-          <div className="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-white"></div>
-          <div className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-white"></div>
-          <div className="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-white"></div>
-          <div className="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-white"></div>
-        </div>
-      </div>
-
       {/* Processing indicator */}
       {processing && (
         <div className="absolute bottom-32 left-0 right-0 p-4 flex items-center justify-center text-white z-30">
