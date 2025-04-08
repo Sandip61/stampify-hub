@@ -18,7 +18,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   const mountedRef = useRef(false);
   const qrCodeRef = useRef<Html5Qrcode | null>(null);
   const isMobile = useIsMobile();
-
+  
   const onScanSuccess = async (decodedText: string) => {
     if (!mountedRef.current || scanResult) return;
     
@@ -89,7 +89,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
                 {
                   fps: 10,
                   qrbox: undefined, // No QR box overlay
-                  aspectRatio: 1,
+                  aspectRatio: window.innerWidth / window.innerHeight, // Match device aspect ratio
                 },
                 onScanSuccess,
                 onScanFailure
@@ -104,7 +104,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
                   {
                     fps: 10,
                     qrbox: undefined, // No QR box overlay
-                    aspectRatio: 1,
+                    aspectRatio: window.innerWidth / window.innerHeight, // Match device aspect ratio
                   },
                   onScanSuccess,
                   onScanFailure
@@ -140,9 +140,15 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   }, [isMobile]);
 
   return (
-    <div className="w-full h-full relative">
-      {/* QR scanner container - full-sized element with no padding or margins */}
-      <div id="qr-reader" className="w-full h-full overflow-hidden" />
+    <div className="w-full h-full overflow-hidden">
+      {/* Camera view container - ensure it fills the entire area with no margins or padding */}
+      <div id="qr-reader" className="w-full h-full" style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%'
+      }} />
       
       {/* Processing indicator */}
       {processing && (
