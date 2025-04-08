@@ -119,8 +119,8 @@ const ScanQR = () => {
         </div>
       )}
       
-      {/* Decorative square with visible corners */}
-      <div className="absolute top-[65%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 z-40">
+      {/* Decorative square with visible corners - moved to 38% from the top */}
+      <div className="absolute top-[38%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 z-40">
         {/* Top Left Corner */}
         <div className="absolute top-0 left-0 w-10 h-10 border-l-4 border-t-4 border-teal-400 rounded-tl-lg"></div>
         
