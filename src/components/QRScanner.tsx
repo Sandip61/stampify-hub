@@ -80,45 +80,41 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           const qrCode = new Html5Qrcode(qrRegionId);
           qrCodeRef.current = qrCode;
           
-          // Start scanning with flexible configuration
-          const startScanning = async () => {
+          // Determine which camera to use
+          const cameraOptions = [
+            { facingMode: "environment" }, // Back camera (preferred for mobile)
+            { facingMode: "user" }         // Front camera (fallback)
+          ];
+          
+          const scanConfig = {
+            fps: 10,
+            qrbox: undefined, // No QR box overlay
+            aspectRatio: 1,   // Use a 1:1 aspect ratio as default
+          };
+          
+          const tryCamera = async (cameraIndex = 0) => {
+            if (cameraIndex >= cameraOptions.length) {
+              toast.error("Failed to access camera. Please check camera permissions.");
+              return;
+            }
+            
             try {
-              console.log("Starting QR scanner with environment camera");
+              console.log(`Trying camera option ${cameraIndex + 1}/${cameraOptions.length}`);
               await qrCode.start(
-                { facingMode: "environment" }, // Try rear camera first
-                {
-                  fps: 10,
-                  qrbox: undefined, // No QR box overlay
-                  aspectRatio: window.innerWidth / window.innerHeight, // Match device aspect ratio
-                },
+                cameraOptions[cameraIndex],
+                scanConfig,
                 onScanSuccess,
                 onScanFailure
               );
               setScanning(true);
-              console.log("Camera started successfully");
+              console.log(`Camera ${cameraIndex + 1} started successfully`);
             } catch (err) {
-              console.log("Trying with user camera instead:", err);
-              try {
-                await qrCode.start(
-                  { facingMode: "user" }, // Fall back to front camera
-                  {
-                    fps: 10,
-                    qrbox: undefined, // No QR box overlay
-                    aspectRatio: window.innerWidth / window.innerHeight, // Match device aspect ratio
-                  },
-                  onScanSuccess,
-                  onScanFailure
-                );
-                setScanning(true);
-                console.log("Fallback camera started successfully");
-              } catch (err2) {
-                console.error("Both camera options failed:", err2);
-                toast.error("Failed to access camera. Please check camera permissions.");
-              }
+              console.log(`Camera ${cameraIndex + 1} failed:`, err);
+              tryCamera(cameraIndex + 1); // Try next camera option
             }
           };
           
-          startScanning();
+          tryCamera(0); // Start with first camera option
         } else {
           console.error("QR reader element not found in the DOM");
         }
@@ -137,18 +133,23 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           .catch(e => console.warn('Failed to stop QR scanner:', e));
       }
     };
-  }, [isMobile]);
+  }, []);
 
   return (
-    <div className="w-full h-full overflow-hidden">
-      {/* Camera view container - ensure it fills the entire area with no margins or padding */}
-      <div id="qr-reader" className="w-full h-full" style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%'
-      }} />
+    <div className="absolute inset-0 w-full h-full overflow-hidden bg-black">
+      {/* Camera view - we need to ensure this fills the screen */}
+      <div 
+        id="qr-reader" 
+        className="w-full h-full" 
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          overflow: 'hidden'
+        }}
+      />
       
       {/* Processing indicator */}
       {processing && (

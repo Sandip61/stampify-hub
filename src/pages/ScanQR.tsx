@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, CheckCircle } from 'lucide-react';
@@ -7,7 +8,6 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { processScannedQRCode } from '@/utils/stamps';
 import { getCurrentUser } from '@/utils/auth';
 import QRScanner from '@/components/QRScanner';
-import MainLayout from '@/layouts/MainLayout';
 
 const ScanQR = () => {
   const navigate = useNavigate();
@@ -102,24 +102,20 @@ const ScanQR = () => {
         <p className="text-white font-medium">Point camera at QR code</p>
       </div>
 
-      {/* Full screen camera container */}
-      <div className="absolute inset-0 w-full h-full">
-        {!scanComplete ? (
-          <div className="w-full h-full">
-            <QRScanner onScanComplete={handleScanComplete} />
-          </div>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="bg-green-50 p-10 flex flex-col items-center justify-center text-center rounded-lg m-4">
-              <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
-                <CheckCircle className="h-10 w-10 text-green-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-green-800 mb-2">Success!</h3>
-              <p className="text-green-600">Your stamps have been collected</p>
+      {/* Full screen camera container - removed nested containers for better layout */}
+      {!scanComplete ? (
+        <QRScanner onScanComplete={handleScanComplete} />
+      ) : (
+        <div className="fixed inset-0 flex items-center justify-center bg-black">
+          <div className="bg-green-50 p-10 flex flex-col items-center justify-center text-center rounded-lg m-4">
+            <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
+              <CheckCircle className="h-10 w-10 text-green-600" />
             </div>
+            <h3 className="text-xl font-semibold text-green-800 mb-2">Success!</h3>
+            <p className="text-green-600">Your stamps have been collected</p>
           </div>
-        )}
-      </div>
+        </div>
+      )}
       
       {/* Upload Image button - positioned with absolute to avoid layout issues */}
       <div className="absolute bottom-12 left-0 right-0 flex justify-center z-50">
