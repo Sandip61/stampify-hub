@@ -90,20 +90,20 @@ const ScanQR = () => {
       {/* Hidden file upload element */}
       <div id="qr-reader-file" className="hidden"></div>
       
-      {/* Back button with improved tap target and styling */}
+      {/* Back button with pointer-events ensuring the entire button area is clickable */}
       <div className="absolute top-4 left-4 z-50">
         <Button 
           variant="ghost" 
           onClick={handleBack} 
-          className="text-teal-300 hover:bg-black/20 w-14 h-14 rounded-full flex items-center justify-center p-0" 
+          className="text-teal-300 hover:bg-black/20 w-14 h-14 rounded-full flex items-center justify-center p-0 pointer-events-auto" 
         >
-          <ArrowLeft className="h-8 w-8" />
+          <ArrowLeft className="h-8 w-8 pointer-events-none" />
         </Button>
       </div>
 
-      {/* Instruction text with enhanced styling */}
+      {/* Instruction text with amber color emphasis */}
       <div className="absolute top-6 left-0 right-0 z-50 text-center">
-        <p className="text-gradient-primary font-medium bg-clip-text bg-gradient-to-r from-teal-300 to-amber-300 py-1 px-4 inline-block">
+        <p className="text-gradient-primary font-medium bg-clip-text text-transparent bg-gradient-to-r from-amber-300 to-amber-400 py-1 px-4 inline-block">
           Point camera at QR code
         </p>
       </div>
