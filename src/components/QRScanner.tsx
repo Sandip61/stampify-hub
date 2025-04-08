@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { processScannedQRCode } from '@/utils/stamps';
@@ -70,7 +71,11 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
 
     qrCode.start(
       { facingMode: { exact: 'environment' } },
-      { fps: 10, qrbox: { width: 250, height: 250 } },
+      {
+        fps: 10,
+        qrbox: 250,  // Using a single number instead of object for consistent sizing
+        aspectRatio: 1.0 // Force a square aspect ratio
+      },
       onScanSuccess,
       onScanFailure
     ).catch(err => {
@@ -87,8 +92,8 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   }, [onScanSuccess, onScanFailure]);
 
   return (
-    <div className="relative w-full h-full">
-      {/* Single full-screen video feed */}
+    <div className="relative w-full h-full overflow-hidden">
+      {/* Single full-screen video feed with controlled dimensions */}
       <div id="qr-reader" className="absolute inset-0" />
 
       {/* Processing indicator */}
