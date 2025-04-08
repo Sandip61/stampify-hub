@@ -119,6 +119,21 @@ const ScanQR = () => {
         </div>
       )}
       
+      {/* Decorative square with visible corners */}
+      <div className="absolute top-[65%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 z-40">
+        {/* Top Left Corner */}
+        <div className="absolute top-0 left-0 w-10 h-10 border-l-4 border-t-4 border-teal-400 rounded-tl-lg"></div>
+        
+        {/* Top Right Corner */}
+        <div className="absolute top-0 right-0 w-10 h-10 border-r-4 border-t-4 border-amber-400 rounded-tr-lg"></div>
+        
+        {/* Bottom Left Corner */}
+        <div className="absolute bottom-0 left-0 w-10 h-10 border-l-4 border-b-4 border-amber-400 rounded-bl-lg"></div>
+        
+        {/* Bottom Right Corner */}
+        <div className="absolute bottom-0 right-0 w-10 h-10 border-r-4 border-b-4 border-teal-400 rounded-br-lg"></div>
+      </div>
+      
       {/* Upload Image button - positioned in the fourth quarter of the screen */}
       <div className="absolute top-3/4 left-0 right-0 flex justify-center z-50">
         <Button onClick={triggerFileUpload} className="flex items-center gap-2 bg-white hover:bg-white/90 text-black px-6 py-6 rounded-full shadow">
