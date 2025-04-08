@@ -90,12 +90,12 @@ const ScanQR = () => {
       {/* Hidden file upload element */}
       <div id="qr-reader-file" className="hidden"></div>
       
-      {/* Back button with pointer-events ensuring the entire button area is clickable */}
+      {/* Back button with highlighted touchable area */}
       <div className="absolute top-4 left-4 z-50">
         <Button 
           variant="ghost" 
           onClick={handleBack} 
-          className="text-teal-300 hover:bg-black/20 w-14 h-14 rounded-full flex items-center justify-center p-0 pointer-events-auto" 
+          className="text-teal-300 hover:bg-black/20 w-14 h-14 rounded-full flex items-center justify-center p-0 pointer-events-auto border border-teal-400/30 bg-black/10" 
         >
           <ArrowLeft className="h-8 w-8 pointer-events-none" />
         </Button>
