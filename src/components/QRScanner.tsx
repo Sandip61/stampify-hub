@@ -141,7 +141,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
 
   return (
     <div className="w-full h-full relative">
-      {/* QR scanner container - we're making this a single full-sized element */}
+      {/* QR scanner container - full-sized element with no padding or margins */}
       <div id="qr-reader" className="w-full h-full overflow-hidden" />
       
       {/* Processing indicator */}

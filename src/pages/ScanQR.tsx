@@ -88,7 +88,7 @@ const ScanQR = () => {
 
   return (
     <MainLayout hideNav={true}>
-      <div className="fixed inset-0 bg-black">
+      <div className="fixed inset-0 bg-black w-full h-full">
         {/* Hidden file upload element */}
         <div id="qr-reader-file" className="hidden"></div>
         
@@ -105,7 +105,7 @@ const ScanQR = () => {
         </div>
 
         {/* Full screen camera container */}
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 w-full h-full">
           {!scanComplete ? (
             <div className="w-full h-full">
               <QRScanner onScanComplete={handleScanComplete} />
