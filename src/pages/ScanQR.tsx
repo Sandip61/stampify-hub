@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, CheckCircle } from 'lucide-react';
@@ -87,28 +86,21 @@ const ScanQR = () => {
 
   return (
     <div className="fixed inset-0 w-full h-full min-h-screen bg-black">
-      {/* Hidden file upload element */}
       <div id="qr-reader-file" className="hidden"></div>
       
-      {/* Back button with highlighted touchable area */}
-      <div className="absolute top-4 left-4 z-50">
-        <Button 
-          variant="ghost" 
-          onClick={handleBack} 
-          className="text-teal-300 hover:bg-black/20 w-14 h-14 rounded-full flex items-center justify-center p-0 pointer-events-auto border border-teal-400/30 bg-black/10" 
-        >
-          <ArrowLeft className="h-8 w-8 pointer-events-none" />
-        </Button>
+      <div 
+        onClick={handleBack}
+        className="absolute top-4 left-4 z-50 w-14 h-14 rounded-full border border-teal-400/30 bg-black/10 flex items-center justify-center cursor-pointer hover:bg-black/20 active:bg-black/30"
+      >
+        <ArrowLeft className="h-8 w-8 text-teal-300" />
       </div>
 
-      {/* Instruction text with amber color emphasis */}
       <div className="absolute top-6 left-0 right-0 z-50 text-center">
         <p className="text-gradient-primary font-medium bg-clip-text text-transparent bg-gradient-to-r from-amber-300 to-amber-400 py-1 px-4 inline-block">
           Point camera at QR code
         </p>
       </div>
 
-      {/* Full screen camera container */}
       {!scanComplete ? (
         <div className="absolute inset-0 w-full h-full">
           <QRScanner onScanComplete={handleScanComplete} />
@@ -125,22 +117,13 @@ const ScanQR = () => {
         </div>
       )}
       
-      {/* Decorative square with visible corners - moved to 38% from the top */}
       <div className="absolute top-[38%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 z-40">
-        {/* Top Left Corner */}
         <div className="absolute top-0 left-0 w-10 h-10 border-l-4 border-t-4 border-teal-400 rounded-tl-lg"></div>
-        
-        {/* Top Right Corner */}
         <div className="absolute top-0 right-0 w-10 h-10 border-r-4 border-t-4 border-amber-400 rounded-tr-lg"></div>
-        
-        {/* Bottom Left Corner */}
         <div className="absolute bottom-0 left-0 w-10 h-10 border-l-4 border-b-4 border-amber-400 rounded-bl-lg"></div>
-        
-        {/* Bottom Right Corner */}
         <div className="absolute bottom-0 right-0 w-10 h-10 border-r-4 border-b-4 border-teal-400 rounded-br-lg"></div>
       </div>
       
-      {/* Upload Image button with enhanced styling */}
       <div className="absolute top-3/4 left-0 right-0 flex justify-center z-50">
         <Button 
           onClick={triggerFileUpload} 
