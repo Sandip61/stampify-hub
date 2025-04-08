@@ -141,8 +141,10 @@ const QRScannerModal: React.FC<QRScannerModalProps> = ({ open, onOpenChange }) =
               />
             </div>
           ) : isScanning ? (
-            <div className="relative w-full h-64 flex items-center justify-center bg-black overflow-hidden">
-              <QRScanner onScanComplete={handleScanComplete} />
+            <div className="relative w-full h-64 bg-black">
+              <div className="absolute inset-0 w-full h-full overflow-hidden">
+                <QRScanner onScanComplete={handleScanComplete} />
+              </div>
               {/* Standard-sized scanning frame with fixed dimensions */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="border-4 border-transparent w-48 h-48 relative">

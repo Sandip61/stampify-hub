@@ -86,8 +86,6 @@ const ScanQR = () => {
     }
   };
 
-  console.log("ScanQR render, scanComplete:", scanComplete);
-
   return (
     <MainLayout hideNav={true}>
       <div className="relative min-h-screen bg-black flex flex-col">
@@ -107,16 +105,16 @@ const ScanQR = () => {
         <div id="qr-reader-file" className="hidden"></div>
 
         {/* Camera view with QR scanner */}
-        <div className="flex-1 w-full flex items-center justify-center relative">
+        <div className="flex-1 w-full h-full flex items-center justify-center relative">
           {!scanComplete ? (
             <>
-              <div className="absolute inset-0 z-10 overflow-hidden">
+              <div className="absolute inset-0 z-10 w-full h-full">
                 <QRScanner onScanComplete={handleScanComplete} />
               </div>
               
               {/* Scan area overlay - single fixed size overlay */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-15">
-                <div className="relative w-48 h-48 border-0">
+                <div className="relative w-60 h-60 border-0">
                   {/* Corner markers only - no full border */}
                   <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white"></div>
                   <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white"></div>

@@ -68,33 +68,43 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
     const qrRegionId = 'qr-reader';
     const qrCode = new Html5Qrcode(qrRegionId);
     qrCodeRef.current = qrCode;
-
-    qrCode.start(
-      { facingMode: { exact: 'environment' } },
-      {
-        fps: 10,
-        qrbox: 250,  // Using a single number instead of object for consistent sizing
-        aspectRatio: 1.0 // Force a square aspect ratio
-      },
-      onScanSuccess,
-      onScanFailure
-    ).catch(err => {
-      console.error('Camera start failed:', err);
-      toast.error('Failed to access camera');
-    });
+    
+    // Add a small delay to ensure the DOM element is fully mounted
+    const timer = setTimeout(() => {
+      // Get the container dimensions
+      const container = document.getElementById(qrRegionId);
+      if (!container) return;
+      
+      qrCode.start(
+        { facingMode: { exact: 'environment' } },
+        {
+          fps: 10,
+          qrbox: 250,
+          aspectRatio: 1.0
+        },
+        onScanSuccess,
+        onScanFailure
+      ).catch(err => {
+        console.error('Camera start failed:', err);
+        toast.error('Failed to access camera');
+      });
+    }, 300);
 
     return () => {
+      clearTimeout(timer);
       mountedRef.current = false;
-      qrCode
-        .stop()
-        .catch(e => console.warn('Failed to stop QR scanner:', e));
+      if (qrCodeRef.current) {
+        qrCodeRef.current
+          .stop()
+          .catch(e => console.warn('Failed to stop QR scanner:', e));
+      }
     };
-  }, [onScanSuccess, onScanFailure]);
+  }, []);
 
   return (
-    <div className="relative w-full h-full overflow-hidden">
-      {/* Single full-screen video feed with controlled dimensions */}
-      <div id="qr-reader" className="absolute inset-0" />
+    <div className="relative w-full h-full bg-black overflow-hidden">
+      {/* Single full-screen video feed */}
+      <div id="qr-reader" className="absolute inset-0 w-full h-full" />
 
       {/* Processing indicator */}
       {processing && (
