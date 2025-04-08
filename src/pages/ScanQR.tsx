@@ -90,19 +90,25 @@ const ScanQR = () => {
       {/* Hidden file upload element */}
       <div id="qr-reader-file" className="hidden"></div>
       
-      {/* Back button */}
+      {/* Back button with improved tap target and styling */}
       <div className="absolute top-6 left-6 z-50">
-        <Button variant="ghost" onClick={handleBack} className="text-white hover:bg-black/20">
+        <Button 
+          variant="ghost" 
+          onClick={handleBack} 
+          className="text-teal-300 hover:bg-black/20 w-12 h-12 rounded-full flex items-center justify-center p-0" 
+        >
           <ArrowLeft className="h-6 w-6" />
         </Button>
       </div>
 
-      {/* Instruction text */}
+      {/* Instruction text with enhanced styling */}
       <div className="absolute top-6 left-0 right-0 z-50 text-center">
-        <p className="text-white font-medium">Point camera at QR code</p>
+        <p className="text-gradient-primary font-medium text-lg bg-clip-text bg-gradient-to-r from-teal-300 to-amber-300 py-1 px-4 inline-block">
+          Point camera at QR code
+        </p>
       </div>
 
-      {/* Full screen camera container with updated styling */}
+      {/* Full screen camera container */}
       {!scanComplete ? (
         <div className="absolute inset-0 w-full h-full">
           <QRScanner onScanComplete={handleScanComplete} />
@@ -134,10 +140,13 @@ const ScanQR = () => {
         <div className="absolute bottom-0 right-0 w-10 h-10 border-r-4 border-b-4 border-teal-400 rounded-br-lg"></div>
       </div>
       
-      {/* Upload Image button - positioned in the fourth quarter of the screen */}
+      {/* Upload Image button with enhanced styling */}
       <div className="absolute top-3/4 left-0 right-0 flex justify-center z-50">
-        <Button onClick={triggerFileUpload} className="flex items-center gap-2 bg-white hover:bg-white/90 text-black px-6 py-6 rounded-full shadow">
-          <Upload className="h-5 w-5" />
+        <Button 
+          onClick={triggerFileUpload} 
+          className="flex items-center gap-2 bg-gradient-to-r from-teal-400 to-amber-400 hover:from-teal-500 hover:to-amber-500 text-black px-6 py-6 rounded-full shadow-lg"
+        >
+          <Upload className="h-5 w-5 text-black" />
           <span className="font-medium">Upload Image</span>
         </Button>
         <input
