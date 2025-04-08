@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, CheckCircle } from 'lucide-react';
@@ -88,12 +89,15 @@ const ScanQR = () => {
     <div className="fixed inset-0 w-full h-full min-h-screen bg-black">
       <div id="qr-reader-file" className="hidden"></div>
       
-      <div 
+      {/* Enhanced back button with full area clickability */}
+      <button
         onClick={handleBack}
-        className="absolute top-4 left-4 z-50 w-14 h-14 rounded-full border border-teal-400/30 bg-black/10 flex items-center justify-center cursor-pointer hover:bg-black/20 active:bg-black/30"
+        className="absolute top-4 left-4 z-50 w-14 h-14 rounded-full border border-teal-400/30 bg-black/10 flex items-center justify-center cursor-pointer hover:bg-black/20 active:bg-black/30 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
+        aria-label="Go back"
+        type="button"
       >
-        <ArrowLeft className="h-8 w-8 text-teal-300" />
-      </div>
+        <ArrowLeft className="h-8 w-8 text-teal-300 pointer-events-none" />
+      </button>
 
       <div className="absolute top-6 left-0 right-0 z-50 text-center">
         <p className="text-gradient-primary font-medium bg-clip-text text-transparent bg-gradient-to-r from-amber-300 to-amber-400 py-1 px-4 inline-block">
