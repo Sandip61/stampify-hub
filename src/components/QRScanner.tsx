@@ -5,6 +5,7 @@ import { processScannedQRCode } from '@/utils/stamps';
 import { toast } from 'sonner';
 import { CheckCircle } from 'lucide-react';
 import { getCurrentUser } from '@/utils/auth';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface QRScannerProps {
   onScanComplete?: () => void;
@@ -16,6 +17,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   const [scanning, setScanning] = useState(false);
   const mountedRef = useRef(false);
   const qrCodeRef = useRef<Html5Qrcode | null>(null);
+  const isMobile = useIsMobile();
 
   const onScanSuccess = async (decodedText: string) => {
     if (!mountedRef.current || scanResult) return;
@@ -72,7 +74,8 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
     // Add a small delay to ensure the DOM element is fully mounted
     const timer = setTimeout(() => {
       try {
-        if (document.getElementById(qrRegionId)) {
+        const element = document.getElementById(qrRegionId);
+        if (element) {
           console.log("Initializing QR scanner");
           const qrCode = new Html5Qrcode(qrRegionId);
           qrCodeRef.current = qrCode;
@@ -85,7 +88,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
                 { facingMode: "environment" }, // Try rear camera first
                 {
                   fps: 10,
-                  qrbox: { width: 250, height: 250 },
+                  qrbox: isMobile ? { width: 250, height: 250 } : { width: 300, height: 300 },
                   aspectRatio: 1,
                 },
                 onScanSuccess,
@@ -100,7 +103,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
                   { facingMode: "user" }, // Fall back to front camera
                   {
                     fps: 10,
-                    qrbox: { width: 250, height: 250 },
+                    qrbox: isMobile ? { width: 250, height: 250 } : { width: 300, height: 300 },
                     aspectRatio: 1,
                   },
                   onScanSuccess,
@@ -134,14 +137,14 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           .catch(e => console.warn('Failed to stop QR scanner:', e));
       }
     };
-  }, []);
+  }, [isMobile]);
 
   return (
-    <div className="w-full h-full flex-1 flex flex-col relative bg-black">
-      {/* QR scanner container */}
-      <div id="qr-reader" className="w-full h-full overflow-hidden flex-1" />
+    <div className="w-full h-full relative">
+      {/* QR scanner container - we're making this a single full-sized element */}
+      <div id="qr-reader" className="w-full h-full overflow-hidden" />
       
-      {/* Scan overlay with corner markers */}
+      {/* Single scan overlay with corner markers */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="relative w-64 h-64 border-0">
           {/* Corner markers only */}
