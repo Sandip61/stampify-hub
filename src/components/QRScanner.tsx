@@ -13,11 +13,13 @@ interface QRScannerProps {
 const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const mountedRef = useRef(false);
   const qrCodeRef = useRef<Html5Qrcode | null>(null);
 
   const onScanSuccess = async (decodedText: string) => {
     if (!mountedRef.current || scanResult) return;
+    
     setScanResult(decodedText);
     setProcessing(true);
 
@@ -37,6 +39,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       if (!user) {
         toast.error('Please log in to collect stamps');
         setScanResult(null);
+        setProcessing(false);
         return;
       }
 
@@ -51,7 +54,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to process QR code');
       setScanResult(null);
-    } finally {
       setProcessing(false);
     }
   };
@@ -70,44 +72,53 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
     // Add a small delay to ensure the DOM element is fully mounted
     const timer = setTimeout(() => {
       try {
-        const qrCode = new Html5Qrcode(qrRegionId);
-        qrCodeRef.current = qrCode;
-        
-        // Start scanning with more flexible configuration
-        const startScanning = async () => {
-          try {
-            console.log("Starting QR scanner with environment camera");
-            await qrCode.start(
-              { facingMode: "environment" },
-              {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: window.innerWidth / window.innerHeight,
-              },
-              onScanSuccess,
-              onScanFailure
-            );
-          } catch (err) {
-            console.log("Trying with user camera instead:", err);
+        if (document.getElementById(qrRegionId)) {
+          console.log("Initializing QR scanner");
+          const qrCode = new Html5Qrcode(qrRegionId);
+          qrCodeRef.current = qrCode;
+          
+          // Start scanning with flexible configuration
+          const startScanning = async () => {
             try {
+              console.log("Starting QR scanner with environment camera");
               await qrCode.start(
-                { facingMode: "user" },
+                { facingMode: "environment" }, // Try rear camera first
                 {
                   fps: 10,
                   qrbox: { width: 250, height: 250 },
-                  aspectRatio: window.innerWidth / window.innerHeight,
+                  aspectRatio: 1,
                 },
                 onScanSuccess,
                 onScanFailure
               );
-            } catch (err2) {
-              console.error("Both camera options failed:", err2);
-              toast.error("Failed to access camera. Please check camera permissions.");
+              setScanning(true);
+              console.log("Camera started successfully");
+            } catch (err) {
+              console.log("Trying with user camera instead:", err);
+              try {
+                await qrCode.start(
+                  { facingMode: "user" }, // Fall back to front camera
+                  {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1,
+                  },
+                  onScanSuccess,
+                  onScanFailure
+                );
+                setScanning(true);
+                console.log("Fallback camera started successfully");
+              } catch (err2) {
+                console.error("Both camera options failed:", err2);
+                toast.error("Failed to access camera. Please check camera permissions.");
+              }
             }
-          }
-        };
-        
-        startScanning();
+          };
+          
+          startScanning();
+        } else {
+          console.error("QR reader element not found in the DOM");
+        }
       } catch (error) {
         console.error("Error setting up QR scanner:", error);
         toast.error("Failed to initialize camera. Please try again.");
@@ -126,9 +137,9 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   }, []);
 
   return (
-    <div className="absolute inset-0 bg-black w-full h-full overflow-hidden">
-      {/* Single QR reader container - this contains the camera feed */}
-      <div id="qr-reader" className="w-full h-full" />
+    <div className="w-full h-full flex-1 flex flex-col relative bg-black">
+      {/* QR scanner container */}
+      <div id="qr-reader" className="w-full h-full overflow-hidden flex-1" />
       
       {/* Scan overlay with corner markers */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -157,6 +168,13 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
             <p className="text-green-800 font-medium">QR Code Scanned!</p>
             <p className="text-sm text-green-600">Processing your stamps...</p>
           </div>
+        </div>
+      )}
+
+      {/* Camera status indicator */}
+      {!scanning && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white bg-black/70 px-4 py-2 rounded">
+          Starting camera...
         </div>
       )}
     </div>

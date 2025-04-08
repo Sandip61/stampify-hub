@@ -88,43 +88,26 @@ const ScanQR = () => {
 
   return (
     <MainLayout hideNav={true}>
-      <div className="min-h-screen bg-black flex flex-col relative overflow-hidden">
+      <div className="fixed inset-0 bg-black flex flex-col">
         {/* Hidden container for file upload */}
         <div id="qr-reader-file" className="hidden"></div>
         
-        {/* Back button - positioned absolutely on top */}
+        {/* Back button */}
         <div className="absolute top-6 left-6 z-40">
           <Button variant="ghost" onClick={handleBack} className="text-white hover:bg-black/20">
             <ArrowLeft className="h-6 w-6" />
           </Button>
         </div>
 
-        {/* Instruction text - positioned absolutely on top */}
+        {/* Instruction text */}
         <div className="absolute top-6 left-0 right-0 z-40 text-center">
           <p className="text-white font-medium">Point camera at QR code</p>
         </div>
 
-        {/* Camera view with QR scanner - fills the entire screen */}
-        <div className="flex-1 w-full h-full">
+        {/* Camera view with QR scanner */}
+        <div className="flex-1 w-full h-full relative">
           {!scanComplete ? (
-            <div className="relative w-full h-full">
-              <QRScanner onScanComplete={handleScanComplete} />
-              
-              {/* Upload Image button - positioned absolutely at the bottom */}
-              <div className="absolute bottom-12 w-full flex flex-col items-center z-40">
-                <Button onClick={triggerFileUpload} className="flex items-center gap-2 bg-white hover:bg-white/90 text-black px-6 py-6 rounded-full shadow">
-                  <Upload className="h-5 w-5" />
-                  <span className="font-medium">Upload Image</span>
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </div>
-            </div>
+            <QRScanner onScanComplete={handleScanComplete} />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="bg-green-50 p-10 flex flex-col items-center justify-center text-center rounded-lg m-4">
@@ -136,6 +119,21 @@ const ScanQR = () => {
               </div>
             </div>
           )}
+          
+          {/* Upload Image button */}
+          <div className="absolute bottom-12 w-full flex flex-col items-center z-40">
+            <Button onClick={triggerFileUpload} className="flex items-center gap-2 bg-white hover:bg-white/90 text-black px-6 py-6 rounded-full shadow">
+              <Upload className="h-5 w-5" />
+              <span className="font-medium">Upload Image</span>
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+          </div>
         </div>
       </div>
     </MainLayout>
