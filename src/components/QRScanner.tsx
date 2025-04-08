@@ -71,24 +71,41 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
     
     // Add a small delay to ensure the DOM element is fully mounted
     const timer = setTimeout(() => {
-      // Get the container dimensions
-      const container = document.getElementById(qrRegionId);
-      if (!container) return;
+      // Try to start the camera with less restrictive constraints
+      const startCamera = async () => {
+        try {
+          // First try with environment camera (back camera)
+          await qrCode.start(
+            { facingMode: "environment" },
+            {
+              fps: 10,
+              qrbox: { width: 250, height: 250 },
+            },
+            onScanSuccess,
+            onScanFailure
+          );
+        } catch (err) {
+          console.log("Trying with user camera instead:", err);
+          // If that fails, try with user camera (front camera)
+          try {
+            await qrCode.start(
+              { facingMode: "user" },
+              {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+              },
+              onScanSuccess,
+              onScanFailure
+            );
+          } catch (err2) {
+            console.error("Both camera options failed:", err2);
+            toast.error("Failed to access camera. Please check camera permissions.");
+          }
+        }
+      };
       
-      qrCode.start(
-        { facingMode: { exact: 'environment' } },
-        {
-          fps: 10,
-          qrbox: 250,
-          aspectRatio: 1.0
-        },
-        onScanSuccess,
-        onScanFailure
-      ).catch(err => {
-        console.error('Camera start failed:', err);
-        toast.error('Failed to access camera');
-      });
-    }, 300);
+      startCamera();
+    }, 500);
 
     return () => {
       clearTimeout(timer);
@@ -102,9 +119,20 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   }, []);
 
   return (
-    <div className="relative w-full h-full bg-black overflow-hidden">
-      {/* Single full-screen video feed */}
-      <div id="qr-reader" className="absolute inset-0 w-full h-full" />
+    <div className="w-full h-full bg-black flex flex-col items-center justify-center">
+      {/* QR scanner container */}
+      <div id="qr-reader" className="w-full h-full" />
+      
+      {/* Scan overlay with corner markers */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="relative w-60 h-60 border-0">
+          {/* Corner markers only */}
+          <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white"></div>
+          <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white"></div>
+          <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white"></div>
+          <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white"></div>
+        </div>
+      </div>
 
       {/* Processing indicator */}
       {processing && (

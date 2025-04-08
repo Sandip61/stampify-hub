@@ -107,22 +107,9 @@ const ScanQR = () => {
         {/* Camera view with QR scanner */}
         <div className="flex-1 w-full h-full flex items-center justify-center relative">
           {!scanComplete ? (
-            <>
-              <div className="absolute inset-0 z-10 w-full h-full">
-                <QRScanner onScanComplete={handleScanComplete} />
-              </div>
+            <div className="w-full h-full absolute inset-0">
+              <QRScanner onScanComplete={handleScanComplete} />
               
-              {/* Scan area overlay - single fixed size overlay */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-15">
-                <div className="relative w-60 h-60 border-0">
-                  {/* Corner markers only - no full border */}
-                  <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white"></div>
-                  <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white"></div>
-                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white"></div>
-                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white"></div>
-                </div>
-              </div>
-
               {/* Upload Image button at the bottom */}
               <div className="absolute bottom-12 w-full flex flex-col items-center z-20">
                 <Button onClick={triggerFileUpload} className="flex items-center gap-2 bg-white hover:bg-white/90 text-black px-6 py-6 rounded-full shadow">
@@ -137,7 +124,7 @@ const ScanQR = () => {
                   className="hidden"
                 />
               </div>
-            </>
+            </div>
           ) : (
             <div className="bg-green-50 p-10 flex flex-col items-center justify-center text-center rounded-lg m-4">
               <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
