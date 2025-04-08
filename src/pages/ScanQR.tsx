@@ -91,19 +91,19 @@ const ScanQR = () => {
       <div id="qr-reader-file" className="hidden"></div>
       
       {/* Back button with improved tap target and styling */}
-      <div className="absolute top-6 left-6 z-50">
+      <div className="absolute top-4 left-4 z-50">
         <Button 
           variant="ghost" 
           onClick={handleBack} 
-          className="text-teal-300 hover:bg-black/20 w-12 h-12 rounded-full flex items-center justify-center p-0" 
+          className="text-teal-300 hover:bg-black/20 w-14 h-14 rounded-full flex items-center justify-center p-0" 
         >
-          <ArrowLeft className="h-6 w-6" />
+          <ArrowLeft className="h-8 w-8" />
         </Button>
       </div>
 
       {/* Instruction text with enhanced styling */}
       <div className="absolute top-6 left-0 right-0 z-50 text-center">
-        <p className="text-gradient-primary font-medium text-lg bg-clip-text bg-gradient-to-r from-teal-300 to-amber-300 py-1 px-4 inline-block">
+        <p className="text-gradient-primary font-medium bg-clip-text bg-gradient-to-r from-teal-300 to-amber-300 py-1 px-4 inline-block">
           Point camera at QR code
         </p>
       </div>
