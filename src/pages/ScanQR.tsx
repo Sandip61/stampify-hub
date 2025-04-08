@@ -100,7 +100,7 @@ const ScanQR = () => {
       </button>
 
       <div className="absolute top-6 left-0 right-0 z-50 text-center">
-        <p className="text-blue-300 font-medium py-1 px-4 inline-block">
+        <p className="text-teal-400 font-medium py-1 px-4 inline-block">
           Point camera at QR code
         </p>
       </div>
