@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, CheckCircle } from 'lucide-react';
@@ -118,8 +119,8 @@ const ScanQR = () => {
         </div>
       )}
       
-      {/* Upload Image button - positioned higher in the screen (approximately in the third quarter) */}
-      <div className="absolute top-1/2 left-0 right-0 flex justify-center z-50">
+      {/* Upload Image button - positioned in the fourth quarter of the screen */}
+      <div className="absolute top-3/4 left-0 right-0 flex justify-center z-50">
         <Button onClick={triggerFileUpload} className="flex items-center gap-2 bg-white hover:bg-white/90 text-black px-6 py-6 rounded-full shadow">
           <Upload className="h-5 w-5" />
           <span className="font-medium">Upload Image</span>
