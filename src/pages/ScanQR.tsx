@@ -88,30 +88,30 @@ const ScanQR = () => {
 
   return (
     <MainLayout hideNav={true}>
-      <div className="relative min-h-screen bg-black flex flex-col">
-        {/* Back button */}
-        <div className="absolute top-6 left-6 z-20">
+      <div className="min-h-screen bg-black flex flex-col relative overflow-hidden">
+        {/* Hidden container for file upload */}
+        <div id="qr-reader-file" className="hidden"></div>
+        
+        {/* Back button - positioned absolutely on top */}
+        <div className="absolute top-6 left-6 z-40">
           <Button variant="ghost" onClick={handleBack} className="text-white hover:bg-black/20">
             <ArrowLeft className="h-6 w-6" />
           </Button>
         </div>
 
-        {/* Instruction text */}
-        <div className="absolute top-6 left-0 right-0 z-20 text-center">
+        {/* Instruction text - positioned absolutely on top */}
+        <div className="absolute top-6 left-0 right-0 z-40 text-center">
           <p className="text-white font-medium">Point camera at QR code</p>
         </div>
 
-        {/* Hidden container for file upload */}
-        <div id="qr-reader-file" className="hidden"></div>
-
-        {/* Camera view with QR scanner */}
-        <div className="flex-1 w-full h-full flex items-center justify-center relative">
+        {/* Camera view with QR scanner - fills the entire screen */}
+        <div className="flex-1 w-full h-full">
           {!scanComplete ? (
-            <div className="w-full h-full absolute inset-0">
+            <div className="relative w-full h-full">
               <QRScanner onScanComplete={handleScanComplete} />
               
-              {/* Upload Image button at the bottom */}
-              <div className="absolute bottom-12 w-full flex flex-col items-center z-20">
+              {/* Upload Image button - positioned absolutely at the bottom */}
+              <div className="absolute bottom-12 w-full flex flex-col items-center z-40">
                 <Button onClick={triggerFileUpload} className="flex items-center gap-2 bg-white hover:bg-white/90 text-black px-6 py-6 rounded-full shadow">
                   <Upload className="h-5 w-5" />
                   <span className="font-medium">Upload Image</span>
@@ -126,12 +126,14 @@ const ScanQR = () => {
               </div>
             </div>
           ) : (
-            <div className="bg-green-50 p-10 flex flex-col items-center justify-center text-center rounded-lg m-4">
-              <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
-                <CheckCircle className="h-10 w-10 text-green-600" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="bg-green-50 p-10 flex flex-col items-center justify-center text-center rounded-lg m-4">
+                <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
+                  <CheckCircle className="h-10 w-10 text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-green-800 mb-2">Success!</h3>
+                <p className="text-green-600">Your stamps have been collected</p>
               </div>
-              <h3 className="text-xl font-semibold text-green-800 mb-2">Success!</h3>
-              <p className="text-green-600">Your stamps have been collected</p>
             </div>
           )}
         </div>

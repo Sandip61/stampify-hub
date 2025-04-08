@@ -66,45 +66,52 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   useEffect(() => {
     mountedRef.current = true;
     const qrRegionId = 'qr-reader';
-    const qrCode = new Html5Qrcode(qrRegionId);
-    qrCodeRef.current = qrCode;
     
     // Add a small delay to ensure the DOM element is fully mounted
     const timer = setTimeout(() => {
-      // Try to start the camera with less restrictive constraints
-      const startCamera = async () => {
-        try {
-          // First try with environment camera (back camera)
-          await qrCode.start(
-            { facingMode: "environment" },
-            {
-              fps: 10,
-              qrbox: { width: 250, height: 250 },
-            },
-            onScanSuccess,
-            onScanFailure
-          );
-        } catch (err) {
-          console.log("Trying with user camera instead:", err);
-          // If that fails, try with user camera (front camera)
+      try {
+        const qrCode = new Html5Qrcode(qrRegionId);
+        qrCodeRef.current = qrCode;
+        
+        // Start scanning with more flexible configuration
+        const startScanning = async () => {
           try {
+            console.log("Starting QR scanner with environment camera");
             await qrCode.start(
-              { facingMode: "user" },
+              { facingMode: "environment" },
               {
                 fps: 10,
                 qrbox: { width: 250, height: 250 },
+                aspectRatio: window.innerWidth / window.innerHeight,
               },
               onScanSuccess,
               onScanFailure
             );
-          } catch (err2) {
-            console.error("Both camera options failed:", err2);
-            toast.error("Failed to access camera. Please check camera permissions.");
+          } catch (err) {
+            console.log("Trying with user camera instead:", err);
+            try {
+              await qrCode.start(
+                { facingMode: "user" },
+                {
+                  fps: 10,
+                  qrbox: { width: 250, height: 250 },
+                  aspectRatio: window.innerWidth / window.innerHeight,
+                },
+                onScanSuccess,
+                onScanFailure
+              );
+            } catch (err2) {
+              console.error("Both camera options failed:", err2);
+              toast.error("Failed to access camera. Please check camera permissions.");
+            }
           }
-        }
-      };
-      
-      startCamera();
+        };
+        
+        startScanning();
+      } catch (error) {
+        console.error("Error setting up QR scanner:", error);
+        toast.error("Failed to initialize camera. Please try again.");
+      }
     }, 500);
 
     return () => {
@@ -119,24 +126,24 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   }, []);
 
   return (
-    <div className="w-full h-full bg-black flex flex-col items-center justify-center">
-      {/* QR scanner container */}
+    <div className="absolute inset-0 bg-black w-full h-full overflow-hidden">
+      {/* Single QR reader container - this contains the camera feed */}
       <div id="qr-reader" className="w-full h-full" />
       
       {/* Scan overlay with corner markers */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="relative w-60 h-60 border-0">
+        <div className="relative w-64 h-64 border-0">
           {/* Corner markers only */}
-          <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white"></div>
-          <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white"></div>
-          <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white"></div>
-          <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white"></div>
+          <div className="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-white"></div>
+          <div className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-white"></div>
+          <div className="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-white"></div>
+          <div className="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-white"></div>
         </div>
       </div>
 
       {/* Processing indicator */}
       {processing && (
-        <div className="absolute bottom-24 left-0 right-0 p-4 flex items-center justify-center text-white z-30">
+        <div className="absolute bottom-32 left-0 right-0 p-4 flex items-center justify-center text-white z-30">
           <div className="mr-2 h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
           <span>Processing stamp...</span>
         </div>
@@ -144,7 +151,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
 
       {/* Success message */}
       {scanResult && !processing && (
-        <div className="absolute bottom-24 left-0 right-0 p-4 bg-green-50 mx-4 border-t border-green-200 flex items-start rounded-lg z-30">
+        <div className="absolute bottom-32 left-0 right-0 mx-4 p-4 bg-green-50 border-t border-green-200 flex items-start rounded-lg z-30">
           <CheckCircle className="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-green-800 font-medium">QR Code Scanned!</p>
