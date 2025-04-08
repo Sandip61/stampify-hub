@@ -93,6 +93,12 @@
   body {
     @apply bg-gradient-to-br from-teal-50 via-white to-amber-50 min-h-screen bg-fixed text-foreground;
   }
+  
+  /* Mobile viewport fixes for iOS Safari */
+  html, body, #root {
+    height: 100%;
+    overscroll-behavior: none;
+  }
 }
 
 @layer components {
@@ -160,4 +166,22 @@
   .gradient-border {
     @apply relative after:absolute after:inset-0 after:p-px after:rounded-xl after:bg-gradient-to-r after:from-teal-300 after:to-amber-300 after:-z-10;
   }
+}
+
+/* Specific fixes for QR scanner */
+#qr-reader {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#qr-reader video {
+  object-fit: cover !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Fix for html5-qrcode's internal styles */
+.html5-qrcode-element {
+  width: 100% !important;
+  height: 100% !important;
 }

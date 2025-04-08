@@ -80,16 +80,17 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           const qrCode = new Html5Qrcode(qrRegionId);
           qrCodeRef.current = qrCode;
           
-          // Determine which camera to use
+          // Determine which camera to use - always prioritize back camera for mobile
           const cameraOptions = [
             { facingMode: "environment" }, // Back camera (preferred for mobile)
             { facingMode: "user" }         // Front camera (fallback)
           ];
           
+          // Use a responsive scan config that works well on all devices
           const scanConfig = {
             fps: 10,
-            qrbox: undefined, // No QR box overlay
-            aspectRatio: 1,   // Use a 1:1 aspect ratio as default
+            qrbox: undefined, // No QR box overlay for full screen scanning
+            aspectRatio: 1,   // Use a 1:1 aspect ratio
           };
           
           const tryCamera = async (cameraIndex = 0) => {
@@ -114,7 +115,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
             }
           };
           
-          tryCamera(0); // Start with first camera option
+          tryCamera(0); // Start with first camera option (back camera)
         } else {
           console.error("QR reader element not found in the DOM");
         }
@@ -136,8 +137,8 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   }, []);
 
   return (
-    <div className="absolute inset-0 w-full h-full overflow-hidden bg-black">
-      {/* Camera view - we need to ensure this fills the screen */}
+    <div className="absolute inset-0 w-full h-full min-h-screen overflow-hidden bg-black">
+      {/* Camera view with improved positioning */}
       <div 
         id="qr-reader" 
         className="w-full h-full" 
@@ -147,6 +148,8 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           left: 0,
           right: 0,
           bottom: 0,
+          width: '100%',
+          height: '100%',
           overflow: 'hidden'
         }}
       />

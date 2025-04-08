@@ -86,7 +86,7 @@ const ScanQR = () => {
   };
 
   return (
-    <div className="fixed inset-0 w-full h-full bg-black">
+    <div className="fixed inset-0 w-full h-full min-h-screen bg-black">
       {/* Hidden file upload element */}
       <div id="qr-reader-file" className="hidden"></div>
       
@@ -102,9 +102,11 @@ const ScanQR = () => {
         <p className="text-white font-medium">Point camera at QR code</p>
       </div>
 
-      {/* Full screen camera container - removed nested containers for better layout */}
+      {/* Full screen camera container with updated styling */}
       {!scanComplete ? (
-        <QRScanner onScanComplete={handleScanComplete} />
+        <div className="absolute inset-0 w-full h-full">
+          <QRScanner onScanComplete={handleScanComplete} />
+        </div>
       ) : (
         <div className="fixed inset-0 flex items-center justify-center bg-black">
           <div className="bg-green-50 p-10 flex flex-col items-center justify-center text-center rounded-lg m-4">
