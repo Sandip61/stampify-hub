@@ -25,6 +25,9 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
     if (!mountedRef.current || scanResult || processing || errorCooldown) return;
     
     try {
+      // Skip processing if we're in cooldown
+      if (errorCooldown) return;
+
       // Validate QR format
       let payload;
       try {
@@ -33,20 +36,20 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           throw new Error();
         }
       } catch {
-        // Set error cooldown to prevent multiple error messages
-        if (!errorCooldown) {
-          toast.error('Invalid QR code format. Please scan a valid stamp card QR code.');
-          setErrorCooldown(true);
-          setTimeout(() => {
-            if (mountedRef.current) {
-              setErrorCooldown(false);
-            }
-          }, 10000); // 10 seconds cooldown
-        }
-        return; // Exit early without further processing
+        // Trigger cooldown and show message once
+        toast.error('Invalid QR code format. Please scan a valid stamp card QR code.');
+        setErrorCooldown(true);
+
+        setTimeout(() => {
+          if (mountedRef.current) {
+            setErrorCooldown(false);
+          }
+        }, 10000); // 10 seconds cooldown
+
+        return; // Exit early
       }
 
-      // Valid QR code, continue processing
+      // If QR code is valid, proceed
       setProcessing(true);
       setScanResult(decodedText);
       
@@ -54,6 +57,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       if (!user) {
         toast.error('Please log in to collect stamps');
         setProcessing(false);
+        setScanResult(null);
         return;
       }
 
@@ -67,8 +71,8 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       onScanComplete?.();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to process QR code');
-      setProcessing(false);
       setScanResult(null);
+      setProcessing(false);
     }
   };
 
