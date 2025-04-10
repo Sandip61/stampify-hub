@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { processScannedQRCode } from '@/utils/stamps';
@@ -18,17 +17,22 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   const [errorCooldown, setErrorCooldown] = useState(false);
   const mountedRef = useRef(false);
   const qrCodeRef = useRef<Html5Qrcode | null>(null);
+  const lastErrorTimeRef = useRef<number | null>(null);
   const isMobile = useIsMobile();
   
   const onScanSuccess = async (decodedText: string) => {
     // Prevent processing if component unmounted, already processing, or in cooldown
-    if (!mountedRef.current || scanResult || processing || errorCooldown) return;
+    if (!mountedRef.current || scanResult || processing) return;
     
     try {
-      // Skip processing if we're in cooldown
-      if (errorCooldown) return;
+      const now = Date.now();
+      const cooldownDuration = 10000; // 10 seconds
 
-      // Validate QR format
+      // Check if we're still within cooldown
+      if (lastErrorTimeRef.current && now - lastErrorTimeRef.current < cooldownDuration) {
+        return;
+      }
+
       let payload;
       try {
         payload = JSON.parse(decodedText);
@@ -36,17 +40,11 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           throw new Error();
         }
       } catch {
-        // Trigger cooldown and show message once
+        // Set timestamp for last error
+        lastErrorTimeRef.current = now;
+
         toast.error('Invalid QR code format. Please scan a valid stamp card QR code.');
-        setErrorCooldown(true);
-
-        setTimeout(() => {
-          if (mountedRef.current) {
-            setErrorCooldown(false);
-          }
-        }, 10000); // 10 seconds cooldown
-
-        return; // Exit early
+        return;
       }
 
       // If QR code is valid, proceed
