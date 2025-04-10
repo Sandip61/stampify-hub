@@ -21,10 +21,9 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   const isMobile = useIsMobile();
   
   const onScanSuccess = async (decodedText: string) => {
+    // Prevent processing if component unmounted, already processing, or in cooldown
     if (!mountedRef.current || scanResult || processing || errorCooldown) return;
     
-    setProcessing(true);
-
     try {
       // Validate QR format
       let payload;
@@ -35,17 +34,22 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         }
       } catch {
         // Set error cooldown to prevent multiple error messages
-        setErrorCooldown(true);
-        setTimeout(() => {
-          if (mountedRef.current) {
-            setErrorCooldown(false);
-          }
-        }, 3000); // 3 seconds cooldown
-        
-        throw new Error('Invalid QR code format. Please scan a valid stamp card QR code.');
+        if (!errorCooldown) {
+          toast.error('Invalid QR code format. Please scan a valid stamp card QR code.');
+          setErrorCooldown(true);
+          setTimeout(() => {
+            if (mountedRef.current) {
+              setErrorCooldown(false);
+            }
+          }, 10000); // 10 seconds cooldown
+        }
+        return; // Exit early without further processing
       }
 
+      // Valid QR code, continue processing
+      setProcessing(true);
       setScanResult(decodedText);
+      
       const user = await getCurrentUser();
       if (!user) {
         toast.error('Please log in to collect stamps');
@@ -188,15 +192,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         </div>
       )}
       
-      {/* Error cooldown indicator - optional visual feedback */}
-      {errorCooldown && (
-        <div className="absolute bottom-32 left-0 right-0 mx-4 p-4 bg-red-50 border-t border-red-200 flex items-start rounded-lg z-30">
-          <div>
-            <p className="text-red-800 font-medium">Scanner paused</p>
-            <p className="text-sm text-red-600">Please try a different QR code in a moment</p>
-          </div>
-        </div>
-      )}
+      {/* Removed the error cooldown visual indicator as requested */}
     </div>
   );
 };
