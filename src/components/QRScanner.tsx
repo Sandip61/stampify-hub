@@ -15,14 +15,14 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [errorCooldown, setErrorCooldown] = useState(false);
   const mountedRef = useRef(false);
   const qrCodeRef = useRef<Html5Qrcode | null>(null);
   const isMobile = useIsMobile();
   
   const onScanSuccess = async (decodedText: string) => {
-    if (!mountedRef.current || scanResult) return;
+    if (!mountedRef.current || scanResult || processing || errorCooldown) return;
     
-    setScanResult(decodedText);
     setProcessing(true);
 
     try {
@@ -34,13 +34,21 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           throw new Error();
         }
       } catch {
+        // Set error cooldown to prevent multiple error messages
+        setErrorCooldown(true);
+        setTimeout(() => {
+          if (mountedRef.current) {
+            setErrorCooldown(false);
+          }
+        }, 3000); // 3 seconds cooldown
+        
         throw new Error('Invalid QR code format. Please scan a valid stamp card QR code.');
       }
 
+      setScanResult(decodedText);
       const user = await getCurrentUser();
       if (!user) {
         toast.error('Please log in to collect stamps');
-        setScanResult(null);
         setProcessing(false);
         return;
       }
@@ -55,8 +63,8 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       onScanComplete?.();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to process QR code');
-      setScanResult(null);
       setProcessing(false);
+      setScanResult(null);
     }
   };
 
@@ -177,6 +185,16 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       {!scanning && (
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white bg-black/70 px-4 py-2 rounded">
           Starting camera...
+        </div>
+      )}
+      
+      {/* Error cooldown indicator - optional visual feedback */}
+      {errorCooldown && (
+        <div className="absolute bottom-32 left-0 right-0 mx-4 p-4 bg-red-50 border-t border-red-200 flex items-start rounded-lg z-30">
+          <div>
+            <p className="text-red-800 font-medium">Scanner paused</p>
+            <p className="text-sm text-red-600">Please try a different QR code in a moment</p>
+          </div>
         </div>
       )}
     </div>
