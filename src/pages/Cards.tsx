@@ -5,8 +5,9 @@ import { getCurrentUser, User } from "@/utils/auth";
 import { getUserStampCards, StampCard as StampCardType, getUserTransactions, Transaction, initializeDemoData } from "@/utils/data";
 import StampCard from "@/components/StampCard";
 import { Button } from "@/components/ui/button";
-import { Search, Scan, Plus } from "lucide-react";
+import { Search, Scan, Plus, Store, CreditCard, SortDesc } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const Cards = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const Cards = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [showNoCardsModal, setShowNoCardsModal] = useState(false);
+  const [viewMode, setViewMode] = useState<"all" | "grouped">("all");
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -64,6 +66,16 @@ const Cards = () => {
     return a.businessName.localeCompare(b.businessName);
   });
 
+  // Group cards by business
+  const groupedByBusiness = sortedCards.reduce<Record<string, StampCardType[]>>((groups, card) => {
+    const businessName = card.businessName;
+    if (!groups[businessName]) {
+      groups[businessName] = [];
+    }
+    groups[businessName].push(card);
+    return groups;
+  }, {});
+
   const handleCardClick = (cardId: string) => {
     navigate(`/card/${cardId}`);
   };
@@ -98,26 +110,73 @@ const Cards = () => {
           />
         </div>
         
-        <Link to="/scan" className="mt-2 sm:mt-0">
-          <Button variant="secondary" className="flex items-center gap-1.5 w-full sm:w-auto">
-            <Scan className="h-4 w-4" />
-            <span>Scan</span>
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2 mt-2 sm:mt-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="flex items-center gap-1.5">
+                <SortDesc className="h-4 w-4" />
+                <span>View</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-background">
+              <DropdownMenuItem onClick={() => setViewMode("all")} className={viewMode === "all" ? "bg-muted" : ""}>
+                <CreditCard className="h-4 w-4 mr-2" />
+                <span>All Cards</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setViewMode("grouped")} className={viewMode === "grouped" ? "bg-muted" : ""}>
+                <Store className="h-4 w-4 mr-2" />
+                <span>Group by Business</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <Link to="/scan" className="sm:ml-2">
+            <Button variant="secondary" className="flex items-center gap-1.5 w-full sm:w-auto">
+              <Scan className="h-4 w-4" />
+              <span>Scan</span>
+            </Button>
+          </Link>
+        </div>
       </div>
       
       {/* Cards section */}
       {sortedCards.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {sortedCards.map((card) => (
-            <div key={card.id} onClick={() => handleCardClick(card.id)} className="cursor-pointer">
-              <StampCard
-                card={card}
-                className="h-full transition-all transform hover:translate-y-[-2px]"
-              />
-            </div>
-          ))}
-        </div>
+        viewMode === "all" ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {sortedCards.map((card) => (
+              <div key={card.id} onClick={() => handleCardClick(card.id)} className="cursor-pointer">
+                <StampCard
+                  card={card}
+                  className="h-full transition-all transform hover:translate-y-[-2px]"
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {Object.entries(groupedByBusiness).map(([businessName, businessCards]) => (
+              <div key={businessName} className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Store className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-semibold">{businessName}</h2>
+                  <span className="text-xs bg-muted px-2 py-1 rounded-full">
+                    {businessCards.length} {businessCards.length === 1 ? 'card' : 'cards'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {businessCards.map((card) => (
+                    <div key={card.id} onClick={() => handleCardClick(card.id)} className="cursor-pointer">
+                      <StampCard
+                        card={card}
+                        className="h-full transition-all transform hover:translate-y-[-2px]"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )
       ) : (
         <div className="text-center py-12 px-4 bg-gray-50 rounded-lg border border-gray-100">
           <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
