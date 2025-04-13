@@ -90,25 +90,64 @@ export const generateDummyData = async () => {
     }
     
     // Generate stamp cards for each merchant
-    const stampCardsData = merchantsData.map((merchant, index) => {
-      return {
+    const stampCardsData = [
+      // First coffee card
+      {
         id: uuidv4(),
-        name: index === 0 ? "Coffee Loyalty Card" : 
-              index === 1 ? "Pizza Lover Card" : "Smoothie Rewards",
-        description: index === 0 ? "Collect stamps with every coffee purchase" : 
-                    index === 1 ? "Get rewarded for your pizza addiction" : 
-                    "Stay healthy and get rewarded",
-        merchant_id: merchant.id,
-        total_stamps: index === 0 ? 8 : index === 1 ? 10 : 6,
-        reward: index === 0 ? "Free Coffee" : 
-               index === 1 ? "Free Medium Pizza" : "Free Large Smoothie",
-        business_logo: merchant.business_logo,
-        business_color: merchant.business_color,
+        name: "Coffee Loyalty Card",
+        description: "Collect stamps with every coffee purchase",
+        merchant_id: merchantsData[0].id,
+        total_stamps: 8,
+        reward: "Free Coffee",
+        business_logo: merchantsData[0].business_logo,
+        business_color: merchantsData[0].business_color,
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      };
-    });
+      },
+      // Second coffee card (new)
+      {
+        id: uuidv4(),
+        name: "Coffee Bean Collector",
+        description: "Buy coffee beans and earn rewards",
+        merchant_id: merchantsData[0].id,
+        total_stamps: 5,
+        reward: "250g Premium Coffee Beans",
+        business_logo: merchantsData[0].business_logo,
+        business_color: merchantsData[0].business_color,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      // Pizza card
+      {
+        id: uuidv4(),
+        name: "Pizza Lover Card",
+        description: "Get rewarded for your pizza addiction",
+        merchant_id: merchantsData[1].id,
+        total_stamps: 10,
+        reward: "Free Medium Pizza",
+        business_logo: merchantsData[1].business_logo,
+        business_color: merchantsData[1].business_color,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      // Smoothie card
+      {
+        id: uuidv4(),
+        name: "Smoothie Rewards",
+        description: "Stay healthy and get rewarded",
+        merchant_id: merchantsData[2].id,
+        total_stamps: 6,
+        reward: "Free Large Smoothie",
+        business_logo: merchantsData[2].business_logo,
+        business_color: merchantsData[2].business_color,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ];
     
     // Insert stamp cards
     const { error: stampCardsError, data: insertedCards } = await supabase
@@ -125,13 +164,18 @@ export const generateDummyData = async () => {
     if (insertedCards) {
       const customerStampCardsData = insertedCards.map((card, index) => {
         // Give different number of stamps to each card
+        let currentStamps = 0;
+        
+        if (index === 0) currentStamps = 6; // First coffee card (almost complete)
+        else if (index === 1) currentStamps = 3; // Second coffee card (mid-progress)
+        else if (index === 2) currentStamps = 3; // Pizza card (in progress)
+        else currentStamps = 0; // Smoothie card (just started)
+        
         return {
           id: uuidv4(),
           customer_id: customerId,
           card_id: card.id,
-          current_stamps: index === 0 ? 6 : // Almost complete for coffee shop
-                          index === 1 ? 3 : // In progress for pizza shop
-                          0, // Just started for smoothie shop
+          current_stamps: currentStamps,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
@@ -150,7 +194,7 @@ export const generateDummyData = async () => {
       // Generate transactions for the customer
       const transactionsData = [];
       
-      // Coffee shop transactions
+      // First coffee card transactions
       for (let i = 0; i < 6; i++) {
         const date = new Date();
         date.setDate(date.getDate() - (6 - i)); // Transactions over the past 6 days
@@ -166,6 +210,22 @@ export const generateDummyData = async () => {
         });
       }
       
+      // Second coffee card transactions
+      for (let i = 0; i < 3; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() - (10 - i)); // Transactions over the past 10 days
+        
+        transactionsData.push({
+          id: uuidv4(),
+          customer_id: customerId,
+          card_id: insertedCards[1].id,
+          merchant_id: merchantsData[0].id,
+          type: "stamp",
+          count: 1,
+          timestamp: date.toISOString()
+        });
+      }
+      
       // Pizza shop transactions
       for (let i = 0; i < 3; i++) {
         const date = new Date();
@@ -174,7 +234,7 @@ export const generateDummyData = async () => {
         transactionsData.push({
           id: uuidv4(),
           customer_id: customerId,
-          card_id: insertedCards[1].id,
+          card_id: insertedCards[2].id,
           merchant_id: merchantsData[1].id,
           type: "stamp",
           count: 1,

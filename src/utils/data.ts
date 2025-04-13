@@ -93,17 +93,48 @@ export const initializeDemoData = async (): Promise<void> => {
   
   // If user doesn't have cards, create demo cards
   if (!allCards[user.id]) {
-    const demoCards: StampCard[] = demoBusiness.map((business, index) => ({
-      id: `card-${index}`,
-      businessId: business.id,
-      businessName: business.name,
-      businessLogo: business.logo,
-      totalStamps: 10,
-      currentStamps: index === 0 ? 10 : index === 1 ? 6 : index, // First card complete, second halfway, others as index
-      reward: generateReward(business.name, index),
-      color: business.color,
-      createdAt: getRandomPastDate(30).toISOString() // Within last 30 days
-    }));
+    // Create demoCards array with the additional Morning Brew Coffee card
+    const demoCards: StampCard[] = [
+      // First Morning Brew Coffee card (complete)
+      {
+        id: "card-0",
+        businessId: demoBusiness[0].id,
+        businessName: demoBusiness[0].name,
+        businessLogo: demoBusiness[0].logo,
+        totalStamps: 10,
+        currentStamps: 10,
+        reward: "Free Coffee",
+        color: demoBusiness[0].color,
+        createdAt: getRandomPastDate(30).toISOString()
+      },
+      // Second Morning Brew Coffee card (halfway)
+      {
+        id: "card-special",
+        businessId: demoBusiness[0].id,
+        businessName: demoBusiness[0].name,
+        businessLogo: demoBusiness[0].logo,
+        totalStamps: 8,
+        currentStamps: 4,
+        reward: "Free Specialty Coffee",
+        color: demoBusiness[0].color,
+        createdAt: getRandomPastDate(15).toISOString()
+      }
+    ];
+    
+    // Add the rest of the businesses' cards
+    for (let i = 1; i < demoBusiness.length; i++) {
+      demoCards.push({
+        id: `card-${i}`,
+        businessId: demoBusiness[i].id,
+        businessName: demoBusiness[i].name,
+        businessLogo: demoBusiness[i].logo,
+        totalStamps: 10,
+        currentStamps: i === 1 ? 6 : i, // Second card halfway, others as index
+        reward: generateReward(demoBusiness[i].name, i),
+        color: demoBusiness[i].color,
+        createdAt: getRandomPastDate(30).toISOString()
+      });
+    }
     
     allCards[user.id] = demoCards;
     localStorage.setItem(STAMP_CARDS_KEY, JSON.stringify(allCards));
