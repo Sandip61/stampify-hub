@@ -65,7 +65,7 @@ const Cards = () => {
   });
 
   const handleCardClick = (cardId: string) => {
-    navigate(`/cards/${cardId}`);
+    navigate(`/card/${cardId}`);
   };
 
   if (isLoading) {
