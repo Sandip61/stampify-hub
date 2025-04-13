@@ -5,19 +5,16 @@ import { getCurrentUser, User } from "@/utils/auth";
 import { getUserStampCards, StampCard as StampCardType, getUserTransactions, Transaction, initializeDemoData } from "@/utils/data";
 import StampCard from "@/components/StampCard";
 import { Button } from "@/components/ui/button";
-import { Search, Scan, Plus, Gift, Stamp, ArrowLeft } from "lucide-react";
+import { Search, Scan, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const Cards = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [cards, setCards] = useState<StampCardType[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [showNoCardsModal, setShowNoCardsModal] = useState(false);
-  const [selectedCard, setSelectedCard] = useState<StampCardType | null>(null);
-  const [showTransactionsModal, setShowTransactionsModal] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -33,10 +30,6 @@ const Cards = () => {
           const userCards = await getUserStampCards();
           setCards(userCards);
           
-          // Get transaction history
-          const userTransactions = await getUserTransactions();
-          setTransactions(userTransactions);
-          
           // Show modal if no cards
           if (userCards.length === 0) {
             setShowNoCardsModal(true);
@@ -51,22 +44,6 @@ const Cards = () => {
     
     checkAuth();
   }, []);
-
-  const handleCardClick = (card: StampCardType) => {
-    setSelectedCard(card);
-    setShowTransactionsModal(true);
-  };
-
-  // Filter transactions for selected card
-  const getCardTransactions = (cardId: string) => {
-    return transactions.filter(transaction => transaction.cardId === cardId);
-  };
-
-  // Format date
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
 
   // Filter cards based on search term
   const filteredCards = cards.filter(card => 
@@ -129,7 +106,7 @@ const Cards = () => {
       {sortedCards.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {sortedCards.map((card) => (
-            <div key={card.id} onClick={() => handleCardClick(card)} className="cursor-pointer">
+            <div key={card.id}>
               <StampCard
                 card={card}
                 className="h-full transition-all transform hover:translate-y-[-2px]"
@@ -153,75 +130,6 @@ const Cards = () => {
           </Link>
         </div>
       )}
-      
-      {/* Transaction history modal */}
-      <Dialog open={showTransactionsModal} onOpenChange={setShowTransactionsModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <div className="flex items-center">
-              <button 
-                onClick={() => setShowTransactionsModal(false)} 
-                className="mr-2 p-1 rounded-full hover:bg-gray-100"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-              <DialogTitle>
-                {selectedCard?.businessName} Card History
-              </DialogTitle>
-            </div>
-          </DialogHeader>
-          <div className="py-4">
-            {selectedCard && (
-              <>
-                <StampCard
-                  card={selectedCard}
-                  className="mb-4"
-                />
-                
-                <h3 className="text-sm font-medium mb-2">Recent Activity</h3>
-                <div className="bg-card rounded-xl border overflow-hidden">
-                  <div className="divide-y">
-                    {getCardTransactions(selectedCard.id).length > 0 ? (
-                      getCardTransactions(selectedCard.id).map(transaction => (
-                        <div key={transaction.id} className="p-4 flex items-center">
-                          <div className={`rounded-full p-2 mr-3 ${
-                            transaction.type === 'stamp' 
-                              ? 'bg-blue-500/10 text-blue-500' 
-                              : 'bg-green-500/10 text-green-500'
-                          }`}>
-                            {transaction.type === 'stamp' ? (
-                              <Stamp className="h-4 w-4" />
-                            ) : (
-                              <Gift className="h-4 w-4" />
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">
-                              {transaction.businessName}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {transaction.type === 'stamp' 
-                                ? `Added ${transaction.count || 1} stamp${(transaction.count || 1) > 1 ? 's' : ''}` 
-                                : `Redeemed reward${transaction.rewardCode ? ` (${transaction.rewardCode})` : ''}`}
-                            </p>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatDate(transaction.timestamp)}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-4 text-center text-muted-foreground">
-                        No activity for this card yet
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
       
       {/* Welcome modal */}
       <Dialog open={showNoCardsModal} onOpenChange={setShowNoCardsModal}>
