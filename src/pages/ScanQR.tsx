@@ -89,10 +89,10 @@ const ScanQR = () => {
     <div className="fixed inset-0 w-full h-full min-h-screen bg-black">
       <div id="qr-reader-file" className="hidden"></div>
       
-      {/* Enhanced back button with full area clickability */}
+      {/* Enhanced back button with background and shadow */}
       <button
         onClick={handleBack}
-        className="absolute top-4 left-4 z-50 w-14 h-14 rounded-full border border-teal-400/30 bg-black/10 flex items-center justify-center cursor-pointer hover:bg-black/20 active:bg-black/30 focus:outline-none focus:ring-2 focus:ring-teal-400/50"
+        className="absolute top-4 left-4 z-50 w-14 h-14 rounded-full bg-black/30 backdrop-blur-sm border border-teal-400/30 shadow-[0_0_15px_rgba(20,184,166,0.5)] flex items-center justify-center cursor-pointer hover:bg-black/40 active:bg-black/50 focus:outline-none focus:ring-2 focus:ring-teal-400/50 transition-all duration-200"
         aria-label="Go back"
         type="button"
       >
