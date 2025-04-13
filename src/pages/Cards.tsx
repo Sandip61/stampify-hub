@@ -64,6 +64,10 @@ const Cards = () => {
     return a.businessName.localeCompare(b.businessName);
   });
 
+  const handleCardClick = (cardId: string) => {
+    navigate(`/cards/${cardId}`);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
@@ -106,7 +110,7 @@ const Cards = () => {
       {sortedCards.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {sortedCards.map((card) => (
-            <div key={card.id}>
+            <div key={card.id} onClick={() => handleCardClick(card.id)} className="cursor-pointer">
               <StampCard
                 card={card}
                 className="h-full transition-all transform hover:translate-y-[-2px]"
