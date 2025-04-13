@@ -93,7 +93,7 @@ export const initializeDemoData = async (): Promise<void> => {
   
   // If user doesn't have cards, create demo cards
   if (!allCards[user.id]) {
-    // Create demoCards array with the additional Morning Brew Coffee card
+    // Create demoCards array with two Morning Brew Coffee cards
     const demoCards: StampCard[] = [
       // First Morning Brew Coffee card (complete)
       {
