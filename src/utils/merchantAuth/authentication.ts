@@ -74,46 +74,50 @@ export const registerMerchant = async (
       );
     }
 
-    console.log("Auth signup successful, creating merchant profile for:", authData.user.id);
+    console.log("Auth signup successful, creating merchant profile via edge function for user:", authData.user.id);
 
-    // Create the merchant profile directly in the database thanks to our updated RLS policies
+    // Instead of direct database operations, call the create-merchant edge function
     try {
-      // First, create the user record
-      const { error: userInsertError } = await supabase
-        .from('users')
-        .upsert({ id: authData.user.id });
-      
-      if (userInsertError) {
-        console.error("Error creating user record:", userInsertError);
-      } else {
-        console.log("Successfully created user record");
-      }
-      
-      // Now create the merchant record
-      const { error: merchantError } = await supabase
-        .from('merchants')
-        .upsert({
+      const { data: merchantData, error: functionError } = await supabase.functions.invoke('create-merchant', {
+        body: {
           id: authData.user.id,
           business_name: businessName,
           business_logo: businessLogo,
           business_color: businessColor,
-          email: email,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
+          email: email
+        }
+      });
       
-      if (merchantError) {
-        console.error("Error creating merchant directly:", merchantError);
-        
+      if (functionError) {
+        console.error("Error calling create-merchant function:", functionError);
         throw new AppError(
           ErrorType.MERCHANT_UPDATE_FAILED,
-          "Failed to create merchant profile."
+          "Failed to create merchant profile. Please try again later."
         );
-      } else {
-        console.log("Successfully created merchant directly");
       }
+      
+      if (!merchantData || !merchantData.merchant) {
+        console.error("No merchant data returned from function:", merchantData);
+        throw new AppError(
+          ErrorType.MERCHANT_UPDATE_FAILED,
+          "Failed to create merchant profile. No data returned."
+        );
+      }
+      
+      console.log("Successfully created merchant via edge function:", merchantData.merchant);
+      
+      // Return the merchant data from the edge function response
+      return {
+        id: merchantData.merchant.id,
+        businessName: merchantData.merchant.business_name,
+        businessLogo: merchantData.merchant.business_logo || businessLogo,
+        businessColor: merchantData.merchant.business_color || businessColor,
+        email: merchantData.merchant.email || email,
+        createdAt: merchantData.merchant.created_at,
+        updatedAt: merchantData.merchant.updated_at
+      };
     } catch (error) {
-      console.error("Error creating merchant profile:", error);
+      console.error("Error creating merchant profile via edge function:", error);
       
       if (error instanceof AppError) {
         throw error;
@@ -124,29 +128,6 @@ export const registerMerchant = async (
         "Failed to create merchant profile. Please try again later."
       );
     }
-
-    // Wait a short time to allow database operations to complete
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Get the created merchant profile
-    const merchantProfile = await getMerchantProfile(authData.user.id);
-    
-    if (!merchantProfile) {
-      console.log("No merchant profile found, creating a temporary one");
-      // Return a temporary merchant profile
-      return {
-        id: authData.user.id,
-        businessName: businessName,
-        businessLogo: businessLogo,
-        businessColor: businessColor,
-        email: email,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-    }
-    
-    console.log("Merchant registration completed successfully");
-    return merchantProfile;
   } catch (error) {
     console.error("Registration error:", error);
     throw handleError(error, ErrorType.UNKNOWN_ERROR, "Merchant registration failed");
