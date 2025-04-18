@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { 
@@ -177,7 +177,11 @@ const MerchantCards = () => {
                               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-ticket"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
                             </Link>
                           </TooltipTrigger>
-                          <TooltipContent side="bottom">
+                          <TooltipContent 
+                            side="bottom" 
+                            align="center" 
+                            className="whitespace-nowrap"
+                          >
                             Manage Stamps
                           </TooltipContent>
                         </Tooltip>
