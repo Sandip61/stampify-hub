@@ -179,7 +179,7 @@ const MerchantCards = () => {
                           </TooltipTrigger>
                           <TooltipContent 
                             side="bottom" 
-                            align="center" 
+                            align="start" 
                             className="whitespace-nowrap"
                           >
                             Manage Stamps
