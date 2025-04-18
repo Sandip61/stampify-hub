@@ -11,6 +11,7 @@ import { StampCard } from "@/types/StampCard";
 import StampCardHeader from "@/components/merchant/StampCardHeader";
 import QRCodeGenerator from "@/components/merchant/QRCodeGenerator";
 import ActiveQRCodes from "@/components/merchant/ActiveQRCodes";
+import { getMerchantStampCard } from "@/utils/merchantData";
 
 const StampManagement = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +29,29 @@ const StampManagement = () => {
     if (!id) return;
     
     try {
+      // First, check if this is a mock data ID (starts with "card-")
+      if (id.startsWith('card-')) {
+        console.log("Fetching mock stamp card data for ID:", id);
+        const mockCard = getMerchantStampCard(id);
+        
+        if (mockCard) {
+          // Convert mock card to StampCard format
+          setStampCard({
+            id: mockCard.id,
+            name: mockCard.name,
+            description: mockCard.description,
+            total_stamps: mockCard.totalStamps,
+            reward: mockCard.reward,
+            business_logo: mockCard.logo,
+            business_color: mockCard.color
+          });
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // If not a mock card or mock card not found, try Supabase
+      console.log("Fetching stamp card from Supabase for ID:", id);
       const { data, error } = await supabase
         .from("stamp_cards")
         .select("*")
@@ -37,6 +61,7 @@ const StampManagement = () => {
       if (error) {
         console.error("Error fetching stamp card:", error);
         toast.error("Error loading stamp card");
+        setLoading(false);
         return;
       }
 
