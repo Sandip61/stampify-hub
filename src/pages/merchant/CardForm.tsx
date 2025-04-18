@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -96,7 +95,6 @@ const MerchantCardForm = () => {
     setIsSubmitting(true);
     
     try {
-      // Get the current merchant profile
       console.log("Getting current merchant profile...");
       const merchant = await getCurrentMerchant();
       
@@ -109,25 +107,21 @@ const MerchantCardForm = () => {
       
       console.log("Current merchant:", merchant);
       
-      // Prepare the stamp card data
       const stampCardData = {
         name,
         description,
-        totalStamps,
+        total_stamps: totalStamps,
         reward,
-        color,
-        logo,
-        isActive,
-        expiryDays,
-        merchant_id: merchant.id,
+        business_color: color,
         business_logo: logo,
-        business_color: color
+        is_active: isActive,
+        expiry_days: expiryDays,
+        merchant_id: merchant.id
       };
       
       console.log("Saving stamp card data to Supabase:", stampCardData);
       
       if (isEditMode && id) {
-        // Update existing stamp card in Supabase
         console.log(`Attempting to update stamp card with ID ${id} in Supabase...`);
         const { data, error } = await supabase
           .from('stamp_cards')
@@ -142,8 +136,6 @@ const MerchantCardForm = () => {
         
         console.log("Supabase update response:", data);
         
-        // Also update in mock data for UI preview
-        console.log("Updating stamp card in mock data...");
         await updateMerchantStampCard(id, {
           name,
           description,
@@ -157,7 +149,6 @@ const MerchantCardForm = () => {
         
         toast.success("Stamp card updated successfully");
       } else {
-        // Create new stamp card in Supabase
         console.log("Attempting to create new stamp card in Supabase...");
         const { data, error } = await supabase
           .from('stamp_cards')
@@ -172,8 +163,6 @@ const MerchantCardForm = () => {
         
         console.log("Successfully created stamp card in Supabase:", data);
         
-        // Also create in mock data for UI preview
-        console.log("Creating stamp card in mock data...");
         await createMerchantStampCard({
           name,
           description,
