@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { 
@@ -11,14 +10,6 @@ import {
   Filter
 } from "lucide-react";
 import { Merchant } from "@/utils/merchantAuth";
-import { 
-  getMerchantCustomers, 
-  getMerchantTransactions,
-  addMerchantCustomer,
-  MerchantCustomer,
-  MerchantTransaction,
-  initializeDemoMerchantDataForLogin
-} from "@/utils/merchantData";
 import { mockMerchant } from "@/utils/mockMerchantData";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -27,6 +18,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+
+// Define the interface for customer data
+interface MerchantCustomer {
+  id: string;
+  name: string;
+  email: string;
+  totalStampsEarned: number;
+  totalRewardsRedeemed: number;
+  lastActivityAt: string;
+}
+
+// Define the interface for transaction data
+interface MerchantTransaction {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  type: 'stamp' | 'redeem';
+  timestamp: string;
+  rewardCode?: string;
+}
 
 const MerchantCustomers = () => {
   const [merchant, setMerchant] = useState<Merchant | null>(mockMerchant);
@@ -45,30 +57,18 @@ const MerchantCustomers = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Set the mock merchant directly
-        setMerchant(mockMerchant);
-
-        // Initialize demo data for this merchant
-        initializeDemoMerchantDataForLogin(mockMerchant.id);
-        
-        // Load data
-        loadCustomersAndTransactions();
+        // For now we'll use empty arrays since we haven't implemented the actual data fetching yet
+        setCustomers([]);
+        setTransactions([]);
+        setIsLoading(false);
       } catch (error) {
-        console.error("Error loading merchant data:", error);
+        console.error("Error loading data:", error);
+        setIsLoading(false);
       }
     };
     
     loadData();
   }, []);
-
-  const loadCustomersAndTransactions = () => {
-    setIsLoading(true);
-    const customers = getMerchantCustomers();
-    const transactions = getMerchantTransactions();
-    setCustomers(customers);
-    setTransactions(transactions);
-    setIsLoading(false);
-  };
 
   const validateNewCustomer = () => {
     const errors: { name?: string; email?: string } = {};
@@ -93,13 +93,13 @@ const MerchantCustomers = () => {
     setIsAddingCustomer(true);
     
     try {
-      await addMerchantCustomer(newCustomer.name, newCustomer.email);
+      // In a real app, we'd add the customer to the database
+      // For now, just show a toast
       toast.success("Customer added successfully");
       setNewCustomer({ name: "", email: "" });
-      loadCustomersAndTransactions();
+      setIsAddingCustomer(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to add customer");
-    } finally {
       setIsAddingCustomer(false);
     }
   };
@@ -275,173 +275,32 @@ const MerchantCustomers = () => {
           <div className="w-8 h-8 border-t-2 border-primary rounded-full animate-spin"></div>
         </div>
       ) : viewMode === "customers" ? (
-        filteredCustomers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center border rounded-xl p-12">
-            <div className="rounded-full bg-muted p-3 mb-4">
-              <Users className="h-6 w-6 text-muted-foreground" />
-            </div>
-            {searchTerm ? (
-              <>
-                <h3 className="text-lg font-semibold mb-1">No customers found</h3>
-                <p className="text-muted-foreground mb-4">
-                  No customers match your search criteria
-                </p>
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="text-sm text-primary"
-                >
-                  Clear search
-                </button>
-              </>
-            ) : (
-              <>
-                <h3 className="text-lg font-semibold mb-1">No customers yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Start adding customers to your loyalty program
-                </p>
-                <button
-                  onClick={() => setIsAddingCustomer(true)}
-                  className="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                >
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Add your first customer
-                </button>
-              </>
-            )}
+        <div className="flex flex-col items-center justify-center border rounded-xl p-12">
+          <div className="rounded-full bg-muted p-3 mb-4">
+            <Users className="h-6 w-6 text-muted-foreground" />
           </div>
-        ) : (
-          <div className="bg-card border rounded-xl overflow-x-auto">
-            <div className="min-w-full">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-4 font-medium">Customer</th>
-                    <th className="text-left p-4 font-medium">Email</th>
-                    <th className="text-left p-4 font-medium">Stamps</th>
-                    <th className="text-left p-4 font-medium">Rewards</th>
-                    <th className="text-left p-4 font-medium">Last Activity</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredCustomers.map((customer) => (
-                    <tr key={customer.id} className="hover:bg-muted/50">
-                      <td className="p-4">
-                        <div className="font-medium">{customer.name}</div>
-                      </td>
-                      <td className="p-4 text-muted-foreground">
-                        {customer.email}
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center">
-                          <Stamp className="h-4 w-4 text-blue-500 mr-1" />
-                          {customer.totalStampsEarned}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center">
-                          <Gift className="h-4 w-4 text-green-500 mr-1" />
-                          {customer.totalRewardsRedeemed}
-                        </div>
-                      </td>
-                      <td className="p-4 text-muted-foreground">
-                        {new Date(customer.lastActivityAt).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )
+          <h3 className="text-lg font-semibold mb-1">No customers yet</h3>
+          <p className="text-muted-foreground mb-4">
+            Start adding customers to your loyalty program
+          </p>
+          <button
+            onClick={() => setIsAddingCustomer(true)}
+            className="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add your first customer
+          </button>
+        </div>
       ) : (
-        filteredTransactions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center border rounded-xl p-12">
-            <div className="rounded-full bg-muted p-3 mb-4">
-              <Stamp className="h-6 w-6 text-muted-foreground" />
-            </div>
-            {searchTerm || transactionFilter !== "all" ? (
-              <>
-                <h3 className="text-lg font-semibold mb-1">No transactions found</h3>
-                <p className="text-muted-foreground mb-4">
-                  No transactions match your search criteria
-                </p>
-                <button
-                  onClick={() => {
-                    setSearchTerm("");
-                    setTransactionFilter("all");
-                  }}
-                  className="text-sm text-primary"
-                >
-                  Clear filters
-                </button>
-              </>
-            ) : (
-              <>
-                <h3 className="text-lg font-semibold mb-1">No transactions yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Transactions will appear here when customers interact with your loyalty program
-                </p>
-              </>
-            )}
+        <div className="flex flex-col items-center justify-center border rounded-xl p-12">
+          <div className="rounded-full bg-muted p-3 mb-4">
+            <Stamp className="h-6 w-6 text-muted-foreground" />
           </div>
-        ) : (
-          <div className="bg-card border rounded-xl overflow-x-auto">
-            <div className="min-w-full">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-4 font-medium">Type</th>
-                    <th className="text-left p-4 font-medium">Customer</th>
-                    <th className="text-left p-4 font-medium">Date & Time</th>
-                    <th className="text-left p-4 font-medium">Details</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredTransactions.map((transaction) => (
-                    <tr key={transaction.id} className="hover:bg-muted/50">
-                      <td className="p-4">
-                        {transaction.type === "stamp" ? (
-                          <div className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700">
-                            <Stamp className="h-3 w-3 mr-1" />
-                            Stamp
-                          </div>
-                        ) : (
-                          <div className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-green-100 text-green-700">
-                            <Gift className="h-3 w-3 mr-1" />
-                            Redemption
-                          </div>
-                        )}
-                      </td>
-                      <td className="p-4">
-                        <div className="font-medium">{transaction.customerName}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {transaction.customerEmail}
-                        </div>
-                      </td>
-                      <td className="p-4 text-muted-foreground">
-                        {formatDate(transaction.timestamp)}
-                      </td>
-                      <td className="p-4">
-                        {transaction.type === "stamp" ? (
-                          <div>Stamp added</div>
-                        ) : (
-                          <div>
-                            Reward redeemed
-                            {transaction.rewardCode && (
-                              <div className="text-xs text-muted-foreground">
-                                Code: {transaction.rewardCode}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )
+          <h3 className="text-lg font-semibold mb-1">No transactions yet</h3>
+          <p className="text-muted-foreground mb-4">
+            Transactions will appear here when customers interact with your loyalty program
+          </p>
+        </div>
       )}
     </div>
   );

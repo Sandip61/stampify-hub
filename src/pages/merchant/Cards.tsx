@@ -14,8 +14,7 @@ import {
   getMerchantStampCards, 
   MerchantStampCard,
   deleteMerchantStampCard,
-  updateMerchantStampCard,
-  initializeDemoMerchantDataForLogin
+  updateMerchantStampCard
 } from "@/utils/merchantData";
 import { mockMerchant } from "@/utils/mockMerchantData";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -28,24 +27,20 @@ const MerchantCards = () => {
   const [searchTerm, setSearchTerm] = useState("");
   
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setMerchant(mockMerchant);
-        initializeDemoMerchantDataForLogin(mockMerchant.id);
-        loadCards();
-      } catch (error) {
-        console.error("Error loading merchant data:", error);
-      }
-    };
-    
-    loadData();
+    loadCards();
   }, [navigate]);
 
-  const loadCards = () => {
+  const loadCards = async () => {
     setIsLoading(true);
-    const cards = getMerchantStampCards();
-    setCards(cards);
-    setIsLoading(false);
+    try {
+      const cardsData = await getMerchantStampCards();
+      setCards(cardsData);
+    } catch (error) {
+      console.error("Error fetching cards:", error);
+      toast.error("Failed to load stamp cards");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDelete = async (cardId: string) => {

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,7 @@ import { StampCard } from "@/types/StampCard";
 import StampCardHeader from "@/components/merchant/StampCardHeader";
 import QRCodeGenerator from "@/components/merchant/QRCodeGenerator";
 import ActiveQRCodes from "@/components/merchant/ActiveQRCodes";
+import { getMerchantStampCard } from "@/utils/merchantData";
 
 const StampManagement = () => {
   const { id } = useParams<{ id: string }>();
@@ -26,6 +28,7 @@ const StampManagement = () => {
     if (!id) return;
     
     try {
+      // Fetch from Supabase
       const { data, error } = await supabase
         .from("stamp_cards")
         .select("*")

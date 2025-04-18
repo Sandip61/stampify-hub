@@ -1,6 +1,5 @@
 
 // Mock merchant data for direct access across all merchant pages
-import { initializeDemoMerchantDataForLogin } from "@/utils/merchantData";
 
 export const mockMerchant = {
   id: "demo-merchant-id",
@@ -12,15 +11,8 @@ export const mockMerchant = {
   updatedAt: new Date().toISOString()
 };
 
-// Initialize merchant data for the mock merchant
+// No longer needed, as we're using Supabase directly
 export const initMockMerchantData = () => {
-  try {
-    // Direct import instead of require
-    initializeDemoMerchantDataForLogin(mockMerchant.id);
-    console.log("Demo merchant data initialized for merchant", mockMerchant.id);
-    return true;
-  } catch (error) {
-    console.error("Failed to initialize mock merchant data:", error);
-    return false;
-  }
+  console.log("Mock initialization is deprecated. Using Supabase directly.");
+  return true;
 };
