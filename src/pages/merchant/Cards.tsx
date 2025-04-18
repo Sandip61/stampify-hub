@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -19,6 +18,7 @@ import {
   initializeDemoMerchantDataForLogin
 } from "@/utils/merchantData";
 import { mockMerchant } from "@/utils/mockMerchantData";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const MerchantCards = () => {
   const navigate = useNavigate();
@@ -30,13 +30,8 @@ const MerchantCards = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Set the mock merchant directly instead of fetching
         setMerchant(mockMerchant);
-
-        // Initialize demo data for this merchant
         initializeDemoMerchantDataForLogin(mockMerchant.id);
-        
-        // Load cards
         loadCards();
       } catch (error) {
         console.error("Error loading merchant data:", error);
@@ -77,7 +72,6 @@ const MerchantCards = () => {
     }
   };
 
-  // Filter cards based on search term
   const filteredCards = cards.filter(card => 
     card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     card.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -180,29 +174,57 @@ const MerchantCards = () => {
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-ticket"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
                       </Link>
-                      <button
-                        onClick={() => toggleCardStatus(card)}
-                        className={`p-2 rounded-md ${
-                          card.isActive 
-                            ? 'hover:bg-red-100 text-red-500' 
-                            : 'hover:bg-green-100 text-green-500'
-                        }`}
-                        title={card.isActive ? 'Deactivate' : 'Activate'}
-                      >
-                        {card.isActive ? <XCircle className="h-5 w-5" /> : <CheckCircle className="h-5 w-5" />}
-                      </button>
-                      <Link
-                        to={`/merchant/cards/edit/${card.id}`}
-                        className="p-2 rounded-md hover:bg-teal-100 text-teal-600"
-                      >
-                        <Edit className="h-5 w-5" />
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(card.id)}
-                        className="p-2 rounded-md hover:bg-red-100 text-red-500"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => toggleCardStatus(card)}
+                              className={`p-2 rounded-md ${
+                                card.isActive 
+                                  ? 'hover:bg-red-100 text-red-500' 
+                                  : 'hover:bg-green-100 text-green-500'
+                              }`}
+                            >
+                              {card.isActive ? <XCircle className="h-5 w-5" /> : <CheckCircle className="h-5 w-5" />}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {card.isActive ? 'Deactivate Card' : 'Activate Card'}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Link
+                              to={`/merchant/cards/edit/${card.id}`}
+                              className="p-2 rounded-md hover:bg-teal-100 text-teal-600"
+                            >
+                              <Edit className="h-5 w-5" />
+                            </Link>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Edit Stamp Card
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => handleDelete(card.id)}
+                              className="p-2 rounded-md hover:bg-red-100 text-red-500"
+                            >
+                              <Trash2 className="h-5 w-5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Delete Stamp Card
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </div>
                   
