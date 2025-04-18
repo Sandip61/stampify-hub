@@ -1,13 +1,7 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
-import { 
-  getMerchantStampCard, 
-  createMerchantStampCard,
-  updateMerchantStampCard
-} from "@/utils/merchantData";
-import { mockMerchant } from "@/utils/mockMerchantData";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentMerchant } from "@/utils/merchantAuth";
 import { handleError } from "@/utils/errors";
@@ -39,23 +33,42 @@ const MerchantCardForm = () => {
   useEffect(() => {
     if (isEditMode && id) {
       setIsLoading(true);
-      const card = getMerchantStampCard(id);
       
-      if (card) {
-        setName(card.name);
-        setDescription(card.description);
-        setTotalStamps(card.totalStamps);
-        setReward(card.reward);
-        setLogo(card.logo);
-        setColor(card.color);
-        setIsActive(card.isActive);
-        setExpiryDays(card.expiryDays || 0);
-      } else {
-        toast.error("Stamp card not found");
-        navigate("/merchant/cards");
-      }
-      
-      setIsLoading(false);
+      const fetchStampCard = async () => {
+        try {
+          const { data, error } = await supabase
+            .from("stamp_cards")
+            .select("*")
+            .eq("id", id)
+            .single();
+
+          if (error) {
+            console.error("Error fetching stamp card:", error);
+            toast.error("Stamp card not found");
+            navigate("/merchant/cards");
+            return;
+          }
+
+          if (data) {
+            setName(data.name);
+            setDescription(data.description || "");
+            setTotalStamps(data.total_stamps);
+            setReward(data.reward);
+            setLogo(data.business_logo || "🏪");
+            setColor(data.business_color || "#3B82F6");
+            setIsActive(data.is_active ?? true);
+            setExpiryDays(data.expiry_days || undefined);
+          }
+        } catch (error) {
+          console.error("Error fetching stamp card:", error);
+          toast.error("Failed to load stamp card");
+          navigate("/merchant/cards");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchStampCard();
     }
   }, [id, isEditMode, navigate]);
 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,12 +5,10 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StampIssuer from "@/components/StampIssuer";
 import RewardRedeemer from "@/components/RewardRedeemer";
-import { AppError } from "@/utils/errorHandling";
 import { StampCard } from "@/types/StampCard";
 import StampCardHeader from "@/components/merchant/StampCardHeader";
 import QRCodeGenerator from "@/components/merchant/QRCodeGenerator";
 import ActiveQRCodes from "@/components/merchant/ActiveQRCodes";
-import { getMerchantStampCard } from "@/utils/merchantData";
 
 const StampManagement = () => {
   const { id } = useParams<{ id: string }>();
@@ -29,29 +26,6 @@ const StampManagement = () => {
     if (!id) return;
     
     try {
-      // First, check if this is a mock data ID (starts with "card-")
-      if (id.startsWith('card-')) {
-        console.log("Fetching mock stamp card data for ID:", id);
-        const mockCard = getMerchantStampCard(id);
-        
-        if (mockCard) {
-          // Convert mock card to StampCard format
-          setStampCard({
-            id: mockCard.id,
-            name: mockCard.name,
-            description: mockCard.description,
-            total_stamps: mockCard.totalStamps,
-            reward: mockCard.reward,
-            business_logo: mockCard.logo,
-            business_color: mockCard.color
-          });
-          setLoading(false);
-          return;
-        }
-      }
-      
-      // If not a mock card or mock card not found, try Supabase
-      console.log("Fetching stamp card from Supabase for ID:", id);
       const { data, error } = await supabase
         .from("stamp_cards")
         .select("*")
@@ -65,7 +39,17 @@ const StampManagement = () => {
         return;
       }
 
-      setStampCard(data);
+      const convertedStampCard: StampCard = {
+        id: data.id,
+        name: data.name,
+        description: data.description || "",
+        total_stamps: data.total_stamps,
+        reward: data.reward,
+        business_logo: data.business_logo || "🏪",
+        business_color: data.business_color || "#3B82F6"
+      };
+
+      setStampCard(convertedStampCard);
     } catch (error) {
       console.error("Error:", error);
       toast.error("Something went wrong");
