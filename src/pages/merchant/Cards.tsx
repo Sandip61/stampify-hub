@@ -229,7 +229,11 @@ const MerchantCards = () => {
                               <Trash2 className="h-5 w-5" />
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent side="bottom">
+                          <TooltipContent 
+                            side="bottom" 
+                            align="end" 
+                            className="mr-2 overflow-visible"
+                          >
                             Delete Stamp Card
                           </TooltipContent>
                         </Tooltip>
