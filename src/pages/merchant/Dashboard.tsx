@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { 
@@ -10,6 +11,7 @@ import {
   ArrowUpRight
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { StampCard } from "@/types/StampCard";
 
 // Placeholder for analytics data structure
 interface AnalyticsData {
@@ -46,13 +48,49 @@ const MerchantDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+  const [stampCards, setStampCards] = useState<StampCard[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        // In a real app, we would fetch this data from Supabase
-        // For now, we'll use placeholder data
+        // Fetch actual stamp cards from Supabase
+        const { data: cardsData, error: cardsError } = await supabase
+          .from("stamp_cards")
+          .select("*")
+          .order("created_at", { ascending: false });
         
+        if (cardsError) {
+          console.error("Error fetching stamp cards:", cardsError);
+          throw cardsError;
+        }
+        
+        if (cardsData) {
+          setStampCards(cardsData);
+          console.log("Stamp cards fetched:", cardsData);
+        }
+        
+        // Basic analytics from fetched data
+        setAnalytics({
+          totalStamps: cardsData ? cardsData.reduce((sum, card) => sum + card.total_stamps, 0) : 0,
+          totalRedemptions: 0, // We'll need to fetch this from transactions
+          totalCustomers: 0, // We'll need to fetch this from a customers table
+          activeCustomers: 0,
+          redemptionRate: 0,
+          retentionRate: 0,
+          transactionsByDay: [
+            { date: new Date().toISOString(), stamps: 0, redemptions: 0 }
+          ],
+          transactionsByCard: []
+        });
+        
+        // Fetch recent transactions (if we had them)
+        setRecentTransactions([]);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error loading merchant data:", error);
+        setIsLoading(false);
+        
+        // Set default analytics in case of error
         setAnalytics({
           totalStamps: 0,
           totalRedemptions: 0,
@@ -65,12 +103,6 @@ const MerchantDashboard = () => {
           ],
           transactionsByCard: []
         });
-        
-        setRecentTransactions([]);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error loading merchant data:", error);
-        setIsLoading(false);
       }
     };
     
@@ -196,22 +228,55 @@ const MerchantDashboard = () => {
         </div>
       </div>
 
-      {/* Program performance */}
+      {/* Program performance / Your Stamp Cards */}
       <div className="bg-card border rounded-xl overflow-hidden">
         <div className="p-4 border-b">
-          <h3 className="font-semibold">Program Performance</h3>
+          <h3 className="font-semibold">Your Stamp Cards</h3>
         </div>
         
-        <div className="p-8 text-center text-muted-foreground">
-          <p>Start building your loyalty program to see performance metrics</p>
-          <Link 
-            to="/merchant/cards/new"
-            className="mt-4 inline-flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-          >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Create Stamp Card
-          </Link>
-        </div>
+        {stampCards.length > 0 ? (
+          <div className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {stampCards.map((card) => (
+                <Link 
+                  key={card.id} 
+                  to={`/merchant/cards/${card.id}`}
+                  className="block p-4 border rounded-lg bg-white hover:shadow-md transition-shadow"
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h4 className="font-medium">{card.name}</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {card.description || `${card.total_stamps} stamps required`}
+                      </p>
+                    </div>
+                    <div 
+                      className="w-12 h-12 flex items-center justify-center rounded-full text-white"
+                      style={{ backgroundColor: card.business_color || '#3B82F6' }}
+                    >
+                      {card.business_logo || '🏪'}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex justify-between text-sm">
+                    <span>{card.total_stamps} stamps</span>
+                    <span className="text-primary">{card.reward}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="p-8 text-center text-muted-foreground">
+            <p>Start building your loyalty program to see performance metrics</p>
+            <Link 
+              to="/merchant/cards/new"
+              className="mt-4 inline-flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create Stamp Card
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
