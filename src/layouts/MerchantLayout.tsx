@@ -1,4 +1,3 @@
-
 import { useState, ReactNode, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
@@ -9,7 +8,8 @@ import {
   Home,
   LogOut,
   Menu,
-  X
+  X,
+  User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { mockMerchant, initMockMerchantData } from "@/utils/mockMerchantData";
@@ -26,18 +26,15 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
   const [visible, setVisible] = useState(true);
   const [lastScrollPosition, setLastScrollPosition] = useState(0);
   
-  // Initialize mock merchant data on component mount
   useEffect(() => {
     initMockMerchantData();
   }, []);
   
-  // Handle scroll for mobile navigation visibility
   useEffect(() => {
     const handleScroll = () => {
       const currentPosition = window.scrollY;
       const isScrollingDown = currentPosition > lastScrollPosition;
 
-      // Only hide on scroll down when we're past a certain threshold
       if (currentPosition > 60) {
         setVisible(!isScrollingDown);
       } else {
@@ -52,14 +49,12 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
   }, [lastScrollPosition]);
 
   const handleLogout = () => {
-    // For now this just navigates to home page since we don't have real auth
     navigate("/");
     toast.success("You have been logged out successfully");
   };
   
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-teal-50 via-white to-amber-50">
-      {/* Desktop sidebar */}
       <div 
         className={cn(
           "fixed inset-y-0 left-0 z-40 w-64 merchant-sidebar transform transition-transform duration-200 ease-in-out md:translate-x-0",
@@ -127,6 +122,17 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
               <Settings className="mr-3 h-5 w-5" />
               Settings
             </Link>
+            <Link
+              to="/merchant/profile"
+              className={cn(
+                "merchant-nav-item",
+                location.pathname.includes("/merchant/profile") && "merchant-nav-item-active"
+              )}
+              onClick={() => setSidebarOpen(false)}
+            >
+              <User className="mr-3 h-5 w-5" />
+              Profile
+            </Link>
             <button
               onClick={handleLogout}
               className="merchant-nav-item w-full text-left text-red-100 hover:bg-red-500/30"
@@ -147,17 +153,15 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
         </div>
       </div>
       
-      {/* Main content */}
       <div className={cn(
         "flex-1 transition-all duration-200",
-        "md:ml-64" // Always shifted on medium screens and above
+        "md:ml-64"
       )}>
         <main className="p-6">
           {children}
         </main>
       </div>
 
-      {/* Mobile navigation */}
       <div 
         className={cn(
           "fixed bottom-0 left-0 right-0 z-50 md:hidden merchant-mobile-nav transition-transform duration-300",
@@ -218,7 +222,6 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
         </nav>
       </div>
 
-      {/* Mobile menu toggle button - only visible on smaller screens */}
       <button
         className="fixed z-50 top-4 right-4 md:hidden bg-teal-600 text-white p-3 rounded-full shadow-lg"
         onClick={() => setSidebarOpen(!sidebarOpen)}

@@ -1,4 +1,3 @@
-
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Toaster } from "sonner";
 
@@ -27,6 +26,7 @@ import MerchantRegister from "./pages/merchant/Register";
 import MerchantSignup from "./pages/merchant/Signup";
 import MerchantResetPassword from "./pages/merchant/ResetPassword";
 import MerchantAnalytics from "./pages/merchant/Analytics";
+import MerchantProfile from "./pages/merchant/Profile";
 
 // Layouts
 import MainLayout from "./layouts/MainLayout";
@@ -211,6 +211,14 @@ const router = createBrowserRouter([
     element: (
       <MerchantLayout>
         <MerchantSettings />
+      </MerchantLayout>
+    ),
+  },
+  {
+    path: "/merchant/profile",
+    element: (
+      <MerchantLayout>
+        <MerchantProfile />
       </MerchantLayout>
     ),
   },
