@@ -226,22 +226,36 @@ export const getCurrentMerchant = async (): Promise<Merchant | null> => {
 // Logout merchant
 export const logoutMerchant = async (): Promise<void> => {
   try {
-    // More aggressive session clearing
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      throw handleSupabaseError(error, "signing out merchant", ErrorType.UNKNOWN_ERROR);
-    }
+    // Set a flag indicating we're logging out
+    sessionStorage.setItem('just_logged_out', 'true');
     
     // Clear any local storage items that might be keeping authentication state
     localStorage.removeItem('supabase.auth.token');
     
+    // Try signing out, but don't throw if there's no session
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error && !error.message.includes("session missing")) {
+        console.error("Error during signOut:", error);
+      }
+    } catch (signOutError) {
+      console.error("Sign out error caught:", signOutError);
+      // Continue with the rest of logout process even if signOut fails
+    }
+    
     // Clear any other auth-related storage that might be persisting
-    sessionStorage.clear();
+    sessionStorage.removeItem('supabase.auth.expires_at');
+    sessionStorage.removeItem('supabase.auth.token.created_at');
     
     // Small delay to ensure everything is cleared
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Force refresh Supabase auth state
+    await supabase.auth.refreshSession();
+
   } catch (error) {
-    handleError(error, ErrorType.UNKNOWN_ERROR, "Error signing out");
+    console.error("Error in logoutMerchant:", error);
+    // Don't throw the error, just log it and let logout continue
   }
 };
 

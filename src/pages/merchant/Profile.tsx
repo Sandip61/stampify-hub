@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, LogOut, Mail, Store, Palette } from "lucide-react";
@@ -30,12 +31,17 @@ const MerchantProfile = () => {
 
   const handleLogout = async () => {
     try {
-      await logoutMerchant();
-      setTimeout(() => {
-        toast.success("Logged out successfully");
-        navigate("/merchant/login", { replace: true });
-      }, 100);
+      // Handle logout without waiting for the promise
+      logoutMerchant().catch(error => {
+        console.error("Logout error:", error);
+      });
+      
+      // Always show success and navigate regardless of potential errors
+      toast.success("Logged out successfully");
+      navigate("/merchant/login", { replace: true });
+      
     } catch (error) {
+      console.error("Unexpected error in handleLogout:", error);
       toast.error("Failed to log out");
     }
   };

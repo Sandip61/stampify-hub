@@ -51,13 +51,15 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
 
   const handleLogout = async () => {
     try {
-      await logoutMerchant();
+      logoutMerchant().catch(error => {
+        console.error("Logout error:", error);
+      });
       
-      setTimeout(() => {
-        toast.success("You have been logged out successfully");
-        navigate("/merchant/login", { replace: true });
-      }, 100);
+      toast.success("You have been logged out successfully");
+      navigate("/merchant/login", { replace: true });
+      
     } catch (error) {
+      console.error("Unexpected error in handleLogout:", error);
       toast.error("Failed to log out");
     }
   };
