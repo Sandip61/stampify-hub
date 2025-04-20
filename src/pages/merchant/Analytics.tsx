@@ -8,9 +8,8 @@ import {
   Calendar,
   CreditCard
 } from "lucide-react";
-import { Merchant } from "@/utils/merchantAuth";
-import { mockMerchant } from "@/utils/mockMerchantData";
 import { supabase } from "@/integrations/supabase/client";
+import { StampCard } from "@/types/StampCard";
 
 // Analytics data interface
 interface AnalyticsData {
@@ -34,16 +33,57 @@ interface AnalyticsData {
 }
 
 const MerchantAnalytics = () => {
-  const [merchant, setMerchant] = useState<Merchant | null>(mockMerchant);
   const [isLoading, setIsLoading] = useState(true);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [stampCards, setStampCards] = useState<StampCard[]>([]);
   
   useEffect(() => {
     const loadData = async () => {
       try {
-        // In the future, we would fetch real data from Supabase
-        // For now, use placeholder data
+        // Fetch actual stamp cards from Supabase
+        const { data: cardsData, error: cardsError } = await supabase
+          .from("stamp_cards")
+          .select("*")
+          .order("created_at", { ascending: false });
         
+        if (cardsError) {
+          console.error("Error fetching stamp cards for analytics:", cardsError);
+          throw cardsError;
+        }
+        
+        if (cardsData) {
+          setStampCards(cardsData);
+          console.log("Analytics - Stamp cards fetched:", cardsData);
+        }
+        
+        // Fetch transactions data (this would need to be implemented in the future)
+        // For now, we'll just use the cards data to calculate basic metrics
+        
+        // Basic analytics from fetched data
+        setAnalytics({
+          totalStamps: cardsData ? cardsData.reduce((sum, card) => sum + card.total_stamps, 0) : 0,
+          totalRedemptions: 0, // We'll need to fetch this from transactions in the future
+          activeCustomers: 0, // We'll need to fetch this from a customers table in the future
+          totalCustomers: 0, // We'll need to fetch this from a customers table in the future
+          redemptionRate: 0,
+          retentionRate: 0,
+          transactionsByDay: [
+            { date: new Date().toISOString(), stamps: 0, redemptions: 0 }
+          ],
+          transactionsByCard: cardsData ? cardsData.map(card => ({
+            cardId: card.id,
+            cardName: card.name,
+            stamps: 0, // These would come from transactions in the future
+            redemptions: 0 // These would come from transactions in the future
+          })) : []
+        });
+        
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error loading analytics data:", error);
+        setIsLoading(false);
+        
+        // Set default analytics in case of error
         setAnalytics({
           totalStamps: 0,
           totalRedemptions: 0,
@@ -52,19 +92,10 @@ const MerchantAnalytics = () => {
           redemptionRate: 0,
           retentionRate: 0,
           transactionsByDay: [
-            {
-              date: new Date().toISOString(),
-              stamps: 0,
-              redemptions: 0
-            }
+            { date: new Date().toISOString(), stamps: 0, redemptions: 0 }
           ],
           transactionsByCard: []
         });
-        
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error loading analytics data:", error);
-        setIsLoading(false);
       }
     };
     
@@ -161,9 +192,16 @@ const MerchantAnalytics = () => {
           <h3 className="font-semibold">Activity Over Time</h3>
         </div>
         
-        <div className="h-64 flex items-center justify-center">
-          <p className="text-muted-foreground">No activity data available yet</p>
-        </div>
+        {stampCards.length > 0 ? (
+          <div className="h-64 flex flex-col justify-center">
+            <p className="text-muted-foreground text-center">Activity data is being collected. Check back soon for insights.</p>
+            <p className="text-sm text-muted-foreground text-center mt-2">You have {stampCards.length} active stamp card{stampCards.length !== 1 ? 's' : ''}.</p>
+          </div>
+        ) : (
+          <div className="h-64 flex items-center justify-center">
+            <p className="text-muted-foreground">No activity data available yet</p>
+          </div>
+        )}
       </div>
 
       {/* Card performance */}
@@ -173,9 +211,30 @@ const MerchantAnalytics = () => {
           <h3 className="font-semibold">Card Performance</h3>
         </div>
         
-        <div className="h-40 flex items-center justify-center">
-          <p className="text-muted-foreground">No card performance data available yet</p>
-        </div>
+        {stampCards.length > 0 ? (
+          <div className="space-y-4">
+            {stampCards.map(card => (
+              <div key={card.id} className="p-4 border rounded-lg">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <div 
+                      className="w-8 h-8 flex items-center justify-center rounded-full mr-3 text-white"
+                      style={{ backgroundColor: card.business_color || '#3B82F6' }}
+                    >
+                      {card.business_logo || '🏪'}
+                    </div>
+                    <h4 className="font-medium">{card.name}</h4>
+                  </div>
+                  <span className="text-sm text-muted-foreground">{card.total_stamps} stamps required</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="h-40 flex items-center justify-center">
+            <p className="text-muted-foreground">No card performance data available yet</p>
+          </div>
+        )}
       </div>
 
       {/* Customer engagement */}
