@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { loginMerchant, validateMerchantEmail } from "@/utils/merchantAuth";
 import { toast } from "sonner";
-import { isValidEmail, loginMerchant, getCurrentMerchant } from "@/utils/merchantAuth";
 import PasswordInput from "@/components/PasswordInput";
+import { getCurrentMerchant } from "@/utils/merchantAuth";
 
 const MerchantLogin = () => {
   const navigate = useNavigate();
@@ -14,33 +16,32 @@ const MerchantLogin = () => {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
   
-  // Check if the user is coming from a confirmed email link
   const hasConfirmed = new URLSearchParams(location.search).get('confirmed') === 'true';
+  const isJustLoggedOut = sessionStorage.getItem('just_logged_out') === 'true';
 
   useEffect(() => {
     if (hasConfirmed) {
       toast.success("Email verified successfully! You can now log in.");
     }
-  }, [hasConfirmed]);
+    
+    // Clear the logged out flag if it exists
+    if (isJustLoggedOut) {
+      sessionStorage.removeItem('just_logged_out');
+    }
+  }, [hasConfirmed, isJustLoggedOut]);
 
   useEffect(() => {
     const checkAuth = async () => {
+      // Don't redirect to dashboard if user just logged out
+      if (isJustLoggedOut) {
+        setIsCheckingAuth(false);
+        return;
+      }
+      
       try {
-        // Force a small delay to ensure previous logout is complete
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
         const merchant = await getCurrentMerchant();
         if (merchant) {
-          // Only auto-redirect if we're confident the user is logged in
-          // and didn't just try to logout
-          const justLoggedOut = sessionStorage.getItem('just_logged_out');
-          
-          if (!justLoggedOut) {
-            navigate("/merchant");
-          } else {
-            // Clear the flag
-            sessionStorage.removeItem('just_logged_out');
-          }
+          navigate("/merchant", { replace: true });
         }
       } catch (error) {
         console.error("Auth check error:", error);
@@ -50,14 +51,14 @@ const MerchantLogin = () => {
     };
     
     checkAuth();
-  }, [navigate]);
+  }, [navigate, isJustLoggedOut]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
     
     if (!email) {
       newErrors.email = "Email is required";
-    } else if (!isValidEmail(email)) {
+    } else if (!validateMerchantEmail(email)) {
       newErrors.email = "Please enter a valid email";
     }
     
@@ -97,8 +98,8 @@ const MerchantLogin = () => {
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8">
-        <div className="w-12 h-12 rounded-full border-t-2 border-primary animate-spin" />
+      <div className="min-h-screen flex flex-col justify-center items-center">
+        <div className="w-12 h-12 rounded-full border-t-2 border-teal-600 animate-spin" />
       </div>
     );
   }
@@ -108,7 +109,7 @@ const MerchantLogin = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-amber-600 bg-clip-text text-transparent">Merchant Login</h1>
-          <p className="text-muted-foreground mt-2">Sign in to your Stampify Merchant account</p>
+          <p className="text-muted-foreground mt-2">Sign in to your merchant dashboard</p>
         </div>
         
         {emailConfirmationSent && (
@@ -135,7 +136,7 @@ const MerchantLogin = () => {
                 className={`flex h-10 w-full rounded-md border ${
                   errors.email ? "border-destructive" : "border-input"
                 } bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
-                placeholder="your@email.com"
+                placeholder="your@business.com"
                 disabled={isLoading}
               />
               {errors.email && (
@@ -148,10 +149,7 @@ const MerchantLogin = () => {
                 <label htmlFor="password" className="text-sm font-medium">
                   Password
                 </label>
-                <Link 
-                  to="/merchant/forgot-password" 
-                  className="text-sm text-teal-600 hover:text-teal-800 hover:underline"
-                >
+                <Link to="/merchant/reset-password" className="text-xs text-teal-600 hover:text-teal-800 hover:underline">
                   Forgot password?
                 </Link>
               </div>
@@ -170,22 +168,20 @@ const MerchantLogin = () => {
               className="w-full h-10 px-4 py-2 rounded-md bg-gradient-to-r from-teal-600 to-amber-600 text-white hover:from-teal-700 hover:to-amber-700 transition-colors disabled:opacity-50 disabled:pointer-events-none"
               disabled={isLoading}
             >
-              {isLoading ? "Signing in..." : "Sign in"}
+              {isLoading ? "Signing In..." : "Sign In"}
             </button>
           </form>
         </div>
         
         <div className="text-center mt-6">
           <p className="text-sm text-muted-foreground">
-            New to Stampify?{" "}
-            <Link to="/merchant/signup" className="text-teal-600 hover:text-teal-800 hover:underline">
-              Create a merchant account
+            Don't have a merchant account?{" "}
+            <Link to="/merchant/register" className="text-teal-600 hover:text-teal-800 hover:underline">
+              Create account
             </Link>
           </p>
         </div>
       </div>
-      
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-600 via-amber-600 to-teal-600"></div>
     </div>
   );
 };

@@ -1,3 +1,4 @@
+
 import { useState, ReactNode, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
@@ -14,7 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { mockMerchant, initMockMerchantData } from "@/utils/mockMerchantData";
 import { toast } from "sonner";
-import { logoutMerchant } from "@/utils/merchantAuth";
+import { logoutMerchant, getCurrentMerchant } from "@/utils/merchantAuth";
 
 interface MerchantLayoutProps {
   children: ReactNode;
@@ -26,10 +27,33 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [visible, setVisible] = useState(true);
   const [lastScrollPosition, setLastScrollPosition] = useState(0);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     initMockMerchantData();
   }, []);
+  
+  // Add authentication check
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const merchant = await getCurrentMerchant();
+        if (!merchant) {
+          navigate("/merchant/login", { replace: true });
+          return;
+        }
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error("Auth check error:", error);
+        navigate("/merchant/login", { replace: true });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAuth();
+  }, [navigate]);
   
   useEffect(() => {
     const handleScroll = () => {
@@ -51,10 +75,12 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
 
   const handleLogout = async () => {
     try {
+      // Handle logout without waiting for the promise
       logoutMerchant().catch(error => {
         console.error("Logout error:", error);
       });
       
+      // Always show success and navigate regardless of potential errors
       toast.success("You have been logged out successfully");
       navigate("/merchant/login", { replace: true });
       
@@ -63,6 +89,21 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
       toast.error("Failed to log out");
     }
   };
+  
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="w-12 h-12 rounded-full border-t-2 border-teal-600 animate-spin" />
+      </div>
+    );
+  }
+  
+  // Only render the layout if authenticated
+  if (!isAuthenticated) {
+    // This should not be visible as we redirect, but just in case
+    return null;
+  }
   
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-teal-50 via-white to-amber-50">
