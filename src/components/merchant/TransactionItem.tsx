@@ -2,6 +2,23 @@
 import { Clock, Stamp, Gift, PlusCircle, Edit, Archive } from "lucide-react";
 import { TransactionHistory } from "@/pages/merchant/History";
 
+const getTransactionTypeDetails = (type: string) => {
+  switch (type) {
+    case 'stamp':
+      return { icon: <Stamp className="h-4 w-4" />, color: 'bg-blue-500/10 text-blue-500' };
+    case 'redeem':
+      return { icon: <Gift className="h-4 w-4" />, color: 'bg-green-500/10 text-green-500' };
+    case 'card_created':
+      return { icon: <PlusCircle className="h-4 w-4" />, color: 'bg-purple-500/10 text-purple-500' };
+    case 'card_updated':
+      return { icon: <Edit className="h-4 w-4" />, color: 'bg-yellow-500/10 text-yellow-500' };
+    case 'card_deactivated':
+      return { icon: <Archive className="h-4 w-4" />, color: 'bg-red-500/10 text-red-500' };
+    default:
+      return { icon: <Clock className="h-4 w-4" />, color: 'bg-gray-500/10 text-gray-500' };
+  }
+};
+
 interface TransactionItemProps {
   transaction: TransactionHistory;
 }
@@ -15,23 +32,6 @@ export const TransactionItem = ({ transaction }: TransactionItemProps) => {
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
-
-  const getTransactionTypeDetails = (type: string) => {
-    switch (type) {
-      case 'stamp':
-        return { icon: <Stamp className="h-4 w-4" />, color: 'bg-blue-500/10 text-blue-500' };
-      case 'redeem':
-        return { icon: <Gift className="h-4 w-4" />, color: 'bg-green-500/10 text-green-500' };
-      case 'card_created':
-        return { icon: <PlusCircle className="h-4 w-4" />, color: 'bg-purple-500/10 text-purple-500' };
-      case 'card_updated':
-        return { icon: <Edit className="h-4 w-4" />, color: 'bg-yellow-500/10 text-yellow-500' };
-      case 'card_deactivated':
-        return { icon: <Archive className="h-4 w-4" />, color: 'bg-red-500/10 text-red-500' };
-      default:
-        return { icon: <Clock className="h-4 w-4" />, color: 'bg-gray-500/10 text-gray-500' };
-    }
   };
 
   const getTransactionDescription = (transaction: TransactionHistory) => {
