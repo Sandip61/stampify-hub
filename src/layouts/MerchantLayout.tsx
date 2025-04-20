@@ -1,4 +1,3 @@
-
 import { useState, ReactNode, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { 
@@ -10,7 +9,8 @@ import {
   LogOut,
   Menu,
   X,
-  User
+  User,
+  History
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { mockMerchant, initMockMerchantData } from "@/utils/mockMerchantData";
@@ -34,7 +34,6 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
     initMockMerchantData();
   }, []);
   
-  // Add authentication check
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -75,12 +74,10 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
 
   const handleLogout = async () => {
     try {
-      // Handle logout without waiting for the promise
       logoutMerchant().catch(error => {
         console.error("Logout error:", error);
       });
       
-      // Always show success and navigate regardless of potential errors
       toast.success("You have been logged out successfully");
       navigate("/merchant/login", { replace: true });
       
@@ -90,7 +87,6 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
     }
   };
   
-  // Show loading state while checking authentication
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -99,9 +95,7 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
     );
   }
   
-  // Only render the layout if authenticated
   if (!isAuthenticated) {
-    // This should not be visible as we redirect, but just in case
     return null;
   }
   
@@ -162,6 +156,17 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
             >
               <BarChart3 className="mr-3 h-5 w-5" />
               Analytics
+            </Link>
+            <Link
+              to="/merchant/history"
+              className={cn(
+                "merchant-nav-item",
+                location.pathname.includes("/merchant/history") && "merchant-nav-item-active"
+              )}
+              onClick={() => setSidebarOpen(false)}
+            >
+              <History className="mr-3 h-5 w-5" />
+              History
             </Link>
             <Link
               to="/merchant/settings"
@@ -260,6 +265,16 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
           >
             <BarChart3 className="w-5 h-5" />
             <span className="text-xs">Analytics</span>
+          </Link>
+          <Link 
+            to="/merchant/history" 
+            className={cn(
+              "flex flex-col items-center space-y-1", 
+              location.pathname.includes("/merchant/history") ? "text-teal-600" : "text-muted-foreground"
+            )}
+          >
+            <History className="w-5 h-5" />
+            <span className="text-xs">History</span>
           </Link>
           <Link 
             to="/merchant/settings" 
