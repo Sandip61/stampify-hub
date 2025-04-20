@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, LogOut, Mail, Store, Palette } from "lucide-react";
@@ -32,8 +31,10 @@ const MerchantProfile = () => {
   const handleLogout = async () => {
     try {
       await logoutMerchant();
-      toast.success("Logged out successfully");
-      navigate("/merchant/login");
+      setTimeout(() => {
+        toast.success("Logged out successfully");
+        navigate("/merchant/login", { replace: true });
+      }, 100);
     } catch (error) {
       toast.error("Failed to log out");
     }

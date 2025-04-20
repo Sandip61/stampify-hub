@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
@@ -26,10 +25,26 @@ const MerchantLogin = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const merchant = await getCurrentMerchant();
-      if (merchant) {
-        navigate("/merchant");
-      } else {
+      try {
+        // Force a small delay to ensure previous logout is complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const merchant = await getCurrentMerchant();
+        if (merchant) {
+          // Only auto-redirect if we're confident the user is logged in
+          // and didn't just try to logout
+          const justLoggedOut = sessionStorage.getItem('just_logged_out');
+          
+          if (!justLoggedOut) {
+            navigate("/merchant");
+          } else {
+            // Clear the flag
+            sessionStorage.removeItem('just_logged_out');
+          }
+        }
+      } catch (error) {
+        console.error("Auth check error:", error);
+      } finally {
         setIsCheckingAuth(false);
       }
     };

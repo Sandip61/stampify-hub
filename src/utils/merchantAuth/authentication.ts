@@ -226,10 +226,20 @@ export const getCurrentMerchant = async (): Promise<Merchant | null> => {
 // Logout merchant
 export const logoutMerchant = async (): Promise<void> => {
   try {
+    // More aggressive session clearing
     const { error } = await supabase.auth.signOut();
     if (error) {
       throw handleSupabaseError(error, "signing out merchant", ErrorType.UNKNOWN_ERROR);
     }
+    
+    // Clear any local storage items that might be keeping authentication state
+    localStorage.removeItem('supabase.auth.token');
+    
+    // Clear any other auth-related storage that might be persisting
+    sessionStorage.clear();
+    
+    // Small delay to ensure everything is cleared
+    await new Promise(resolve => setTimeout(resolve, 50));
   } catch (error) {
     handleError(error, ErrorType.UNKNOWN_ERROR, "Error signing out");
   }

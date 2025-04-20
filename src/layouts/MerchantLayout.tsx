@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { mockMerchant, initMockMerchantData } from "@/utils/mockMerchantData";
 import { toast } from "sonner";
+import { logoutMerchant } from "@/utils/merchantAuth";
 
 interface MerchantLayoutProps {
   children: ReactNode;
@@ -48,9 +49,17 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollPosition]);
 
-  const handleLogout = () => {
-    navigate("/");
-    toast.success("You have been logged out successfully");
+  const handleLogout = async () => {
+    try {
+      await logoutMerchant();
+      
+      setTimeout(() => {
+        toast.success("You have been logged out successfully");
+        navigate("/merchant/login", { replace: true });
+      }, 100);
+    } catch (error) {
+      toast.error("Failed to log out");
+    }
   };
   
   return (
