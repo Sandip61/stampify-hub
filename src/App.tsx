@@ -27,6 +27,7 @@ import MerchantSignup from "./pages/merchant/Signup";
 import MerchantResetPassword from "./pages/merchant/ResetPassword";
 import MerchantAnalytics from "./pages/merchant/Analytics";
 import MerchantProfile from "./pages/merchant/Profile";
+import MerchantHistory from "./pages/merchant/History";
 
 // Layouts
 import MainLayout from "./layouts/MainLayout";
@@ -219,6 +220,14 @@ const router = createBrowserRouter([
     element: (
       <MerchantLayout>
         <MerchantProfile />
+      </MerchantLayout>
+    ),
+  },
+  {
+    path: "/merchant/history",
+    element: (
+      <MerchantLayout>
+        <MerchantHistory />
       </MerchantLayout>
     ),
   },
