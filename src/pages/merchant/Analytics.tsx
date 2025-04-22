@@ -1,9 +1,7 @@
-
 import { useEffect, useState } from "react";
 import { 
   BarChart3, 
   Users, 
-  Stamp,
   Gift,
   Calendar,
   CreditCard
@@ -13,7 +11,7 @@ import { StampCard } from "@/types/StampCard";
 
 // Analytics data interface
 interface AnalyticsData {
-  totalStamps: number;
+  totalStampCards: number;
   totalRedemptions: number;
   activeCustomers: number;
   totalCustomers: number;
@@ -56,15 +54,12 @@ const MerchantAnalytics = () => {
           console.log("Analytics - Stamp cards fetched:", cardsData);
         }
         
-        // Fetch transactions data (this would need to be implemented in the future)
-        // For now, we'll just use the cards data to calculate basic metrics
-        
         // Basic analytics from fetched data
         setAnalytics({
-          totalStamps: cardsData ? cardsData.reduce((sum, card) => sum + card.total_stamps, 0) : 0,
-          totalRedemptions: 0, // We'll need to fetch this from transactions in the future
-          activeCustomers: 0, // We'll need to fetch this from a customers table in the future
-          totalCustomers: 0, // We'll need to fetch this from a customers table in the future
+          totalStampCards: cardsData ? cardsData.length : 0,
+          totalRedemptions: 0,
+          activeCustomers: 0,
+          totalCustomers: 0,
           redemptionRate: 0,
           retentionRate: 0,
           transactionsByDay: [
@@ -73,8 +68,8 @@ const MerchantAnalytics = () => {
           transactionsByCard: cardsData ? cardsData.map(card => ({
             cardId: card.id,
             cardName: card.name,
-            stamps: 0, // These would come from transactions in the future
-            redemptions: 0 // These would come from transactions in the future
+            stamps: 0,
+            redemptions: 0
           })) : []
         });
         
@@ -83,9 +78,8 @@ const MerchantAnalytics = () => {
         console.error("Error loading analytics data:", error);
         setIsLoading(false);
         
-        // Set default analytics in case of error
         setAnalytics({
-          totalStamps: 0,
+          totalStampCards: 0,
           totalRedemptions: 0,
           activeCustomers: 0,
           totalCustomers: 0,
@@ -138,11 +132,11 @@ const MerchantAnalytics = () => {
         <div className="bg-card border rounded-xl p-4">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-muted-foreground">Total Stamps</p>
-              <h3 className="text-2xl font-bold mt-1">{analytics.totalStamps}</h3>
+              <p className="text-sm text-muted-foreground">Total Stamp Cards</p>
+              <h3 className="text-2xl font-bold mt-1">{analytics.totalStampCards}</h3>
             </div>
             <div className="rounded-full p-2 bg-primary/10 text-primary">
-              <Stamp className="h-5 w-5" />
+              <CreditCard className="h-5 w-5" />
             </div>
           </div>
         </div>

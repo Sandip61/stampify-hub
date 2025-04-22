@@ -5,7 +5,7 @@ import { getCurrentUser, User } from "@/utils/auth";
 import { getUserStampCards, StampCard as StampCardType, initializeDemoData } from "@/utils/data";
 import StampCard from "@/components/StampCard";
 import { generateDummyData } from "@/utils/generateDummyData";
-import { Plus, RefreshCw, Stamp, Gift } from "lucide-react";
+import { Plus, RefreshCw, Gift, CreditCard } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -79,18 +79,18 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="bg-card border rounded-xl p-5">
           <div className="flex items-center text-primary mb-2">
-            <Stamp className="h-5 w-5 mr-2" />
-            <h2 className="font-semibold">Total Stamps</h2>
+            <CreditCard className="h-5 w-5 mr-2" />
+            <h2 className="font-semibold">Total Cards</h2>
           </div>
           <p className="text-3xl font-bold">
             {loading ? (
               <span className="animate-pulse">...</span>
             ) : (
-              stampCards.reduce((total, card) => total + card.currentStamps, 0)
+              stampCards.length
             )}
           </p>
           <p className="text-sm text-muted-foreground mt-1">
-            Across all your loyalty cards
+            Number of your loyalty cards
           </p>
         </div>
 
