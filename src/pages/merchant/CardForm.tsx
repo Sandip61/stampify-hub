@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -55,7 +56,7 @@ const MerchantCardForm = () => {
           setIsActive(stampCard.isActive);
           setExpiryDays(stampCard.expiryDays);
         } catch (error) {
-          handleError(error, ErrorType.NOT_FOUND, "Failed to load stamp card");
+          handleError(error, ErrorType.RESOURCE_NOT_FOUND, "Failed to load stamp card");
           navigate("/merchant/cards");
         } finally {
           setIsLoading(false);

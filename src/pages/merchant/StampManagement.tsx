@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,7 +50,7 @@ const StampManagement = () => {
 
       setStampCard(convertedStampCard);
     } catch (error) {
-      handleError(error, ErrorType.NOT_FOUND, "Error loading stamp card");
+      handleError(error, ErrorType.RESOURCE_NOT_FOUND, "Error loading stamp card");
     } finally {
       setLoading(false);
     }
