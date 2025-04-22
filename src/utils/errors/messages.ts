@@ -42,6 +42,48 @@ export function getUserFriendlyErrorMessage(errorType: ErrorType): string {
     case ErrorType.DATABASE_ERROR:
       return "A database error occurred. Our team has been notified.";
     
+    // Profile related errors
+    case ErrorType.PROFILE_NOT_FOUND:
+      return "User profile not found. Please try again or contact support.";
+    case ErrorType.PROFILE_UPDATE_FAILED:
+      return "Failed to update profile. Please try again later.";
+    
+    // Merchant related errors
+    case ErrorType.MERCHANT_NOT_FOUND:
+      return "Merchant account not found. Please try again or contact support.";
+    case ErrorType.MERCHANT_UPDATE_FAILED:
+      return "Failed to update merchant information. Please try again later.";
+    
+    // Stamp related errors
+    case ErrorType.STAMP_ISSUE_FAILED:
+      return "Failed to issue stamps. Please try again later.";
+    case ErrorType.STAMP_REDEEM_FAILED:
+      return "Failed to redeem reward. Please verify the code and try again.";
+    
+    // QR code related errors
+    case ErrorType.QR_CODE_INVALID:
+      return "Invalid QR code. Please scan a valid stamp card QR code.";
+    case ErrorType.QR_CODE_GENERATION_FAILED:
+      return "Failed to generate QR code. Please try again later.";
+    
+    // Data operation errors
+    case ErrorType.DATA_FETCH_FAILED:
+      return "Failed to retrieve data. Please try again later.";
+    case ErrorType.DATA_CREATE_FAILED:
+      return "Failed to create data. Please try again later.";
+    case ErrorType.DATA_UPDATE_FAILED:
+      return "Failed to update data. Please try again later.";
+    case ErrorType.DATA_DELETE_FAILED:
+      return "Failed to delete data. Please try again later.";
+    
+    // Offline errors
+    case ErrorType.OFFLINE_STORAGE_ERROR:
+      return "Failed to store data for offline use. Please check your device storage.";
+    
+    // Authorization errors
+    case ErrorType.UNAUTHORIZED:
+      return "You need to be logged in to perform this action.";
+    
     // Generic fallback message
     case ErrorType.UNKNOWN_ERROR:
     default:
