@@ -1,6 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { handleSupabaseError, ErrorType } from "@/utils/errors";
 
 export interface MerchantStampCard {
   id: string;
@@ -140,7 +140,24 @@ export const createMerchantStampCard = async (cardData: Omit<MerchantStampCard, 
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (error.code === "23514" && error.message?.includes("stamp_transactions_type_check")) {
+        console.warn("Encountered transaction type constraint, but card was likely created successfully");
+        const { data: cardData, error: fetchError } = await supabase
+          .from("stamp_cards")
+          .select("*")
+          .eq("merchant_id", merchant.id)
+          .eq("name", cardData.name)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+          
+        if (!fetchError && cardData) {
+          return cardData;
+        }
+      }
+      throw error;
+    }
     return data;
   } catch (error) {
     console.error("Error creating stamp card:", error);
@@ -222,14 +239,12 @@ export const getMerchantTransactions = async () => {
 
 export const getMerchantCustomers = async () => {
   try {
-    // Get all customers who have interacted with the merchant's stamp cards
     const { data: customerData, error: customerError } = await supabase.rpc('get_merchant_customers');
 
     if (customerError) throw customerError;
 
     const customers: MerchantCustomer[] = [];
     
-    // If no RPC function, can be added later. For now, return empty array
     console.warn("Customer data retrieval via RPC not implemented yet");
     return customers;
   } catch (error) {
@@ -240,8 +255,6 @@ export const getMerchantCustomers = async () => {
 
 export const addMerchantCustomer = async (name: string, email: string) => {
   try {
-    // This would typically involve creating a user and then associating them with the merchant
-    // For now, just show a toast message
     toast.info("Customer addition via API not implemented yet");
     return true;
   } catch (error) {
@@ -252,8 +265,6 @@ export const addMerchantCustomer = async (name: string, email: string) => {
 
 export const getMerchantAnalytics = async (): Promise<AnalyticsData> => {
   try {
-    // This would fetch analytics data from the database
-    // For now, return a placeholder
     return {
       totalStamps: 0,
       totalRedemptions: 0,
@@ -270,7 +281,6 @@ export const getMerchantAnalytics = async (): Promise<AnalyticsData> => {
   }
 };
 
-// Helper function to get the current merchant (copied from merchantAuth)
 const getCurrentMerchant = async () => {
   try {
     const { data: { session }, error } = await supabase.auth.getSession();

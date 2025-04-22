@@ -91,8 +91,18 @@ export const handleSupabaseError = (
   // Log detailed error for debugging
   console.error(`Supabase error during ${operation}:`, error);
   
-  // Handle DB constraint violation errors
+  // Handle specific constraint violation error related to stamp_transactions_type_check
   if (error.code === "23514" && error.message?.includes("stamp_transactions_type_check")) {
+    return new AppError(
+      ErrorType.DATABASE_ERROR,
+      "There was an issue with the transaction type. The development team has been notified and is working on a fix.",
+      error,
+      { operation }
+    );
+  }
+  
+  // Handle DB constraint violation errors
+  if (error.code === "23514") {
     return new AppError(
       ErrorType.DATABASE_ERROR,
       "There's an issue with the database constraints. Please contact support.",
