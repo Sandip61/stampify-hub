@@ -1,11 +1,9 @@
-
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { 
   BarChart3, 
   CreditCard, 
   Users, 
-  Stamp,
   Gift,
   PlusCircle,
   ArrowUpRight
@@ -15,7 +13,7 @@ import { StampCard } from "@/types/StampCard";
 
 // Placeholder for analytics data structure
 interface AnalyticsData {
-  totalStamps: number;
+  totalStampCards: number;
   totalRedemptions: number;
   totalCustomers: number;
   activeCustomers: number;
@@ -71,7 +69,7 @@ const MerchantDashboard = () => {
         
         // Basic analytics from fetched data
         setAnalytics({
-          totalStamps: cardsData ? cardsData.reduce((sum, card) => sum + card.total_stamps, 0) : 0,
+          totalStampCards: cardsData ? cardsData.length : 0,
           totalRedemptions: 0, // We'll need to fetch this from transactions
           totalCustomers: 0, // We'll need to fetch this from a customers table
           activeCustomers: 0,
@@ -92,7 +90,7 @@ const MerchantDashboard = () => {
         
         // Set default analytics in case of error
         setAnalytics({
-          totalStamps: 0,
+          totalStampCards: 0,
           totalRedemptions: 0,
           totalCustomers: 0,
           activeCustomers: 0,
@@ -154,11 +152,11 @@ const MerchantDashboard = () => {
         <div className="bg-card border rounded-xl p-4">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-muted-foreground">Total Stamps</p>
-              <h3 className="text-2xl font-bold mt-1">{analytics.totalStamps}</h3>
+              <p className="text-sm text-muted-foreground">Total Cards</p>
+              <h3 className="text-2xl font-bold mt-1">{analytics.totalStampCards}</h3>
             </div>
             <div className="rounded-full p-2 bg-primary/10 text-primary">
-              <Stamp className="h-5 w-5" />
+              <CreditCard className="h-5 w-5" />
             </div>
           </div>
         </div>
