@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { handleSupabaseError, ErrorType } from "@/utils/errors";
@@ -143,7 +144,7 @@ export const createMerchantStampCard = async (cardData: Omit<MerchantStampCard, 
     if (error) {
       if (error.code === "23514" && error.message?.includes("stamp_transactions_type_check")) {
         console.warn("Encountered transaction type constraint, but card was likely created successfully");
-        const { data: cardData, error: fetchError } = await supabase
+        const { data: fetchedCardData, error: fetchError } = await supabase
           .from("stamp_cards")
           .select("*")
           .eq("merchant_id", merchant.id)
@@ -152,8 +153,8 @@ export const createMerchantStampCard = async (cardData: Omit<MerchantStampCard, 
           .limit(1)
           .single();
           
-        if (!fetchError && cardData) {
-          return cardData;
+        if (!fetchError && fetchedCardData) {
+          return fetchedCardData;
         }
       }
       throw error;
