@@ -91,23 +91,29 @@ export const handleSupabaseError = (
   // Log detailed error for debugging
   console.error(`Supabase error during ${operation}:`, error);
   
-  // Handle transaction type constraint errors properly
+  // Handle constraint violations for stamp transactions
   if (error.code === "23514" && error.message?.includes("stamp_transactions_type_check")) {
     return new AppError(
       ErrorType.DATABASE_ERROR,
-      "There was an issue with the transaction type. Please contact support if the issue persists.",
+      "There was an issue with the transaction type. Please try again with a valid transaction type.",
       error,
       { operation }
     );
   }
   
-  // Handle DB constraint violation errors
+  // Handle other check constraint violations
   if (error.code === "23514") {
+    // Extract constraint name if possible
+    const constraintMatch = error.message?.match(/check constraint "([^"]+)"/);
+    const constraintName = constraintMatch ? constraintMatch[1] : "unknown constraint";
+    
+    console.log("Constraint violation:", constraintName, error.message);
+    
     return new AppError(
       ErrorType.DATABASE_ERROR,
-      "There's an issue with the database constraints. Please contact support.",
+      `A database constraint was violated (${constraintName}). Please check your input values.`,
       error,
-      { operation }
+      { operation, constraintName }
     );
   }
   
