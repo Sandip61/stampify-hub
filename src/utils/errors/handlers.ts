@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { ErrorType } from './types';
 import { AppError } from './AppError';
@@ -94,7 +95,7 @@ export const handleSupabaseError = (
   if (error.code === "23514" && error.message?.includes("stamp_transactions_type_check")) {
     return new AppError(
       ErrorType.DATABASE_ERROR,
-      "There was an issue with the transaction type. Please try again or contact support if the issue persists.",
+      "There was an issue with the transaction type. Please contact support if the issue persists.",
       error,
       { operation }
     );
@@ -113,8 +114,8 @@ export const handleSupabaseError = (
   // Map common Supabase error codes/messages to our error types
   if (error.code === "23505" || error.message?.includes("already exists")) {
     return new AppError(
-      ErrorType.AUTH_EMAIL_IN_USE,
-      "An account with this email already exists",
+      ErrorType.RESOURCE_ALREADY_EXISTS,
+      "A resource with this identifier already exists",
       error,
       { operation }
     );
