@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { 
@@ -66,14 +67,38 @@ const MerchantDashboard = () => {
           setStampCards(cardsData);
           console.log("Stamp cards fetched:", cardsData);
         }
+
+        // Fetch all customer_stamp_cards (issued stamp cards)
+        const { data: customerStampCards, error: cscError } = await supabase
+          .from("customer_stamp_cards")
+          .select("*, card:stamp_cards(total_stamps)")
         
-        // Basic analytics from fetched data
+        if (cscError) {
+          console.error("Error fetching customer stamp cards:", cscError);
+          throw cscError;
+        }
+
+        // Calculate total issued
+        const totalIssued = customerStampCards?.length ?? 0;
+        
+        // Number redeemed: where individual current_stamps >= corresponding card.total_stamps
+        const numRedeemed =
+          customerStampCards?.filter((csc: any) =>
+            csc.card &&
+            typeof csc.card.total_stamps === "number" &&
+            csc.current_stamps >= csc.card.total_stamps
+          ).length ?? 0;
+
+        // Calculate Redemption Rate
+        const redemptionRate = totalIssued === 0 ? 0 : (numRedeemed / totalIssued) * 100;
+
+        // Update analytics
         setAnalytics({
           totalStampCards: cardsData ? cardsData.length : 0,
-          totalRedemptions: 0, // We'll need to fetch this from transactions
-          totalCustomers: 0, // We'll need to fetch this from a customers table
+          totalRedemptions: numRedeemed,
+          totalCustomers: 0, // Still need to fetch from a customers table for real value
           activeCustomers: 0,
-          redemptionRate: 0,
+          redemptionRate: redemptionRate,
           retentionRate: 0,
           transactionsByDay: [
             { date: new Date().toISOString(), stamps: 0, redemptions: 0 }
