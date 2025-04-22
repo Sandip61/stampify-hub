@@ -2,7 +2,7 @@
 import { Clock, Stamp, Gift, PlusCircle, Edit, Archive } from "lucide-react";
 import { TransactionHistory } from "@/pages/merchant/History";
 
-const getTransactionTypeDetails = (type: string) => {
+export const getTransactionTypeDetails = (type: string) => {
   switch (type) {
     case 'stamp':
       return { icon: <Stamp className="h-4 w-4" />, color: 'bg-blue-500/10 text-blue-500' };
@@ -19,11 +19,24 @@ const getTransactionTypeDetails = (type: string) => {
   }
 };
 
-interface TransactionItemProps {
-  transaction: TransactionHistory;
-}
+export const getTransactionDescription = (transaction: TransactionHistory) => {
+  switch (transaction.type) {
+    case 'stamp':
+      return `Added ${transaction.count || 1} stamp${(transaction.count || 1) > 1 ? 's' : ''} for ${transaction.customer_id}`;
+    case 'redeem':
+      return `Reward redeemed by ${transaction.customer_id}`;
+    case 'card_created':
+      return 'New Stamp Card Created';
+    case 'card_updated':
+      return 'Stamp Card Updated';
+    case 'card_deactivated':
+      return 'Stamp Card Deactivated';
+    default:
+      return 'Unknown Activity';
+  }
+};
 
-export const TransactionItem = ({ transaction }: TransactionItemProps) => {
+export const TransactionItem = ({ transaction }: { transaction: TransactionHistory }) => {
   const { icon, color } = getTransactionTypeDetails(transaction.type);
   
   const formatTime = (dateString: string) => {
@@ -32,23 +45,6 @@ export const TransactionItem = ({ transaction }: TransactionItemProps) => {
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
-
-  const getTransactionDescription = (transaction: TransactionHistory) => {
-    switch (transaction.type) {
-      case 'stamp':
-        return `Added ${transaction.count || 1} stamp${(transaction.count || 1) > 1 ? 's' : ''} for ${transaction.customer_id}`;
-      case 'redeem':
-        return `Reward redeemed by ${transaction.customer_id}`;
-      case 'card_created':
-        return 'New Stamp Card Created';
-      case 'card_updated':
-        return 'Stamp Card Updated';
-      case 'card_deactivated':
-        return 'Stamp Card Deactivated';
-      default:
-        return 'Unknown Activity';
-    }
   };
 
   return (
