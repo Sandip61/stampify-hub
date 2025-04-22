@@ -91,6 +91,16 @@ export const handleSupabaseError = (
   // Log detailed error for debugging
   console.error(`Supabase error during ${operation}:`, error);
   
+  // Handle DB constraint violation errors
+  if (error.code === "23514" && error.message?.includes("stamp_transactions_type_check")) {
+    return new AppError(
+      ErrorType.DATABASE_ERROR,
+      "There's an issue with the database constraints. Please contact support.",
+      error,
+      { operation }
+    );
+  }
+  
   // Map common Supabase error codes/messages to our error types
   if (error.code === "23505" || error.message?.includes("already exists")) {
     return new AppError(
