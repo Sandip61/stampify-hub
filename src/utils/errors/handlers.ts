@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { ErrorType } from './types';
 import { AppError } from './AppError';
@@ -91,11 +90,11 @@ export const handleSupabaseError = (
   // Log detailed error for debugging
   console.error(`Supabase error during ${operation}:`, error);
   
-  // Handle specific constraint violation error related to stamp_transactions_type_check
+  // Handle transaction type constraint errors properly
   if (error.code === "23514" && error.message?.includes("stamp_transactions_type_check")) {
     return new AppError(
       ErrorType.DATABASE_ERROR,
-      "There was an issue with the transaction type. The development team has been notified and is working on a fix.",
+      "There was an issue with the transaction type. Please try again or contact support if the issue persists.",
       error,
       { operation }
     );

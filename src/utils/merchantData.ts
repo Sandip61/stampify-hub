@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { handleSupabaseError, ErrorType } from "@/utils/errors";
@@ -24,7 +23,7 @@ export interface MerchantTransaction {
   customerId: string;
   customerName: string;
   customerEmail: string;
-  type: 'stamp' | 'redeem';
+  type: 'stamp' | 'redeem' | 'card_created' | 'card_updated' | 'card_deactivated';
   count?: number;
   timestamp: string;
   rewardCode?: string;
@@ -141,24 +140,8 @@ export const createMerchantStampCard = async (cardData: Omit<MerchantStampCard, 
       .select()
       .single();
 
-    if (error) {
-      if (error.code === "23514" && error.message?.includes("stamp_transactions_type_check")) {
-        console.warn("Encountered transaction type constraint, but card was likely created successfully");
-        const { data: fetchedCardData, error: fetchError } = await supabase
-          .from("stamp_cards")
-          .select("*")
-          .eq("merchant_id", merchant.id)
-          .eq("name", cardData.name)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
-          
-        if (!fetchError && fetchedCardData) {
-          return fetchedCardData;
-        }
-      }
-      throw error;
-    }
+    if (error) throw error;
+    
     return data;
   } catch (error) {
     console.error("Error creating stamp card:", error);
@@ -227,7 +210,7 @@ export const getMerchantTransactions = async () => {
       customerId: tx.customer_id,
       customerName: tx.profiles?.name || "Unknown",
       customerEmail: tx.profiles?.email || "unknown@example.com",
-      type: tx.type as 'stamp' | 'redeem',
+      type: tx.type as 'stamp' | 'redeem' | 'card_created' | 'card_updated' | 'card_deactivated',
       count: tx.count,
       timestamp: tx.timestamp,
       rewardCode: tx.reward_code

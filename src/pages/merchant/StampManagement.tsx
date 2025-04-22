@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +10,8 @@ import StampCardHeader from "@/components/merchant/StampCardHeader";
 import QRCodeGenerator from "@/components/merchant/QRCodeGenerator";
 import ActiveQRCodes from "@/components/merchant/ActiveQRCodes";
 import { getMerchantStampCard } from "@/utils/merchantData";
+import { handleError } from "@/utils/errors";
+import { ErrorType } from "@/utils/errors";
 
 const StampManagement = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,34 +29,27 @@ const StampManagement = () => {
     if (!id) return;
     
     try {
-      // Fetch from Supabase
-      const { data, error } = await supabase
-        .from("stamp_cards")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      if (error) {
-        console.error("Error fetching stamp card:", error);
-        toast.error("Error loading stamp card");
+      const card = await getMerchantStampCard(id);
+      
+      if (!card) {
+        toast.error("Stamp card not found");
         setLoading(false);
         return;
       }
 
       const convertedStampCard: StampCard = {
-        id: data.id,
-        name: data.name,
-        description: data.description || "",
-        total_stamps: data.total_stamps,
-        reward: data.reward,
-        business_logo: data.business_logo || "🏪",
-        business_color: data.business_color || "#3B82F6"
+        id: card.id,
+        name: card.name,
+        description: card.description,
+        total_stamps: card.totalStamps,
+        reward: card.reward,
+        business_logo: card.logo,
+        business_color: card.color
       };
 
       setStampCard(convertedStampCard);
     } catch (error) {
-      console.error("Error:", error);
-      toast.error("Something went wrong");
+      handleError(error, ErrorType.NOT_FOUND, "Error loading stamp card");
     } finally {
       setLoading(false);
     }
