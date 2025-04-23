@@ -93,9 +93,17 @@ export const handleSupabaseError = (
   
   // Handle stamp_transactions_type_check constraint violation specifically
   if (error.code === "23514" && error.message?.includes("stamp_transactions_type_check")) {
+    // Extract allowed values from constraint violation if possible
+    let allowedValuesInfo = "";
+    const allowedValuesMatch = error.message?.match(/allowed values: (.+?)\)/i);
+    
+    if (allowedValuesMatch && allowedValuesMatch[1]) {
+      allowedValuesInfo = `. Allowed values are: ${allowedValuesMatch[1]}`;
+    }
+    
     return new AppError(
       ErrorType.DATABASE_ERROR,
-      "Database error: Invalid transaction type. This is usually a server configuration issue. Please contact support and mention 'stamp_transactions_type_check'.",
+      `Database constraint violation: The transaction type you're trying to use is not allowed by the system${allowedValuesInfo}. Please contact support for assistance.`,
       error,
       { operation, constraint: "stamp_transactions_type_check" }
     );
@@ -107,13 +115,21 @@ export const handleSupabaseError = (
     const constraintMatch = error.message?.match(/check constraint "([^"]+)"/);
     const constraintName = constraintMatch ? constraintMatch[1] : "unknown constraint";
     
-    console.log("Constraint violation details:", constraintName, error);
+    // Try to extract the relevant column from the message
+    const columnMatch = error.message?.match(/column "([^"]+)"/);
+    const columnName = columnMatch ? columnMatch[1] : "unknown";
+    
+    // Try to extract the value that failed validation
+    const valueMatch = error.message?.match(/value "([^"]+)"/);
+    const value = valueMatch ? valueMatch[1] : "unknown";
+    
+    console.log("Constraint violation details:", { constraintName, columnName, value, fullError: error });
     
     return new AppError(
       ErrorType.DATABASE_ERROR,
-      `A database constraint was violated (${constraintName}). This might be a server configuration issue. Please try again or contact support if the issue persists.`,
+      `A database constraint "${constraintName}" was violated for column "${columnName}" with value "${value}". This might be a server configuration issue. Please try again or contact support if the issue persists.`,
       error,
-      { operation, constraintName }
+      { operation, constraintName, columnName, value }
     );
   }
   
