@@ -19,6 +19,7 @@ const StampManagement = () => {
   const [stampCard, setStampCard] = useState<StampCard | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshQRCodes, setRefreshQRCodes] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     if (id) {
@@ -34,6 +35,7 @@ const StampManagement = () => {
       
       if (!card) {
         toast.error("Stamp card not found");
+        setError("Stamp card not found");
         setLoading(false);
         return;
       }
@@ -49,8 +51,10 @@ const StampManagement = () => {
       };
 
       setStampCard(convertedStampCard);
+      setError(null);
     } catch (error) {
-      handleError(error, ErrorType.RESOURCE_NOT_FOUND, "Error loading stamp card");
+      const appError = handleError(error, ErrorType.RESOURCE_NOT_FOUND, "Error loading stamp card");
+      setError(appError.getUserFriendlyMessage());
     } finally {
       setLoading(false);
     }
@@ -76,7 +80,9 @@ const StampManagement = () => {
     return (
       <div className="text-center py-12">
         <h2 className="text-xl font-medium text-red-600">Stamp card not found</h2>
-        <p className="mt-2 text-gray-600">The stamp card you're looking for does not exist or you don't have permission to view it.</p>
+        <p className="mt-2 text-gray-600">
+          {error || "The stamp card you're looking for does not exist or you don't have permission to view it."}
+        </p>
       </div>
     );
   }
