@@ -23,6 +23,8 @@ export const issueStampsToCustomer = async ({
     // Show toast to indicate request is being processed
     const pendingToast = toast.loading("Issuing stamps...");
 
+    console.log("Calling issue-stamp function with:", { cardId, customerEmail, count, method });
+
     // Update to v2+ function invocation syntax
     const { data, error } = await supabase.functions.invoke('issue-stamp', {
       body: {

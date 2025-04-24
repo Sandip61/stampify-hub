@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 
@@ -129,6 +128,7 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
     
     if (userError || !user) {
+      console.error('Auth error:', userError)
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -143,6 +143,7 @@ serve(async (req) => {
 
     // Get the request body
     const body = await req.json() as RequestBody
+    console.log('Request body:', body)
     
     // Validate request parameters
     const validation = validateRequestParameters(body);
