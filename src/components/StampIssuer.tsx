@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { issueStampsToCustomer } from "@/utils/stamps";
-import { Badge, AlertCircle } from "lucide-react";
+import { Loader2, Badge, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface StampIssuerProps {
@@ -39,11 +39,9 @@ const StampIssuer: React.FC<StampIssuerProps> = ({ cardId }) => {
       
       if (result.rewardEarned) {
         toast.success(`Stamp(s) issued and reward earned! Reward code: ${result.rewardCode}`);
-      } else {
-        toast.success(`${stampCount} stamp(s) issued successfully!`);
       }
       
-      // Reset form
+      // Reset form on success
       setEmail("");
       setStampCount(1);
     } catch (error) {
@@ -55,7 +53,6 @@ const StampIssuer: React.FC<StampIssuerProps> = ({ cardId }) => {
         : "Failed to issue stamps. Please try again later.";
         
       setError(errorMessage);
-      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -110,7 +107,7 @@ const StampIssuer: React.FC<StampIssuerProps> = ({ cardId }) => {
         >
           {isLoading ? (
             <>
-              <Badge className="animate-spin mr-2 h-4 w-4" />
+              <Loader2 className="animate-spin mr-2 h-4 w-4" />
               Issuing Stamps...
             </>
           ) : (
