@@ -34,6 +34,7 @@ const StampIssuer: React.FC<StampIssuerProps> = ({ cardId }) => {
     setError(null);
     
     try {
+      console.log(`Submitting stamp issue request for card: ${cardId}, email: ${email}, count: ${stampCount}`);
       const result = await issueStampsToCustomer({
         cardId,
         customerEmail: email,
@@ -41,10 +42,13 @@ const StampIssuer: React.FC<StampIssuerProps> = ({ cardId }) => {
         method: "direct"
       });
       
+      console.log("Stamp issue result:", result);
       setLastResult(result);
       
       if (result.rewardEarned) {
         toast.success(`Stamp(s) issued and reward earned! Reward code: ${result.rewardCode}`);
+      } else {
+        toast.success(`${stampCount} stamp(s) issued successfully!`);
       }
       
       // Reset form on success
@@ -59,6 +63,7 @@ const StampIssuer: React.FC<StampIssuerProps> = ({ cardId }) => {
         : "Failed to issue stamps. Please try again later.";
         
       setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

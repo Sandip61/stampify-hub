@@ -68,6 +68,7 @@ export const issueStampsToCustomer = async (
 
     // Online mode - proceed with API call
     const { data, error } = await supabase.functions.invoke('issue-stamp', {
+      method: 'POST',
       body: options
     });
 

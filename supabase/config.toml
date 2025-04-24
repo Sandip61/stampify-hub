@@ -50,7 +50,7 @@ enabled = true
 [storage]
 enabled = true
 
-[functions.settings]
+[functions]
 enabled = true
 port = 54328
 
@@ -61,4 +61,8 @@ verify_jwt = false
 
 [[functions.function]]
 name = "issue-stamp"
+verify_jwt = true
+
+[[functions.function]]
+name = "redeem-reward"
 verify_jwt = true
