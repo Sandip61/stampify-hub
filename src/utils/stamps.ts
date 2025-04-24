@@ -18,14 +18,14 @@ export const issueStampsToCustomer = async ({
   method?: "direct" | "qr"
 }) => {
   try {
-    // Updated URL to use the new Supabase Functions domain
+    // Use the correct format for calling Supabase Edge Functions
     const response = await supabase.functions.invoke('issue-stamp', {
-      body: JSON.stringify({
+      body: {
         cardId,
         customerEmail,
         count,
         method
-      })
+      }
     });
 
     // Add null check for response.data before accessing properties
