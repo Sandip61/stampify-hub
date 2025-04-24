@@ -67,7 +67,7 @@ const StampIssuer: React.FC<StampIssuerProps> = ({ cardId }) => {
   return (
     <div>
       {!isOnline && (
-        <Alert variant="warning" className="mb-4">
+        <Alert variant="default" className="mb-4">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             You're offline. Stamps will be issued when you reconnect.
