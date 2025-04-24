@@ -63,9 +63,9 @@ export const issueStampsToCustomer = async ({
     
     // More descriptive error message
     const errorMessage = error instanceof Error ? error.message : "Unknown error issuing stamps";
-    if (!toast.isActive("stamp-error")) {
-      toast.error(errorMessage, { id: "stamp-error" });
-    }
+    
+    // Fix: Use a unique ID for the error toast instead of checking if it's active
+    toast.error(errorMessage, { id: "stamp-error" });
     
     throw error;
   }
