@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -61,22 +60,31 @@ export const issueStampsToCustomer = async (
       };
     }
 
+    // Show a loading toast when the API call is made
+    const loadingToastId = toast.loading("Issuing stamps...");
+
     // Online mode - proceed with API call
     const { data, error } = await supabase.functions.invoke('issue-stamp', {
       body: options
     });
 
+    // Clear the loading toast
+    toast.dismiss(loadingToastId);
+
     if (error) {
+      console.error("Error invoking issue-stamp function:", error);
       throw handleSupabaseError(error, "issuing stamps", ErrorType.STAMP_ISSUE_FAILED);
     }
 
-    if (!data.success) {
+    if (!data || !data.success) {
       throw new AppError(
         ErrorType.STAMP_ISSUE_FAILED,
-        data.error || "Failed to issue stamps"
+        data?.error || "Failed to issue stamps"
       );
     }
 
+    // Show success toast
+    toast.success(`Successfully issued ${options.count || 1} stamp(s)`);
     return data;
   } catch (error) {
     // If it's a network error, try to queue it for offline
@@ -118,6 +126,10 @@ export const issueStampsToCustomer = async (
         console.error("Failed to queue offline operation:", offlineError);
       }
     }
+    
+    // Display error message
+    const errorMessage = error instanceof Error ? error.message : "Unknown error issuing stamps";
+    toast.error(errorMessage, { id: "stamp-error" });
     
     throw handleError(error, ErrorType.STAMP_ISSUE_FAILED, "Failed to issue stamps");
   }

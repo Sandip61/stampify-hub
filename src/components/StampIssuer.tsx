@@ -4,6 +4,9 @@ import { toast } from "sonner";
 import { issueStampsToCustomer } from "@/utils/stamps";
 import { Loader2, Badge, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface StampIssuerProps {
   cardId: string;
@@ -71,39 +74,39 @@ const StampIssuer: React.FC<StampIssuerProps> = ({ cardId }) => {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="customerEmail" className="block text-sm font-medium text-gray-700 mb-1">
+          <Label htmlFor="customerEmail" className="block text-sm font-medium text-gray-700 mb-1">
             Customer Email
-          </label>
-          <input
+          </Label>
+          <Input
             id="customerEmail"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="customer@example.com"
-            className="w-full px-3 py-2 border rounded-md"
+            className="w-full"
             required
           />
         </div>
         
         <div>
-          <label htmlFor="stampCount" className="block text-sm font-medium text-gray-700 mb-1">
+          <Label htmlFor="stampCount" className="block text-sm font-medium text-gray-700 mb-1">
             Number of Stamps
-          </label>
-          <input
+          </Label>
+          <Input
             id="stampCount"
             type="number"
             min="1"
             max="10"
             value={stampCount}
             onChange={(e) => setStampCount(Number(e.target.value))}
-            className="w-full px-3 py-2 border rounded-md"
+            className="w-full"
           />
         </div>
         
-        <button
+        <Button
           type="submit"
           disabled={isLoading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center"
+          className="w-full flex items-center justify-center"
         >
           {isLoading ? (
             <>
@@ -116,7 +119,7 @@ const StampIssuer: React.FC<StampIssuerProps> = ({ cardId }) => {
               Issue Stamps
             </>
           )}
-        </button>
+        </Button>
       </form>
       
       {lastResult && (

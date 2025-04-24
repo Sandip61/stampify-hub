@@ -58,3 +58,8 @@ port = 54328
 [[functions.function]]
 name = "create-merchant"
 verify_jwt = false
+
+[[functions.function]]
+name = "issue-stamp"
+verify_jwt = true
+
