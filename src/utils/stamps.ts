@@ -18,8 +18,8 @@ export const issueStampsToCustomer = async ({
   method?: "direct" | "qr"
 }) => {
   try {
-    // Use the correct format for calling Supabase Edge Functions
-    const response = await supabase.functions.invoke('issue-stamp', {
+    // Update to v2+ function invocation syntax
+    const { data, error } = await supabase.functions.invoke('issue-stamp', {
       body: {
         cardId,
         customerEmail,
@@ -28,16 +28,20 @@ export const issueStampsToCustomer = async ({
       }
     });
 
+    if (error) {
+      throw error;
+    }
+
     // Add null check for response.data before accessing properties
-    if (!response.data) {
+    if (!data) {
       throw new Error("No response data received from the issue-stamp function");
     }
 
-    if (!response.data.success) {
-      throw new Error(response.data.error || "Failed to issue stamps");
+    if (!data.success) {
+      throw new Error(data.error || "Failed to issue stamps");
     }
 
-    return response.data;
+    return data;
   } catch (error) {
     console.error("Error issuing stamps:", error);
     throw error;
