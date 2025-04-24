@@ -1,6 +1,11 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+// Re-export everything from the modular stamps system
+export * from './stamps/types';
+export * from './stamps/qrCodes';
+export * from './stamps/operations';
+
 export const issueStampsToCustomer = async ({
   cardId, 
   customerEmail, 
