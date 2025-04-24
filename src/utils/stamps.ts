@@ -28,6 +28,11 @@ export const issueStampsToCustomer = async ({
       })
     });
 
+    // Add null check for response.data before accessing properties
+    if (!response.data) {
+      throw new Error("No response data received from the issue-stamp function");
+    }
+
     if (!response.data.success) {
       throw new Error(response.data.error || "Failed to issue stamps");
     }
