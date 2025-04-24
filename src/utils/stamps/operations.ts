@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -63,6 +64,8 @@ export const issueStampsToCustomer = async (
     // Show a loading toast when the API call is made
     const loadingToastId = toast.loading("Issuing stamps...");
 
+    console.log("Calling issue-stamp function with:", options);
+
     // Online mode - proceed with API call
     const { data, error } = await supabase.functions.invoke('issue-stamp', {
       body: options
@@ -71,15 +74,19 @@ export const issueStampsToCustomer = async (
     // Clear the loading toast
     toast.dismiss(loadingToastId);
 
+    // If there's an error from the function call
     if (error) {
       console.error("Error invoking issue-stamp function:", error);
       throw handleSupabaseError(error, "issuing stamps", ErrorType.STAMP_ISSUE_FAILED);
     }
 
-    if (!data || !data.success) {
+    // If the function returns a data object but with success=false
+    if (!data || data.success === false) {
+      const errorMessage = data?.error || "Failed to issue stamps";
+      console.error("Issue-stamp function error:", errorMessage);
       throw new AppError(
         ErrorType.STAMP_ISSUE_FAILED,
-        data?.error || "Failed to issue stamps"
+        errorMessage
       );
     }
 

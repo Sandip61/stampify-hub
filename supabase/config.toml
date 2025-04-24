@@ -62,4 +62,3 @@ verify_jwt = false
 [[functions.function]]
 name = "issue-stamp"
 verify_jwt = true
-
