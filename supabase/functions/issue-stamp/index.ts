@@ -373,6 +373,7 @@ serve(async (req) => {
     }
 
     // Get the stamp card - Using maybeSingle instead of single to handle "not found" gracefully
+    console.log('Fetching stamp card with ID:', cardId);
     const { data: stampCard, error: cardError } = await supabase
       .from('stamp_cards')
       .select('*')

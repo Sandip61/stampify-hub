@@ -63,11 +63,24 @@ const StampIssuer: React.FC<StampIssuerProps> = ({ cardId }) => {
     } catch (error) {
       console.error("Error issuing stamps:", error);
       
-      // Get a more specific error message
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : "Failed to issue stamps. Please try again later.";
-        
+      // Extract the specific error message if possible
+      let errorMessage = "Failed to issue stamps. Please try again later.";
+      
+      if (error instanceof Error) {
+        // Try to parse JSON error message from Edge Function if it exists
+        try {
+          const errorObj = JSON.parse(error.message);
+          if (errorObj && errorObj.error) {
+            errorMessage = errorObj.error;
+          } else {
+            errorMessage = error.message;
+          }
+        } catch {
+          // If not JSON, use the error message directly
+          errorMessage = error.message;
+        }
+      }
+      
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
