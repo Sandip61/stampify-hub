@@ -29,6 +29,12 @@ const StampIssuer: React.FC<StampIssuerProps> = ({ cardId }) => {
       toast.error("Please enter a customer email");
       return;
     }
+
+    if (!cardId) {
+      toast.error("Card ID is missing. Please reload the page.");
+      setError("Card ID is missing. Please reload the page.");
+      return;
+    }
     
     setIsLoading(true);
     setError(null);
@@ -89,6 +95,15 @@ const StampIssuer: React.FC<StampIssuerProps> = ({ cardId }) => {
         </Alert>
       )}
 
+      {!cardId && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Card ID is missing. Please reload the page or select a valid stamp card.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <Label htmlFor="customerEmail" className="block text-sm font-medium text-gray-700 mb-1">
@@ -122,7 +137,7 @@ const StampIssuer: React.FC<StampIssuerProps> = ({ cardId }) => {
         
         <Button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || !cardId}
           className="w-full flex items-center justify-center"
         >
           {isLoading ? (

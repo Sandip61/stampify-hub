@@ -24,13 +24,21 @@ const StampManagement = () => {
   useEffect(() => {
     if (id) {
       fetchStampCard();
+    } else {
+      setError("No stamp card ID provided");
+      setLoading(false);
     }
   }, [id]);
 
   const fetchStampCard = async () => {
-    if (!id) return;
+    if (!id) {
+      setError("No stamp card ID provided");
+      setLoading(false);
+      return;
+    }
     
     try {
+      console.log("Fetching stamp card with ID:", id);
       const card = await getMerchantStampCard(id);
       
       if (!card) {
@@ -40,6 +48,7 @@ const StampManagement = () => {
         return;
       }
 
+      console.log("Retrieved stamp card:", card);
       const convertedStampCard: StampCard = {
         id: card.id,
         name: card.name,
@@ -53,6 +62,7 @@ const StampManagement = () => {
       setStampCard(convertedStampCard);
       setError(null);
     } catch (error) {
+      console.error("Error fetching stamp card:", error);
       const appError = handleError(error, ErrorType.RESOURCE_NOT_FOUND, "Error loading stamp card");
       setError(appError.getUserFriendlyMessage());
     } finally {
@@ -82,6 +92,9 @@ const StampManagement = () => {
         <h2 className="text-xl font-medium text-red-600">Stamp card not found</h2>
         <p className="mt-2 text-gray-600">
           {error || "The stamp card you're looking for does not exist or you don't have permission to view it."}
+        </p>
+        <p className="mt-4 text-sm text-gray-500">
+          Card ID requested: {id || "No ID provided"}
         </p>
       </div>
     );
