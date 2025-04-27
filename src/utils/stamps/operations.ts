@@ -64,26 +64,31 @@ export const issueStampsToCustomer = async (
     const loadingToastId = toast.loading("Issuing stamps...");
 
     console.log("Calling issue-stamp function with:", options);
-    console.log("Supabase project reference:", "ctutwgntxhpuxtfkkdiy");
 
-    // Online mode - proceed with API call
-    const { data, error } = await supabase.functions.invoke('issue-stamp', {
-      body: options
+    // Online mode - proceed with direct Edge Function call
+    const response = await fetch('https://ctutwgntxhpuxtfkkdiy.functions.supabase.co/issue-stamp', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${supabase.auth.getSession()?.access_token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(options)
     });
 
-    console.log("API Response:", { data, error });
+    const data = await response.json();
+    console.log("API Response:", data);
 
     // Clear the loading toast
     toast.dismiss(loadingToastId);
 
     // If there's an error from the function call
-    if (error) {
-      console.error("Error invoking issue-stamp function:", error);
-      throw handleSupabaseError(error, "issuing stamps", ErrorType.STAMP_ISSUE_FAILED);
+    if (!response.ok) {
+      console.error("Error invoking issue-stamp function:", data);
+      throw handleSupabaseError(data, "issuing stamps", ErrorType.STAMP_ISSUE_FAILED);
     }
 
     // If the function returns a data object but with success=false
-    if (!data || data.success === false) {
+    if (data.success === false) {
       const errorMessage = data?.error || "Failed to issue stamps";
       console.error("Issue-stamp function error:", errorMessage);
       throw new AppError(
