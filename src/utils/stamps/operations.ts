@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -69,11 +68,7 @@ export const issueStampsToCustomer = async (
 
     // Online mode - proceed with API call
     const { data, error } = await supabase.functions.invoke('issue-stamp', {
-      method: 'POST',
-      body: options,
-      headers: {
-        'Content-Type': 'application/json',
-      }
+      body: options
     });
 
     console.log("API Response:", { data, error });

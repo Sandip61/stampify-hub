@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 
@@ -430,19 +429,13 @@ serve(async (req) => {
 
         const foundUser = userData.users.find(u => u.email === customerEmail);
         if (!foundUser) {
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: 'Customer with this email not found' 
-            }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-              status: 404
-            }
-          );
+          // If no user found with email, create a placeholder ID based on the email
+          // This allows non-registered users to collect stamps
+          customerId = `email:${customerEmail}`;
+          console.log(`No user found with email ${customerEmail}, using placeholder ID: ${customerId}`);
+        } else {
+          customerId = foundUser.id;
         }
-
-        customerId = foundUser.id;
       } catch (error) {
         console.error('Error in user lookup:', error);
         return new Response(
@@ -534,7 +527,7 @@ serve(async (req) => {
           // Generate a secure reward code with additional entropy
           const randomBytes = new Uint8Array(16);
           crypto.getRandomValues(randomBytes);
-          rewardCode = crypto.randomUUID() + '-' + Array.from(randomBytes)
+          rewardCode = Array.from(randomBytes)
             .map(b => b.toString(16).padStart(2, '0'))
             .join('').substring(0, 6).toUpperCase();
         }
