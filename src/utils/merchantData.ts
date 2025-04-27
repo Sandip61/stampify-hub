@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { handleSupabaseError, ErrorType } from "@/utils/errors";
@@ -204,17 +205,25 @@ export const getMerchantTransactions = async () => {
 
     if (error) throw error;
 
-    return data.map(tx => ({
-      id: tx.id,
-      cardId: tx.card_id,
-      customerId: tx.customer_id,
-      customerName: tx.profiles ? tx.profiles.name || "Unknown" : "Unknown",
-      customerEmail: tx.profiles ? tx.profiles.email || "unknown@example.com" : "unknown@example.com",
-      type: tx.type as 'stamp' | 'redeem' | 'card_created' | 'card_updated' | 'card_deactivated',
-      count: tx.count,
-      timestamp: tx.timestamp,
-      rewardCode: tx.reward_code
-    }));
+    return data.map(tx => {
+      // Add explicit type checking and safe access for profiles data
+      type ProfileData = { name?: string; email?: string } | null;
+      const profileData = tx.profiles as ProfileData;
+      
+      return {
+        id: tx.id,
+        cardId: tx.card_id,
+        customerId: tx.customer_id,
+        customerName: profileData && typeof profileData === 'object' && 'name' in profileData ? 
+          profileData.name || "Unknown" : "Unknown",
+        customerEmail: profileData && typeof profileData === 'object' && 'email' in profileData ? 
+          profileData.email || "unknown@example.com" : "unknown@example.com",
+        type: tx.type as 'stamp' | 'redeem' | 'card_created' | 'card_updated' | 'card_deactivated',
+        count: tx.count,
+        timestamp: tx.timestamp,
+        rewardCode: tx.reward_code
+      };
+    });
   } catch (error) {
     console.error("Error fetching transactions:", error);
     return [];
