@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 
@@ -371,15 +372,29 @@ serve(async (req) => {
       }
     }
 
-    // Get the stamp card
+    // Get the stamp card - Using maybeSingle instead of single to handle "not found" gracefully
     const { data: stampCard, error: cardError } = await supabase
       .from('stamp_cards')
       .select('*')
       .eq('id', cardId)
-      .single();
+      .maybeSingle();
 
-    if (cardError || !stampCard) {
+    if (cardError) {
       console.error('Card error:', cardError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Database error while fetching card: ${cardError.message}` 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 500
+        }
+      );
+    }
+
+    if (!stampCard) {
+      console.error('Card not found error for ID:', cardId);
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -480,7 +495,7 @@ serve(async (req) => {
         .select('*')
         .eq('card_id', cardId)
         .eq('customer_id', customerId)
-        .single();
+        .maybeSingle();
 
       let stampCardId: string;
       let currentStamps: number;
