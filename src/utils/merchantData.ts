@@ -223,13 +223,21 @@ export const getMerchantTransactions = async () => {
 
 export const getMerchantCustomers = async () => {
   try {
-    const { data: customerData, error: customerError } = await supabase.rpc('get_merchant_customers');
+    const { data: customerData, error: customerError } = await supabase
+      .from("profiles")
+      .select("*");
 
     if (customerError) throw customerError;
 
-    const customers: MerchantCustomer[] = [];
+    const customers: MerchantCustomer[] = customerData ? customerData.map(customer => ({
+      id: customer.id,
+      name: customer.name || "Unknown",
+      email: customer.email || "unknown@example.com",
+      totalStampsEarned: 0,
+      totalRewardsRedeemed: 0,
+      lastActivityAt: customer.updated_at || customer.created_at || new Date().toISOString()
+    })) : [];
     
-    console.warn("Customer data retrieval via RPC not implemented yet");
     return customers;
   } catch (error) {
     console.error("Error fetching customers:", error);

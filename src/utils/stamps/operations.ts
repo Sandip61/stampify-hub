@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -65,11 +66,15 @@ export const issueStampsToCustomer = async (
 
     console.log("Calling issue-stamp function with:", options);
 
+    // Get the session first to access the token
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
     // Online mode - proceed with direct Edge Function call
     const response = await fetch('https://ctutwgntxhpuxtfkkdiy.functions.supabase.co/issue-stamp', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${supabase.auth.getSession()?.access_token}`,
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(options)
