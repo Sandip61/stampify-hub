@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -66,7 +67,7 @@ export const issueStampsToCustomer = async (
     console.log("Calling issue-stamp function with:", options);
     console.log("Supabase project reference:", "ctutwgntxhpuxtfkkdiy");
 
-    // Online mode - proceed with API call - use the full function path
+    // Online mode - proceed with API call
     const { data, error } = await supabase.functions.invoke('issue-stamp', {
       method: 'POST',
       body: options,
