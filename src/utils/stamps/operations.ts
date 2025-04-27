@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -65,10 +64,7 @@ export const issueStampsToCustomer = async (
     const loadingToastId = toast.loading("Issuing stamps...");
 
     console.log("Calling issue-stamp function with:", options);
-    console.log("Supabase config:", {
-      url: supabase.functions.url,
-      projectRef: "ctutwgntxhpuxtfkkdiy"
-    });
+    console.log("Supabase project reference:", "ctutwgntxhpuxtfkkdiy");
 
     // Online mode - proceed with API call - use the full function path
     const { data, error } = await supabase.functions.invoke('issue-stamp', {
