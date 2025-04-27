@@ -65,12 +65,21 @@ export const issueStampsToCustomer = async (
     const loadingToastId = toast.loading("Issuing stamps...");
 
     console.log("Calling issue-stamp function with:", options);
+    console.log("Supabase config:", {
+      url: supabase.functions.url,
+      projectRef: "ctutwgntxhpuxtfkkdiy"
+    });
 
-    // Online mode - proceed with API call
+    // Online mode - proceed with API call - use the full function path
     const { data, error } = await supabase.functions.invoke('issue-stamp', {
       method: 'POST',
-      body: options
+      body: options,
+      headers: {
+        'Content-Type': 'application/json',
+      }
     });
+
+    console.log("API Response:", { data, error });
 
     // Clear the loading toast
     toast.dismiss(loadingToastId);
