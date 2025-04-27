@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 
@@ -102,13 +101,11 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') as string;
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') as string;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string;
     
-    // Get service role client for admin operations
-    const supabaseAdmin = createClient(
-      supabaseUrl,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
-    );
+    // Create two clients - one for auth and one with service role for DB operations
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get the JWT from the request headers
     const authHeader = req.headers.get('Authorization');
@@ -125,7 +122,7 @@ serve(async (req) => {
       );
     }
 
-    // Get the current user session
+    // Verify the user's authentication using the regular client
     const { data: { user }, error: userError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
     
     if (userError || !user) {
@@ -142,7 +139,7 @@ serve(async (req) => {
       );
     }
 
-    // Get the request body - improved error handling for JSON parsing
+    // Get the request body with improved error handling
     let body: RequestBody;
     try {
       const requestText = await req.text();
@@ -176,7 +173,7 @@ serve(async (req) => {
         }
       );
     }
-    
+
     // Validate request parameters
     const validation = validateRequestParameters(body);
     if (!validation.valid) {
@@ -287,7 +284,7 @@ serve(async (req) => {
         }
 
         // Get the QR code from the database
-        const { data: qrCode, error: qrError } = await supabase
+        const { data: qrCode, error: qrError } = await supabaseAdmin
           .from('stamp_qr_codes')
           .select('*')
           .eq('code', qrData.code)
@@ -352,7 +349,7 @@ serve(async (req) => {
 
         // Mark QR code as used if it's single use
         if (qrCode.is_single_use) {
-          await supabase
+          await supabaseAdmin
             .from('stamp_qr_codes')
             .update({ is_used: true })
             .eq('id', qrCode.id);
@@ -372,9 +369,9 @@ serve(async (req) => {
       }
     }
 
-    // Get the stamp card - Using maybeSingle instead of single to handle "not found" gracefully
+    // Get the stamp card using the admin client
     console.log('Fetching stamp card with ID:', cardId);
-    const { data: stampCard, error: cardError } = await supabase
+    const { data: stampCard, error: cardError } = await supabaseAdmin
       .from('stamp_cards')
       .select('*')
       .eq('id', cardId)
@@ -470,7 +467,7 @@ serve(async (req) => {
     // Check rate limiting for security
     try {
       if (customerId) {
-        const rateLimitCheck = await checkRateLimit(supabase, user.id, customerId);
+        const rateLimitCheck = await checkRateLimit(supabaseAdmin, user.id, customerId);
         if (!rateLimitCheck.allowed) {
           return new Response(
             JSON.stringify({ 
@@ -491,7 +488,7 @@ serve(async (req) => {
 
     // Check if customer already has a stamp card
     try {
-      const { data: existingCard, error: existingCardError } = await supabase
+      const { data: existingCard, error: existingCardError } = await supabaseAdmin
         .from('customer_stamp_cards')
         .select('*')
         .eq('card_id', cardId)
@@ -506,7 +503,7 @@ serve(async (req) => {
 
       // If customer doesn't have a card yet, create one
       if (existingCardError || !existingCard) {
-        const { data: newCard, error: newCardError } = await supabase
+        const { data: newCard, error: newCardError } = await supabaseAdmin
           .from('customer_stamp_cards')
           .insert({
             card_id: cardId,
@@ -553,7 +550,7 @@ serve(async (req) => {
           newStampCount = stampCard.total_stamps;
         }
 
-        const { data: updatedCard, error: updateError } = await supabase
+        const { data: updatedCard, error: updateError } = await supabaseAdmin
           .from('customer_stamp_cards')
           .update({ current_stamps: newStampCount })
           .eq('id', existingCard.id)
@@ -579,7 +576,7 @@ serve(async (req) => {
       }
 
       // Create a transaction record with additional security metadata
-      const { data: transaction, error: transactionError } = await supabase
+      const { data: transaction, error: transactionError } = await supabaseAdmin
         .from('stamp_transactions')
         .insert({
           card_id: cardId,
@@ -605,7 +602,7 @@ serve(async (req) => {
 
       // Get the full stamp card with customer stamps for the response
       try {
-        const { data: fullStampCard, error: fullCardError } = await supabase
+        const { data: fullStampCard, error: fullCardError } = await supabaseAdmin
           .from('customer_stamp_cards')
           .select(`
             id,
