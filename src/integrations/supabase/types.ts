@@ -194,6 +194,7 @@ export type Database = {
           customer_id: string
           id: string
           merchant_id: string
+          metadata: Json | null
           reward_code: string | null
           timestamp: string | null
           type: string
@@ -204,6 +205,7 @@ export type Database = {
           customer_id: string
           id?: string
           merchant_id: string
+          metadata?: Json | null
           reward_code?: string | null
           timestamp?: string | null
           type: string
@@ -214,6 +216,7 @@ export type Database = {
           customer_id?: string
           id?: string
           merchant_id?: string
+          metadata?: Json | null
           reward_code?: string | null
           timestamp?: string | null
           type?: string

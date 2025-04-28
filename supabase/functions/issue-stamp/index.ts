@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 
@@ -331,19 +332,8 @@ serve(async (req) => {
           );
         }
 
-        // Verify merchant has permission to issue stamps for this card
-        if (qrCode.merchant_id !== user.id) {
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: 'You do not have permission to issue stamps for this QR code' 
-            }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-              status: 403
-            }
-          );
-        }
+        // For QR method, skip merchant ID check since customers need to scan QR codes created by merchants
+        // This allows customers to collect stamps by scanning QR codes
 
         cardId = qrCode.card_id;
 
@@ -406,7 +396,8 @@ serve(async (req) => {
     }
 
     // Verify merchant has permission to issue stamps for this card
-    if (stampCard.merchant_id !== user.id) {
+    // Only check permissions for direct method, not for QR method
+    if (method === 'direct' && stampCard.merchant_id !== user.id) {
       return new Response(
         JSON.stringify({ 
           success: false, 
