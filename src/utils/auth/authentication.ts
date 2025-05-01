@@ -1,6 +1,6 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { User } from "./types";
+import { customerSupabase, UserRole } from "@/integrations/supabase/client";
+import type { User } from "./types";
 import { getUserProfile } from "./profile";
 import { toast } from "sonner";
 import { 
@@ -14,7 +14,7 @@ import {
 // Check if a user is a merchant
 export const isUserMerchant = async (userId: string): Promise<boolean> => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await customerSupabase
       .from('merchants')
       .select('id')
       .eq('id', userId)
@@ -41,7 +41,7 @@ export const registerUser = async (
 ): Promise<User> => {
   try {
     // Check if user already exists
-    const { data: existingUser, error: existingError } = await supabase
+    const { data: existingUser, error: existingError } = await customerSupabase
       .from('profiles')
       .select('email')
       .eq('email', email)
@@ -59,15 +59,16 @@ export const registerUser = async (
     }
 
     // Register the user with Supabase
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    const { data: authData, error: authError } = await customerSupabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           name,
+          role: UserRole.CUSTOMER, // Explicitly set role in metadata
           is_merchant: false,
         },
-        emailRedirectTo: `${window.location.origin}/login?confirmed=true`
+        emailRedirectTo: `${window.location.origin}/customer/login?confirmed=true`
       },
     });
 
@@ -116,7 +117,7 @@ export const loginUser = async (
 ): Promise<User> => {
   try {
     // Login the user with Supabase
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+    const { data: authData, error: authError } = await customerSupabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -125,11 +126,11 @@ export const loginUser = async (
       // Special handling for specific error messages
       if (authError.message.includes("Email not confirmed")) {
         // Try to resend the confirmation email
-        const { error: resendError } = await supabase.auth.resend({
+        const { error: resendError } = await customerSupabase.auth.resend({
           type: 'signup',
           email: email,
           options: {
-            emailRedirectTo: `${window.location.origin}/login?confirmed=true`
+            emailRedirectTo: `${window.location.origin}/customer/login?confirmed=true`
           }
         });
         
@@ -157,10 +158,9 @@ export const loginUser = async (
       );
     }
 
-    // Check if this is a merchant account
-    const isMerchant = await isUserMerchant(authData.user.id);
-    
-    if (isMerchant) {
+    // Check user role in metadata
+    const userRole = authData.user.user_metadata?.role;
+    if (userRole && userRole !== UserRole.CUSTOMER) {
       throw new AppError(
         ErrorType.PERMISSION_DENIED,
         "This appears to be a merchant account. Please use the merchant login page."
@@ -197,7 +197,7 @@ export const loginUser = async (
 // Get current user
 export const getCurrentUser = async (): Promise<User | null> => {
   try {
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const { data: { session }, error: sessionError } = await customerSupabase.auth.getSession();
     
     if (sessionError) {
       throw handleSupabaseError(sessionError, "getting session", ErrorType.UNKNOWN_ERROR);
@@ -207,9 +207,13 @@ export const getCurrentUser = async (): Promise<User | null> => {
       return null;
     }
 
-    // Check if this is a merchant account
-    const isMerchant = await isUserMerchant(session.user.id);
-    
+    // Check user role in metadata
+    const userRole = session.user.user_metadata?.role;
+    if (userRole && userRole !== UserRole.CUSTOMER) {
+      console.warn('User role mismatch in getCurrentUser');
+      return null;
+    }
+
     // Get the user profile
     try {
       const profileData = await getUserProfile(session.user.id);
@@ -219,7 +223,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
         email: session.user.email || "",
         name: profileData?.name || session.user.user_metadata.name || "",
         notificationsEnabled: profileData?.notificationsEnabled || false,
-        isMerchant,
+        isMerchant: false,
       };
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -229,7 +233,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
         email: session.user.email || "",
         name: session.user.user_metadata.name || "",
         notificationsEnabled: true,
-        isMerchant,
+        isMerchant: false,
       };
     }
   } catch (error) {
@@ -241,7 +245,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
 // Logout user
 export const logoutUser = async (): Promise<void> => {
   try {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await customerSupabase.auth.signOut();
     if (error) {
       throw handleSupabaseError(error, "signing out", ErrorType.UNKNOWN_ERROR);
     }
@@ -253,8 +257,8 @@ export const logoutUser = async (): Promise<void> => {
 // Reset password
 export const resetPassword = async (email: string): Promise<boolean> => {
   try {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+    const { error } = await customerSupabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/customer/reset-password`,
     });
 
     if (error) {

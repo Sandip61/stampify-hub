@@ -1,301 +1,148 @@
-import { useState, ReactNode, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { 
-  BarChart3, 
-  CreditCard, 
-  Settings, 
-  Users, 
-  Home,
-  LogOut,
-  Menu,
-  X,
-  User,
-  History
+
+import { ReactNode } from "react";
+import { Link } from "react-router-dom";
+import {
+  Building2,
+  CreditCard,
+  Users,
+  Settings,
+  LayoutDashboard,
+  History,
+  UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { mockMerchant, initMockMerchantData } from "@/utils/mockMerchantData";
-import { toast } from "sonner";
-import { logoutMerchant, getCurrentMerchant } from "@/utils/merchantAuth";
+import RoleSwitcher from "@/components/RoleSwitcher";
+import { useRole } from "@/contexts/RoleContext";
 
 interface MerchantLayoutProps {
   children: ReactNode;
 }
 
 const MerchantLayout = ({ children }: MerchantLayoutProps) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [visible, setVisible] = useState(true);
-  const [lastScrollPosition, setLastScrollPosition] = useState(0);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  useEffect(() => {
-    initMockMerchantData();
-  }, []);
-  
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const merchant = await getCurrentMerchant();
-        if (!merchant) {
-          navigate("/merchant/login", { replace: true });
-          return;
-        }
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error("Auth check error:", error);
-        navigate("/merchant/login", { replace: true });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    checkAuth();
-  }, [navigate]);
-  
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentPosition = window.scrollY;
-      const isScrollingDown = currentPosition > lastScrollPosition;
+  const { hasBothRoles } = useRole();
 
-      if (currentPosition > 60) {
-        setVisible(!isScrollingDown);
-      } else {
-        setVisible(true);
-      }
-
-      setLastScrollPosition(currentPosition);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollPosition]);
-
-  const handleLogout = async () => {
-    try {
-      logoutMerchant().catch(error => {
-        console.error("Logout error:", error);
-      });
-      
-      toast.success("You have been logged out successfully");
-      navigate("/merchant/login", { replace: true });
-      
-    } catch (error) {
-      console.error("Unexpected error in handleLogout:", error);
-      toast.error("Failed to log out");
-    }
-  };
-  
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="w-12 h-12 rounded-full border-t-2 border-teal-600 animate-spin" />
-      </div>
-    );
-  }
-  
-  if (!isAuthenticated) {
-    return null;
-  }
-  
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-teal-50 via-white to-amber-50">
-      <div 
-        className={cn(
-          "fixed inset-y-0 left-0 z-40 w-64 merchant-sidebar transform transition-transform duration-200 ease-in-out md:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        <div className="flex flex-col h-full">
-          <div className="flex items-center h-16 px-6 border-b border-teal-500">
-            <h1 className="text-xl font-bold">Merchant Dashboard</h1>
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar */}
+      <div className="hidden md:flex md:w-64 md:flex-col">
+        <div className="flex flex-col flex-grow pt-5 overflow-y-auto bg-white border-r">
+          <div className="flex items-center flex-shrink-0 px-4 mb-5">
+            <Link to="/merchant" className="flex items-center">
+              <span className="text-xl mr-2">🏪</span>
+              <h1 className="text-xl font-bold">Stampify Merchant</h1>
+            </Link>
           </div>
-          
-          <nav className="flex-1 px-4 py-4 space-y-1">
-            <Link
-              to="/merchant"
-              className={cn(
-                "merchant-nav-item",
-                location.pathname === "/merchant" && "merchant-nav-item-active"
-              )}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <Home className="mr-3 h-5 w-5" />
+
+          {hasBothRoles && (
+            <div className="px-4 mb-4">
+              <RoleSwitcher />
+            </div>
+          )}
+
+          <nav className="flex-1 px-2 pb-4 space-y-1">
+            <NavItem to="/merchant" icon={<LayoutDashboard size={18} />} end>
               Dashboard
-            </Link>
-            <Link
-              to="/merchant/cards"
-              className={cn(
-                "merchant-nav-item",
-                location.pathname.includes("/merchant/cards") && "merchant-nav-item-active"
-              )}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <CreditCard className="mr-3 h-5 w-5" />
+            </NavItem>
+            <NavItem to="/merchant/cards" icon={<CreditCard size={18} />}>
               Stamp Cards
-            </Link>
-            <Link
-              to="/merchant/customers"
-              className={cn(
-                "merchant-nav-item",
-                location.pathname.includes("/merchant/customers") && "merchant-nav-item-active"
-              )}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <Users className="mr-3 h-5 w-5" />
+            </NavItem>
+            <NavItem to="/merchant/customers" icon={<Users size={18} />}>
               Customers
-            </Link>
-            <Link
-              to="/merchant/analytics"
-              className={cn(
-                "merchant-nav-item",
-                location.pathname.includes("/merchant/analytics") && "merchant-nav-item-active"
-              )}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <BarChart3 className="mr-3 h-5 w-5" />
-              Analytics
-            </Link>
-            <Link
-              to="/merchant/history"
-              className={cn(
-                "merchant-nav-item",
-                location.pathname.includes("/merchant/history") && "merchant-nav-item-active"
-              )}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <History className="mr-3 h-5 w-5" />
+            </NavItem>
+            <NavItem to="/merchant/history" icon={<History size={18} />}>
               History
-            </Link>
-            <Link
-              to="/merchant/settings"
-              className={cn(
-                "merchant-nav-item",
-                location.pathname.includes("/merchant/settings") && "merchant-nav-item-active"
-              )}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <Settings className="mr-3 h-5 w-5" />
-              Settings
-            </Link>
-            <Link
-              to="/merchant/profile"
-              className={cn(
-                "merchant-nav-item",
-                location.pathname.includes("/merchant/profile") && "merchant-nav-item-active"
-              )}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <User className="mr-3 h-5 w-5" />
+            </NavItem>
+            <NavItem to="/merchant/profile" icon={<UserCircle size={18} />}>
               Profile
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="merchant-nav-item w-full text-left text-red-100 hover:bg-red-500/30"
-            >
-              <LogOut className="mr-3 h-5 w-5" />
-              Logout
-            </button>
+            </NavItem>
+            <NavItem to="/merchant/settings" icon={<Settings size={18} />}>
+              Settings
+            </NavItem>
           </nav>
           
-          <div className="border-t border-teal-500 px-4 py-4">
-            <div className="flex items-center">
-              <div>
-                <p className="text-sm font-medium">{mockMerchant.businessName}</p>
-                <p className="text-xs text-teal-100">{mockMerchant.email}</p>
-              </div>
+          <div className="px-4 mb-6 mt-auto">
+            <div className="flex items-center py-2">
+              <Building2 size={18} className="text-gray-400" />
+              <span className="ml-3 text-sm font-medium text-gray-700">
+                Merchant Portal
+              </span>
             </div>
           </div>
         </div>
       </div>
-      
-      <div className={cn(
-        "flex-1 transition-all duration-200",
-        "md:ml-64"
-      )}>
-        <main className="p-6">
-          {children}
+
+      {/* Mobile header */}
+      <div className="flex flex-col flex-1">
+        <div className="sticky top-0 z-10 flex h-16 bg-white border-b md:hidden">
+          <div className="flex items-center px-4 w-full justify-between">
+            <Link to="/merchant" className="flex items-center">
+              <span className="text-xl mr-2">🏪</span>
+              <h1 className="text-xl font-bold">Stampify Merchant</h1>
+            </Link>
+            
+            {/* Mobile menu button */}
+            <button className="p-1 text-gray-400 rounded-md">
+              <span className="sr-only">Open menu</span>
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M4 6h16M4 12h16M4 18h16"
+                ></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Main content */}
+        <main className="flex-1 overflow-y-auto bg-gray-50">
+          <div className="py-6">
+            {children}
+          </div>
         </main>
       </div>
+    </div>
+  );
+};
 
-      <div 
+interface NavItemProps {
+  to: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  end?: boolean;
+}
+
+const NavItem = ({ to, icon, children, end }: NavItemProps) => {
+  const isActive = location.pathname === to || 
+    (!end && location.pathname.startsWith(to + '/'));
+
+  return (
+    <Link
+      to={to}
+      className={cn(
+        "flex items-center px-2 py-2 text-sm font-medium rounded-md group",
+        isActive
+          ? "bg-gray-100 text-gray-900"
+          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+      )}
+    >
+      <span
         className={cn(
-          "fixed bottom-0 left-0 right-0 z-50 md:hidden merchant-mobile-nav transition-transform duration-300",
-          !visible && "translate-y-full"
+          "mr-3",
+          isActive ? "text-gray-500" : "text-gray-400 group-hover:text-gray-500"
         )}
       >
-        <nav className="flex items-center justify-between px-6 h-16">
-          <Link 
-            to="/merchant" 
-            className={cn(
-              "flex flex-col items-center space-y-1", 
-              location.pathname === "/merchant" ? "text-teal-600" : "text-muted-foreground"
-            )}
-          >
-            <Home className="w-5 h-5" />
-            <span className="text-xs">Home</span>
-          </Link>
-          <Link 
-            to="/merchant/cards" 
-            className={cn(
-              "flex flex-col items-center space-y-1", 
-              location.pathname.includes("/merchant/cards") ? "text-teal-600" : "text-muted-foreground"
-            )}
-          >
-            <CreditCard className="w-5 h-5" />
-            <span className="text-xs">Cards</span>
-          </Link>
-          <Link 
-            to="/merchant/customers" 
-            className={cn(
-              "flex flex-col items-center space-y-1", 
-              location.pathname.includes("/merchant/customers") ? "text-teal-600" : "text-muted-foreground"
-            )}
-          >
-            <Users className="w-5 h-5" />
-            <span className="text-xs">Customers</span>
-          </Link>
-          <Link 
-            to="/merchant/analytics" 
-            className={cn(
-              "flex flex-col items-center space-y-1", 
-              location.pathname.includes("/merchant/analytics") ? "text-teal-600" : "text-muted-foreground"
-            )}
-          >
-            <BarChart3 className="w-5 h-5" />
-            <span className="text-xs">Analytics</span>
-          </Link>
-          <Link 
-            to="/merchant/history" 
-            className={cn(
-              "flex flex-col items-center space-y-1", 
-              location.pathname.includes("/merchant/history") ? "text-teal-600" : "text-muted-foreground"
-            )}
-          >
-            <History className="w-5 h-5" />
-            <span className="text-xs">History</span>
-          </Link>
-          <Link 
-            to="/merchant/settings" 
-            className={cn(
-              "flex flex-col items-center space-y-1", 
-              location.pathname.includes("/merchant/settings") ? "text-teal-600" : "text-muted-foreground"
-            )}
-          >
-            <Settings className="w-5 h-5" />
-            <span className="text-xs">Settings</span>
-          </Link>
-        </nav>
-      </div>
-
-      <button
-        className="fixed z-50 top-4 right-4 md:hidden bg-teal-600 text-white p-3 rounded-full shadow-lg"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-      >
-        {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
-    </div>
+        {icon}
+      </span>
+      {children}
+    </Link>
   );
 };
 

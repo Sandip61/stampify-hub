@@ -1,6 +1,6 @@
 
 import { 
-  supabase, 
+  merchantSupabase, 
   type Merchant, 
   dbMerchantToMerchant, 
   merchantToDBMerchant 
@@ -13,7 +13,7 @@ import {
 
 // Get merchant profile by ID
 export const getMerchantProfile = async (merchantId: string): Promise<Merchant | null> => {
-  const { data: dbMerchantData, error: fetchError } = await supabase
+  const { data: dbMerchantData, error: fetchError } = await merchantSupabase
     .from("merchants")
     .select("*")
     .eq("id", merchantId)
@@ -43,7 +43,7 @@ export const updateMerchantProfile = async (
     dbUpdates.updated_at = new Date().toISOString();
 
     // Update merchant in Supabase
-    const { data: dbMerchantData, error: merchantError } = await supabase
+    const { data: dbMerchantData, error: merchantError } = await merchantSupabase
       .from("merchants")
       .update(dbUpdates)
       .eq("id", merchantId)

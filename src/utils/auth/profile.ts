@@ -1,5 +1,5 @@
 
-import { supabase, dbProfileToProfile, profileToDBProfile } from "@/integrations/supabase/client";
+import { customerSupabase, dbProfileToProfile, profileToDBProfile } from "@/integrations/supabase/client";
 import { User } from "./types";
 import {
   AppError,
@@ -10,7 +10,7 @@ import {
 // Get user profile by ID
 export const getUserProfile = async (userId: string) => {
   try {
-    const { data: dbProfileData, error: profileError } = await supabase
+    const { data: dbProfileData, error: profileError } = await customerSupabase
       .from("profiles")
       .select("*")
       .eq("id", userId)
@@ -51,7 +51,7 @@ export const updateUserProfile = async (
     };
     
     // Update profile in Supabase
-    const { data: dbProfileData, error: profileError } = await supabase
+    const { data: dbProfileData, error: profileError } = await customerSupabase
       .from("profiles")
       .update(dbUpdates)
       .eq("id", userId)

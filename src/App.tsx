@@ -1,5 +1,9 @@
+
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Toaster } from "sonner";
+import { RoleProvider } from "./contexts/RoleContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { UserRole } from "./integrations/supabase/client";
 
 // Pages
 import Home from "./pages/Home";
@@ -34,14 +38,115 @@ import MainLayout from "./layouts/MainLayout";
 import MerchantLayout from "./layouts/MerchantLayout";
 
 const router = createBrowserRouter([
+  // Home redirects to customer home
   {
     path: "/",
+    element: <Home />,
+  },
+
+  // Customer routes
+  {
+    path: "/customer",
     element: (
-      <MainLayout>
-        <Home />
+      <ProtectedRoute roleType={UserRole.CUSTOMER}>
+        <MainLayout>
+          <Home />
+        </MainLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/customer/scan-qr",
+    element: (
+      <ProtectedRoute roleType={UserRole.CUSTOMER}>
+        <ScanQR />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/customer/login",
+    element: (
+      <MainLayout hideNav>
+        <Login />
       </MainLayout>
     ),
   },
+  {
+    path: "/customer/register",
+    element: (
+      <MainLayout hideNav>
+        <Register />
+      </MainLayout>
+    ),
+  },
+  {
+    path: "/customer/signup",
+    element: (
+      <MainLayout hideNav>
+        <Register />
+      </MainLayout>
+    ),
+  },
+  {
+    path: "/customer/reset-password",
+    element: (
+      <MainLayout hideNav>
+        <ResetPassword />
+      </MainLayout>
+    ),
+  },
+  {
+    path: "/customer/card/:id",
+    element: (
+      <ProtectedRoute roleType={UserRole.CUSTOMER}>
+        <MainLayout>
+          <StampCardDetail />
+        </MainLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/customer/cards",
+    element: (
+      <ProtectedRoute roleType={UserRole.CUSTOMER}>
+        <MainLayout>
+          <Cards />
+        </MainLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/customer/history",
+    element: (
+      <ProtectedRoute roleType={UserRole.CUSTOMER}>
+        <MainLayout>
+          <History />
+        </MainLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/customer/profile",
+    element: (
+      <ProtectedRoute roleType={UserRole.CUSTOMER}>
+        <MainLayout>
+          <Profile />
+        </MainLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/customer/transactions",
+    element: (
+      <ProtectedRoute roleType={UserRole.CUSTOMER}>
+        <MainLayout>
+          <Transactions />
+        </MainLayout>
+      </ProtectedRoute>
+    ),
+  },
+  
+  // Legacy customer routes (redirect to new paths)
   {
     path: "/scan-qr",
     element: <ScanQR />,
@@ -118,13 +223,16 @@ const router = createBrowserRouter([
       </MainLayout>
     ),
   },
-  // Merchant routes - all authentication requirements removed
+  
+  // Merchant routes
   {
     path: "/merchant",
     element: (
-      <MerchantLayout>
-        <MerchantDashboard />
-      </MerchantLayout>
+      <ProtectedRoute roleType={UserRole.MERCHANT}>
+        <MerchantLayout>
+          <MerchantDashboard />
+        </MerchantLayout>
+      </ProtectedRoute>
     ),
   },
   {
@@ -162,73 +270,91 @@ const router = createBrowserRouter([
   {
     path: "/merchant/analytics",
     element: (
-      <MerchantLayout>
-        <MerchantAnalytics />
-      </MerchantLayout>
+      <ProtectedRoute roleType={UserRole.MERCHANT}>
+        <MerchantLayout>
+          <MerchantAnalytics />
+        </MerchantLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/merchant/cards",
     element: (
-      <MerchantLayout>
-        <MerchantCards />
-      </MerchantLayout>
+      <ProtectedRoute roleType={UserRole.MERCHANT}>
+        <MerchantLayout>
+          <MerchantCards />
+        </MerchantLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/merchant/cards/new",
     element: (
-      <MerchantLayout>
-        <MerchantCardForm />
-      </MerchantLayout>
+      <ProtectedRoute roleType={UserRole.MERCHANT}>
+        <MerchantLayout>
+          <MerchantCardForm />
+        </MerchantLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/merchant/cards/edit/:id",
     element: (
-      <MerchantLayout>
-        <MerchantCardForm />
-      </MerchantLayout>
+      <ProtectedRoute roleType={UserRole.MERCHANT}>
+        <MerchantLayout>
+          <MerchantCardForm />
+        </MerchantLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/merchant/cards/:id/manage",
     element: (
-      <MerchantLayout>
-        <StampManagement />
-      </MerchantLayout>
+      <ProtectedRoute roleType={UserRole.MERCHANT}>
+        <MerchantLayout>
+          <StampManagement />
+        </MerchantLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/merchant/customers",
     element: (
-      <MerchantLayout>
-        <MerchantCustomers />
-      </MerchantLayout>
+      <ProtectedRoute roleType={UserRole.MERCHANT}>
+        <MerchantLayout>
+          <MerchantCustomers />
+        </MerchantLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/merchant/settings",
     element: (
-      <MerchantLayout>
-        <MerchantSettings />
-      </MerchantLayout>
+      <ProtectedRoute roleType={UserRole.MERCHANT}>
+        <MerchantLayout>
+          <MerchantSettings />
+        </MerchantLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/merchant/profile",
     element: (
-      <MerchantLayout>
-        <MerchantProfile />
-      </MerchantLayout>
+      <ProtectedRoute roleType={UserRole.MERCHANT}>
+        <MerchantLayout>
+          <MerchantProfile />
+        </MerchantLayout>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/merchant/history",
     element: (
-      <MerchantLayout>
-        <MerchantHistory />
-      </MerchantLayout>
+      <ProtectedRoute roleType={UserRole.MERCHANT}>
+        <MerchantLayout>
+          <MerchantHistory />
+        </MerchantLayout>
+      </ProtectedRoute>
     ),
   },
   // 404 catch-all route
@@ -240,10 +366,10 @@ const router = createBrowserRouter([
 
 function App() {
   return (
-    <>
+    <RoleProvider>
       <RouterProvider router={router} />
       <Toaster position="top-center" richColors />
-    </>
+    </RoleProvider>
   );
 }
 

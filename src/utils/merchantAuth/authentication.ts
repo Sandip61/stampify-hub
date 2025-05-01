@@ -1,5 +1,7 @@
+
 import { 
-  supabase, 
+  merchantSupabase, 
+  UserRole,
   type Merchant, 
   dbMerchantToMerchant
 } from "@/integrations/supabase/client";
@@ -12,7 +14,6 @@ import {
   handleSupabaseError,
   isValidEmail as validateEmail
 } from "@/utils/errorHandling";
-import { getCurrentUser } from "@/utils/auth";
 
 // Validate email format
 export const isValidEmail = (email: string): boolean => {
@@ -42,12 +43,12 @@ export const registerMerchant = async (
   try {
     // Important: Sign out from any existing session before creating a new account
     // This ensures we don't have session conflicts
-    await supabase.auth.signOut();
+    await merchantSupabase.auth.signOut();
     
     console.log("Starting merchant registration for:", email);
 
     // Register the merchant with Supabase
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    const { data: authData, error: authError } = await merchantSupabase.auth.signUp({
       email,
       password,
       options: {
@@ -55,6 +56,7 @@ export const registerMerchant = async (
           business_name: businessName,
           business_logo: businessLogo,
           business_color: businessColor,
+          role: UserRole.MERCHANT, // Explicitly set role in metadata
           is_merchant: true,
         },
         emailRedirectTo: `${window.location.origin}/merchant/login?confirmed=true`
@@ -78,7 +80,7 @@ export const registerMerchant = async (
 
     // Instead of direct database operations, call the create-merchant edge function
     try {
-      const { data: merchantData, error: functionError } = await supabase.functions.invoke('create-merchant', {
+      const { data: merchantData, error: functionError } = await merchantSupabase.functions.invoke('create-merchant', {
         body: {
           id: authData.user.id,
           business_name: businessName,
@@ -142,10 +144,10 @@ export const loginMerchant = async (
   try {
     // Sign out from any existing session before attempting login
     // This ensures clean authentication state
-    await supabase.auth.signOut();
+    await merchantSupabase.auth.signOut();
     
     // Login the merchant with Supabase
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+    const { data: authData, error: authError } = await merchantSupabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -154,7 +156,7 @@ export const loginMerchant = async (
       // Special handling for "Email not confirmed" error
       if (authError.message.includes("Email not confirmed")) {
         // Try to resend the confirmation email
-        const { error: resendError } = await supabase.auth.resend({
+        const { error: resendError } = await merchantSupabase.auth.resend({
           type: 'signup',
           email: email,
           options: {
@@ -186,6 +188,15 @@ export const loginMerchant = async (
       );
     }
 
+    // Check user role in metadata
+    const userRole = authData.user.user_metadata?.role;
+    if (userRole && userRole !== UserRole.MERCHANT) {
+      throw new AppError(
+        ErrorType.PERMISSION_DENIED,
+        "This appears to be a customer account. Please use the customer login page."
+      );
+    }
+
     // Get the merchant profile
     const merchantProfile = await getMerchantProfile(authData.user.id);
     
@@ -205,13 +216,20 @@ export const loginMerchant = async (
 // Get current merchant
 export const getCurrentMerchant = async (): Promise<Merchant | null> => {
   try {
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const { data: { session }, error: sessionError } = await merchantSupabase.auth.getSession();
     
     if (sessionError) {
       throw handleSupabaseError(sessionError, "getting merchant session", ErrorType.UNKNOWN_ERROR);
     }
     
     if (!session) {
+      return null;
+    }
+
+    // Check user role in metadata
+    const userRole = session.user.user_metadata?.role;
+    if (userRole && userRole !== UserRole.MERCHANT) {
+      console.warn('User role mismatch in getCurrentMerchant');
       return null;
     }
 
@@ -234,7 +252,7 @@ export const logoutMerchant = async (): Promise<void> => {
     
     // Try signing out, but don't throw if there's no session
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error } = await merchantSupabase.auth.signOut();
       if (error && !error.message.includes("session missing")) {
         console.error("Error during signOut:", error);
       }
@@ -251,7 +269,7 @@ export const logoutMerchant = async (): Promise<void> => {
     await new Promise(resolve => setTimeout(resolve, 100));
     
     // Force refresh Supabase auth state
-    await supabase.auth.refreshSession();
+    await merchantSupabase.auth.refreshSession();
 
   } catch (error) {
     console.error("Error in logoutMerchant:", error);
@@ -262,7 +280,7 @@ export const logoutMerchant = async (): Promise<void> => {
 // Reset password
 export const resetMerchantPassword = async (email: string): Promise<boolean> => {
   try {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await merchantSupabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/merchant/reset-password`,
     });
 

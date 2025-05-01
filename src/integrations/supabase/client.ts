@@ -1,12 +1,43 @@
-
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// Create a single supabase client for interacting with your database
-export const supabase = createClient<Database>(
-  'https://ctutwgntxhpuxtfkkdiy.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0dXR3Z250eGhwdXh0ZmtrZGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEwMTc5NzAsImV4cCI6MjA1NjU5Mzk3MH0.0z2LAalJDYlExlM4jbMWwz1l3RZ7oPohVbHjsADT8GE'
+// Constants
+const SUPABASE_URL = 'https://ctutwgntxhpuxtfkkdiy.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0dXR3Z250eGhwdXh0ZmtrZGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEwMTc5NzAsImV4cCI6MjA1NjU5Mzk3MH0.0z2LAalJDYlExlM4jbMWwz1l3RZ7oPohVbHjsADT8GE';
+
+// Storage keys for session isolation
+export const MERCHANT_STORAGE_KEY = 'supabase_merchant_auth';
+export const CUSTOMER_STORAGE_KEY = 'supabase_customer_auth';
+
+// Customer Supabase client
+export const customerSupabase = createClient<Database>(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY,
+  {
+    auth: {
+      storageKey: CUSTOMER_STORAGE_KEY,
+      autoRefreshToken: true,
+      persistSession: true,
+    }
+  }
 );
+
+// Merchant Supabase client
+export const merchantSupabase = createClient<Database>(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY,
+  {
+    auth: {
+      storageKey: MERCHANT_STORAGE_KEY,
+      autoRefreshToken: true,
+      persistSession: true,
+    }
+  }
+);
+
+// Legacy client for backward compatibility during transition
+// Will be removed after full migration
+export const supabase = customerSupabase;
 
 // Define types for database tables
 export interface DBProfile {
@@ -88,3 +119,63 @@ export const merchantToDBMerchant = (merchant: Partial<Merchant>): Partial<DBMer
   
   return dbMerchant;
 };
+
+// Session expiration utility
+export const isSessionExpiringSoon = (expiresAt: number | undefined): boolean => {
+  if (!expiresAt) return true;
+  
+  // expiresAt from Supabase is in seconds, convert to milliseconds
+  const expiryTime = expiresAt * 1000;
+  const currentTime = Date.now();
+  
+  // Check if token expires in less than 60 minutes (3600000 ms)
+  const sixtyMinutesInMs = 60 * 60 * 1000;
+  return expiryTime - currentTime < sixtyMinutesInMs;
+};
+
+// Auth retry utility for handling 401 errors
+export const withAuthRetry = async (
+  supabaseClient: typeof merchantSupabase | typeof customerSupabase,
+  apiCallFn: () => Promise<any>,
+  redirectFn?: () => void
+) => {
+  try {
+    // First attempt at API call
+    return await apiCallFn();
+  } catch (error: any) {
+    // Check if it's a 401 error
+    if (error?.status === 401 || error?.statusCode === 401 || (error?.message && error.message.includes('unauthorized'))) {
+      console.log('Received 401, attempting token refresh...');
+      
+      try {
+        // Try to refresh the session
+        const { data, error: refreshError } = await supabaseClient.auth.refreshSession();
+        
+        if (refreshError || !data.session) {
+          console.error('Failed to refresh session:', refreshError);
+          // If redirect function provided, call it
+          if (redirectFn) redirectFn();
+          throw new Error('Session refresh failed');
+        }
+        
+        // Retry the original API call with fresh token
+        console.log('Session refreshed, retrying API call...');
+        return await apiCallFn();
+      } catch (refreshError) {
+        console.error('Error during auth retry:', refreshError);
+        // If redirect function provided, call it
+        if (redirectFn) redirectFn();
+        throw error; // Re-throw the original error
+      }
+    }
+    
+    // If it's not a 401 error, just re-throw
+    throw error;
+  }
+};
+
+// Role types for the application
+export enum UserRole {
+  CUSTOMER = 'customer',
+  MERCHANT = 'merchant',
+}
