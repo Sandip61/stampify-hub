@@ -1,6 +1,7 @@
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { customerSupabase, merchantSupabase, UserRole } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface RoleContextType {
   activeRole: UserRole;
@@ -36,23 +37,100 @@ export const RoleProvider = ({ children }: RoleProviderProps) => {
   const [merchantSession, setMerchantSession] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Track both sessions
+  // Use refs to track if we've already initialized sessions
+  const initializedRef = useRef(false);
+  
+  // Track when sessions were last checked to prevent too frequent checks
+  const lastSessionCheckRef = useRef(0);
+  
+  // Track ongoing session operations
+  const customerOperationInProgressRef = useRef(false);
+  const merchantOperationInProgressRef = useRef(false);
+  
+  // Track session check errors to prevent infinite loops
+  const sessionErrorCountRef = useRef(0);
+  const MAX_SESSION_ERRORS = 3;
+  
+  // Setup auth listeners and initial session check
   useEffect(() => {
+    if (initializedRef.current) {
+      // Skip if we've already initialized to prevent duplicate subscriptions
+      return;
+    }
+    
+    initializedRef.current = true;
+    
+    // Helper function to handle rate limiting and other errors
+    const safeSessionCheck = async (
+      client: typeof customerSupabase,
+      clientName: string,
+      setSessionFn: (session: any) => void
+    ) => {
+      // Don't allow concurrent operations on the same client
+      if (clientName === 'customer' && customerOperationInProgressRef.current) {
+        console.log('Customer session check already in progress, skipping');
+        return;
+      }
+      if (clientName === 'merchant' && merchantOperationInProgressRef.current) {
+        console.log('Merchant session check already in progress, skipping');
+        return;
+      }
+      
+      // Check if we've had too many errors recently
+      if (sessionErrorCountRef.current >= MAX_SESSION_ERRORS) {
+        console.warn(`Too many session check errors (${sessionErrorCountRef.current}), suspending checks`);
+        return;
+      }
+      
+      // Set operation in progress flag
+      if (clientName === 'customer') {
+        customerOperationInProgressRef.current = true;
+      } else {
+        merchantOperationInProgressRef.current = true;
+      }
+      
+      try {
+        const { data, error } = await client.auth.getSession();
+        
+        if (error) {
+          // If we hit rate limits, back off
+          if (error.status === 429 || error.message?.includes('rate limit')) {
+            console.warn(`${clientName} session check rate limited`);
+            sessionErrorCountRef.current++;
+            return;
+          }
+          
+          console.error(`${clientName} session check error:`, error);
+          sessionErrorCountRef.current++;
+        } else {
+          // Reset error count on success
+          sessionErrorCountRef.current = Math.max(0, sessionErrorCountRef.current - 1);
+          setSessionFn(data.session);
+          console.log(`${clientName} session:`, data.session ? 'Active' : 'None');
+        }
+      } catch (error) {
+        console.error(`Error in ${clientName} session check:`, error);
+        sessionErrorCountRef.current++;
+      } finally {
+        // Clear operation flag
+        if (clientName === 'customer') {
+          customerOperationInProgressRef.current = false;
+        } else {
+          merchantOperationInProgressRef.current = false;
+        }
+      }
+    };
+    
     const checkSessions = async () => {
       setIsLoading(true);
       
+      // Update timestamp for session check
+      lastSessionCheckRef.current = Date.now();
+      
       try {
-        // Check customer session
-        const { data: customerData } = await customerSupabase.auth.getSession();
-        setCustomerSession(customerData.session);
-        console.log('Customer session:', customerData.session ? 'Active' : 'None');
-        
-        // Check merchant session
-        const { data: merchantData } = await merchantSupabase.auth.getSession();
-        setMerchantSession(merchantData.session);
-        console.log('Merchant session:', merchantData.session ? 'Active' : 'None');
-      } catch (error) {
-        console.error('Error checking sessions:', error);
+        // Check sessions with proper error handling
+        await safeSessionCheck(customerSupabase, 'customer', setCustomerSession);
+        await safeSessionCheck(merchantSupabase, 'merchant', setMerchantSession);
       } finally {
         setIsLoading(false);
       }
@@ -63,6 +141,8 @@ export const RoleProvider = ({ children }: RoleProviderProps) => {
       (event, session) => {
         console.log('Customer auth state changed:', event);
         setCustomerSession(session);
+        // Reset error count when auth state changes
+        sessionErrorCountRef.current = 0;
       }
     );
     
@@ -70,6 +150,8 @@ export const RoleProvider = ({ children }: RoleProviderProps) => {
       (event, session) => {
         console.log('Merchant auth state changed:', event);
         setMerchantSession(session);
+        // Reset error count when auth state changes
+        sessionErrorCountRef.current = 0;
       }
     );
     

@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { loginUser, isValidEmail, getCurrentUser } from "@/utils/auth";
 import { toast } from "sonner";
 import PasswordInput from "@/components/PasswordInput";
+import { customerSupabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
+  const [authCheckCompleted, setAuthCheckCompleted] = useState(false);
   
   // Check if the user is coming from a confirmed email link
   const hasConfirmed = new URLSearchParams(location.search).get('confirmed') === 'true';
@@ -28,22 +30,63 @@ const Login = () => {
   }, [hasConfirmed]);
 
   useEffect(() => {
+    // Flag to prevent race conditions
+    let isMounted = true;
+    
     const checkAuth = async () => {
       try {
-        const user = await getCurrentUser();
-        if (user) {
-          // If user is already logged in, redirect to customer home
-          navigate("/customer");
+        console.log("Checking customer authentication status...");
+        
+        // First check directly with Supabase to get the latest state
+        const { data, error } = await customerSupabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error checking Supabase session:", error);
+          if (isMounted) {
+            setIsCheckingAuth(false);
+            setAuthCheckCompleted(true);
+          }
+          return;
+        }
+        
+        // If we have a session, redirect
+        if (data.session) {
+          console.log("Active customer session found:", data.session.user.id);
+          
+          // Also check if we can get the user profile
+          try {
+            const user = await getCurrentUser();
+            if (user) {
+              console.log("Customer profile fetched successfully, redirecting to", from);
+              navigate(from || "/customer");
+              return;
+            } else {
+              console.log("No customer profile found despite valid session");
+              // Clear potentially corrupt session
+              await customerSupabase.auth.signOut();
+            }
+          } catch (profileError) {
+            console.error("Error fetching customer profile:", profileError);
+          }
+        } else {
+          console.log("No active customer session found");
         }
       } catch (error) {
-        console.error("Error checking authentication:", error);
+        console.error("Error in customer auth check:", error);
       } finally {
-        setIsCheckingAuth(false);
+        if (isMounted) {
+          setIsCheckingAuth(false);
+          setAuthCheckCompleted(true);
+        }
       }
     };
     
     checkAuth();
-  }, [navigate]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate, from]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -72,7 +115,12 @@ const Login = () => {
     try {
       const user = await loginUser(email, password);
       toast.success(`Welcome back, ${user.name || 'User'}!`);
-      navigate(from);
+      
+      // Small delay to ensure the session is properly established
+      // before redirecting
+      setTimeout(() => {
+        navigate(from);
+      }, 100);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Login failed";
       
@@ -88,10 +136,11 @@ const Login = () => {
     }
   };
 
-  if (isCheckingAuth) {
+  if (isCheckingAuth && !authCheckCompleted) {
     return (
       <div className="min-h-screen flex flex-col justify-center items-center">
         <div className="w-12 h-12 rounded-full border-t-2 border-teal-600 animate-spin" />
+        <p className="mt-4 text-gray-600">Checking authentication status...</p>
       </div>
     );
   }

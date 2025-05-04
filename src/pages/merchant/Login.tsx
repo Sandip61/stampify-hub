@@ -5,6 +5,7 @@ import { loginMerchant, validateMerchantEmail } from "@/utils/merchantAuth";
 import { toast } from "sonner";
 import PasswordInput from "@/components/PasswordInput";
 import { getCurrentMerchant } from "@/utils/merchantAuth";
+import { merchantSupabase } from "@/integrations/supabase/client";
 
 const MerchantLogin = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const MerchantLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
+  const [authCheckCompleted, setAuthCheckCompleted] = useState(false);
   
   const hasConfirmed = new URLSearchParams(location.search).get('confirmed') === 'true';
   const isJustLoggedOut = sessionStorage.getItem('just_logged_out') === 'true';
@@ -34,27 +36,72 @@ const MerchantLogin = () => {
   }, [hasConfirmed, isJustLoggedOut]);
 
   useEffect(() => {
+    // Flag to prevent race conditions
+    let isMounted = true;
+    
     const checkAuth = async () => {
       // Don't redirect to dashboard if user just logged out
       if (isJustLoggedOut) {
-        setIsCheckingAuth(false);
+        if (isMounted) {
+          setIsCheckingAuth(false);
+          setAuthCheckCompleted(true);
+        }
         return;
       }
       
       try {
-        const merchant = await getCurrentMerchant();
-        if (merchant) {
-          navigate("/merchant", { replace: true });
+        console.log("Checking merchant authentication status...");
+        
+        // First check directly with Supabase to get the latest state
+        const { data, error } = await merchantSupabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error checking Supabase session:", error);
+          if (isMounted) {
+            setIsCheckingAuth(false);
+            setAuthCheckCompleted(true);
+          }
+          return;
+        }
+        
+        // If we have a session, redirect
+        if (data.session) {
+          console.log("Active merchant session found:", data.session.user.id);
+          
+          // Also check if we can get the merchant profile
+          try {
+            const merchant = await getCurrentMerchant();
+            if (merchant) {
+              console.log("Merchant profile fetched successfully, redirecting to", from);
+              navigate(from || "/merchant");
+              return;
+            } else {
+              console.log("No merchant profile found despite valid session");
+              // Clear potentially corrupt session
+              await merchantSupabase.auth.signOut();
+            }
+          } catch (profileError) {
+            console.error("Error fetching merchant profile:", profileError);
+          }
+        } else {
+          console.log("No active merchant session found");
         }
       } catch (error) {
         console.error("Auth check error:", error);
       } finally {
-        setIsCheckingAuth(false);
+        if (isMounted) {
+          setIsCheckingAuth(false);
+          setAuthCheckCompleted(true);
+        }
       }
     };
     
     checkAuth();
-  }, [navigate, isJustLoggedOut]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate, isJustLoggedOut, from]);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -83,7 +130,12 @@ const MerchantLogin = () => {
     try {
       const merchant = await loginMerchant(email, password);
       toast.success(`Welcome back, ${merchant.businessName}!`);
-      navigate(from);
+      
+      // Small delay to ensure the session is properly established
+      // before redirecting
+      setTimeout(() => {
+        navigate(from);
+      }, 100);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Login failed";
       
@@ -99,10 +151,11 @@ const MerchantLogin = () => {
     }
   };
 
-  if (isCheckingAuth) {
+  if (isCheckingAuth && !authCheckCompleted) {
     return (
       <div className="min-h-screen flex flex-col justify-center items-center">
         <div className="w-12 h-12 rounded-full border-t-2 border-teal-600 animate-spin" />
+        <p className="mt-4 text-gray-600">Checking authentication status...</p>
       </div>
     );
   }
