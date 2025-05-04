@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { loginUser, isValidEmail, getCurrentUser } from "@/utils/auth";
@@ -16,6 +17,9 @@ const Login = () => {
   
   // Check if the user is coming from a confirmed email link
   const hasConfirmed = new URLSearchParams(location.search).get('confirmed') === 'true';
+  
+  // Get the intended redirect destination or default to "/"
+  const from = location.state?.from?.pathname || "/";
 
   useEffect(() => {
     if (hasConfirmed) {
@@ -25,10 +29,15 @@ const Login = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const user = await getCurrentUser();
-      if (user) {
-        navigate("/");
-      } else {
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          // If user is already logged in, redirect to home
+          navigate("/");
+        }
+      } catch (error) {
+        console.error("Error checking authentication:", error);
+      } finally {
         setIsCheckingAuth(false);
       }
     };

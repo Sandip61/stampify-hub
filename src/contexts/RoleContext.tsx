@@ -41,26 +41,32 @@ export const RoleProvider = ({ children }: RoleProviderProps) => {
     const checkSessions = async () => {
       setIsLoading(true);
       
-      // Check customer session
-      const { data: customerData } = await customerSupabase.auth.getSession();
-      setCustomerSession(customerData.session);
-      
-      // Check merchant session
-      const { data: merchantData } = await merchantSupabase.auth.getSession();
-      setMerchantSession(merchantData.session);
-      
-      setIsLoading(false);
+      try {
+        // Check customer session
+        const { data: customerData } = await customerSupabase.auth.getSession();
+        setCustomerSession(customerData.session);
+        
+        // Check merchant session
+        const { data: merchantData } = await merchantSupabase.auth.getSession();
+        setMerchantSession(merchantData.session);
+      } catch (error) {
+        console.error('Error checking sessions:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     
     // Set up auth state listeners
     const customerSubscription = customerSupabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Customer auth state changed:', event);
         setCustomerSession(session);
       }
     );
     
     const merchantSubscription = merchantSupabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Merchant auth state changed:', event);
         setMerchantSession(session);
       }
     );

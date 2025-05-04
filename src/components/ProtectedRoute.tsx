@@ -81,9 +81,9 @@ const ProtectedRoute = ({ children, roleType }: ProtectedRouteProps) => {
     );
   }
   
-  // If not authorized, redirect to appropriate login page
+  // If not authorized, redirect to appropriate login page, preserving the current location
   if (!isAuthorized) {
-    return <Navigate to={roleType === UserRole.MERCHANT ? '/merchant/login' : '/customer/login'} replace />;
+    return <Navigate to={roleType === UserRole.MERCHANT ? '/merchant/login' : '/customer/login'} state={{ from: location }} replace />;
   }
   
   // If authorized, render children
