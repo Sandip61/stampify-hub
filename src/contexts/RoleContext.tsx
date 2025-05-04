@@ -45,10 +45,12 @@ export const RoleProvider = ({ children }: RoleProviderProps) => {
         // Check customer session
         const { data: customerData } = await customerSupabase.auth.getSession();
         setCustomerSession(customerData.session);
+        console.log('Customer session:', customerData.session ? 'Active' : 'None');
         
         // Check merchant session
         const { data: merchantData } = await merchantSupabase.auth.getSession();
         setMerchantSession(merchantData.session);
+        console.log('Merchant session:', merchantData.session ? 'Active' : 'None');
       } catch (error) {
         console.error('Error checking sessions:', error);
       } finally {
@@ -85,6 +87,7 @@ export const RoleProvider = ({ children }: RoleProviderProps) => {
   
   // Set active role and persist to localStorage
   const setActiveRole = (role: UserRole) => {
+    console.log(`Setting active role to: ${role}`);
     localStorage.setItem('activeRole', role);
     setActiveRoleState(role);
   };

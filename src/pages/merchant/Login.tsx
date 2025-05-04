@@ -18,6 +18,9 @@ const MerchantLogin = () => {
   
   const hasConfirmed = new URLSearchParams(location.search).get('confirmed') === 'true';
   const isJustLoggedOut = sessionStorage.getItem('just_logged_out') === 'true';
+  
+  // Get the intended redirect destination or default to "/merchant"
+  const from = location.state?.from?.pathname || "/merchant";
 
   useEffect(() => {
     if (hasConfirmed) {
@@ -80,7 +83,7 @@ const MerchantLogin = () => {
     try {
       const merchant = await loginMerchant(email, password);
       toast.success(`Welcome back, ${merchant.businessName}!`);
-      navigate("/merchant");
+      navigate(from);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Login failed";
       

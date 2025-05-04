@@ -18,8 +18,8 @@ const Login = () => {
   // Check if the user is coming from a confirmed email link
   const hasConfirmed = new URLSearchParams(location.search).get('confirmed') === 'true';
   
-  // Get the intended redirect destination or default to "/"
-  const from = location.state?.from?.pathname || "/";
+  // Get the intended redirect destination or default to "/customer"
+  const from = location.state?.from?.pathname || "/customer";
 
   useEffect(() => {
     if (hasConfirmed) {
@@ -32,8 +32,8 @@ const Login = () => {
       try {
         const user = await getCurrentUser();
         if (user) {
-          // If user is already logged in, redirect to home
-          navigate("/");
+          // If user is already logged in, redirect to customer home
+          navigate("/customer");
         }
       } catch (error) {
         console.error("Error checking authentication:", error);
@@ -72,7 +72,7 @@ const Login = () => {
     try {
       const user = await loginUser(email, password);
       toast.success(`Welcome back, ${user.name || 'User'}!`);
-      navigate("/");
+      navigate(from);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Login failed";
       

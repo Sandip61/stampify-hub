@@ -26,6 +26,7 @@ const ProtectedRoute = ({ children, roleType }: ProtectedRouteProps) => {
         
         if (!session) {
           // No session found
+          console.log(`No session found for ${roleType}`);
           setIsAuthorized(false);
           setIsChecking(false);
           return;
@@ -48,7 +49,6 @@ const ProtectedRoute = ({ children, roleType }: ProtectedRouteProps) => {
         const userRole = session.user?.user_metadata?.role;
         
         // If no specific role found, we'll still allow access during the transition period
-        // We can remove this fallback later when all users have proper role metadata
         if (userRole && userRole !== roleType) {
           console.warn(`User role mismatch: expected ${roleType}, got ${userRole}`);
           setIsAuthorized(false);
@@ -83,7 +83,9 @@ const ProtectedRoute = ({ children, roleType }: ProtectedRouteProps) => {
   
   // If not authorized, redirect to appropriate login page, preserving the current location
   if (!isAuthorized) {
-    return <Navigate to={roleType === UserRole.MERCHANT ? '/merchant/login' : '/customer/login'} state={{ from: location }} replace />;
+    const loginPath = roleType === UserRole.MERCHANT ? '/merchant/login' : '/customer/login';
+    console.log(`Not authorized for ${roleType}, redirecting to ${loginPath}`);
+    return <Navigate to={loginPath} state={{ from: location }} replace />;
   }
   
   // If authorized, render children
