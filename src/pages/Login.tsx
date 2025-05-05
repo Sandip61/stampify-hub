@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { loginUser, isValidEmail, getCurrentUser } from "@/utils/auth";
@@ -116,11 +115,9 @@ const Login = () => {
       const user = await loginUser(email, password);
       toast.success(`Welcome back, ${user.name || 'User'}!`);
       
-      // Small delay to ensure the session is properly established
-      // before redirecting
-      setTimeout(() => {
-        navigate(from);
-      }, 100);
+      // Direct navigation to dashboard instead of going through the home route
+      // This avoids the unnecessary redirection screen
+      navigate('/customer', { replace: true });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Login failed";
       

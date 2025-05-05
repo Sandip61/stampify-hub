@@ -1,13 +1,15 @@
 
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useRole } from '@/contexts/RoleContext';
 import { UserRole } from '@/integrations/supabase/client';
 
 const Home = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { activeRole, merchantSession, customerSession, isLoading } = useRole();
   const [redirectAttempts, setRedirectAttempts] = useState(0);
+  const hasRedirectedRef = useRef(false);
   
   useEffect(() => {
     // Prevent infinite redirect loops
@@ -16,43 +18,62 @@ const Home = () => {
       return;
     }
     
-    if (!isLoading) {
+    // Don't redirect if we're already at the right location
+    if (location.pathname === '/merchant' && activeRole === UserRole.MERCHANT && merchantSession) {
+      return;
+    }
+    
+    if (location.pathname === '/customer' && activeRole === UserRole.CUSTOMER && customerSession) {
+      return;
+    }
+    
+    if (!isLoading && !hasRedirectedRef.current) {
       console.log('Home page render - Active role:', activeRole);
       console.log('Customer session:', customerSession ? 'Active' : 'None');
       console.log('Merchant session:', merchantSession ? 'Active' : 'None');
       
       const handleRedirect = () => {
+        // Don't redirect if tab is not visible or we've already redirected
+        if (document.hidden || hasRedirectedRef.current) {
+          return;
+        }
+        
         // Track redirect attempts
         setRedirectAttempts(prev => prev + 1);
         
         if (activeRole === UserRole.MERCHANT && merchantSession) {
           // If they're actively using the merchant role and have a merchant session
           console.log('Redirecting to /merchant (active merchant role with session)');
+          hasRedirectedRef.current = true;
           navigate('/merchant', { replace: true });
         } else if (activeRole === UserRole.CUSTOMER && customerSession) {
           // If they're actively using the customer role and have a customer session
           console.log('Redirecting to /customer (active customer role with session)');
+          hasRedirectedRef.current = true;
           navigate('/customer', { replace: true });
         } else if (merchantSession) {
           // If they have a merchant session but no active role preference
           console.log('Redirecting to /merchant (merchant session available)');
+          hasRedirectedRef.current = true;
           navigate('/merchant', { replace: true });
         } else if (customerSession) {
           // If they have a customer session but no active role preference
           console.log('Redirecting to /customer (customer session available)');
+          hasRedirectedRef.current = true;
           navigate('/customer', { replace: true });
         } else {
           // Default fallback - send to customer login
           console.log('No active sessions, redirecting to customer login');
+          hasRedirectedRef.current = true;
           navigate('/customer/login', { replace: true });
         }
       };
       
-      // Slight delay to ensure context is fully updated
-      const timeoutId = setTimeout(handleRedirect, 100);
+      // Use a longer delay to ensure context is fully updated and reduce rapid redirects
+      const timeoutId = setTimeout(handleRedirect, 300);
       return () => clearTimeout(timeoutId);
     }
-  }, [activeRole, merchantSession, customerSession, isLoading, navigate, redirectAttempts]);
+  }, [activeRole, merchantSession, customerSession, isLoading, navigate, redirectAttempts, location.pathname]);
 
   // Show loading state while determining redirect
   return (

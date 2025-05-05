@@ -49,7 +49,7 @@ export const RoleProvider = ({ children }: RoleProviderProps) => {
   
   // Track session check errors to prevent infinite loops
   const sessionErrorCountRef = useRef(0);
-  const MAX_SESSION_ERRORS = 3;
+  const MAX_SESSION_ERRORS = 5; // Increased from 3 to be more tolerant
   
   // Setup auth listeners and initial session check
   useEffect(() => {
@@ -82,6 +82,14 @@ export const RoleProvider = ({ children }: RoleProviderProps) => {
         return;
       }
       
+      // Implement backoff strategy
+      const now = Date.now();
+      const timeSinceLastCheck = now - lastSessionCheckRef.current;
+      if (lastSessionCheckRef.current > 0 && timeSinceLastCheck < 3000) { // 3 seconds backoff
+        console.log(`Too soon for another ${clientName} session check, skipping`);
+        return;
+      }
+      
       // Set operation in progress flag
       if (clientName === 'customer') {
         customerOperationInProgressRef.current = true;
@@ -107,6 +115,9 @@ export const RoleProvider = ({ children }: RoleProviderProps) => {
           sessionErrorCountRef.current = Math.max(0, sessionErrorCountRef.current - 1);
           setSessionFn(data.session);
           console.log(`${clientName} session:`, data.session ? 'Active' : 'None');
+          
+          // Update timestamp on successful check
+          lastSessionCheckRef.current = Date.now();
         }
       } catch (error) {
         console.error(`Error in ${clientName} session check:`, error);
@@ -124,13 +135,12 @@ export const RoleProvider = ({ children }: RoleProviderProps) => {
     const checkSessions = async () => {
       setIsLoading(true);
       
-      // Update timestamp for session check
-      lastSessionCheckRef.current = Date.now();
-      
       try {
         // Check sessions with proper error handling
-        await safeSessionCheck(customerSupabase, 'customer', setCustomerSession);
-        await safeSessionCheck(merchantSupabase, 'merchant', setMerchantSession);
+        await Promise.all([
+          safeSessionCheck(customerSupabase, 'customer', setCustomerSession),
+          safeSessionCheck(merchantSupabase, 'merchant', setMerchantSession)
+        ]);
       } finally {
         setIsLoading(false);
       }

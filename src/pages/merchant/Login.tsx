@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { loginMerchant, validateMerchantEmail } from "@/utils/merchantAuth";
@@ -131,11 +130,9 @@ const MerchantLogin = () => {
       const merchant = await loginMerchant(email, password);
       toast.success(`Welcome back, ${merchant.businessName}!`);
       
-      // Small delay to ensure the session is properly established
-      // before redirecting
-      setTimeout(() => {
-        navigate(from);
-      }, 100);
+      // Direct navigation to merchant dashboard instead of going through home
+      // This eliminates the unnecessary redirection screen
+      navigate('/merchant', { replace: true });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Login failed";
       

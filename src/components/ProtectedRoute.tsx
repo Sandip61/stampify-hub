@@ -22,6 +22,16 @@ const ProtectedRoute = ({ children, roleType }: ProtectedRouteProps) => {
   const lastRefreshAttemptRef = useRef(0);
   // Debounce timer
   const debounceTimerRef = useRef<number | null>(null);
+  // Track if this component has been mounted
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     // Clear any existing debounce timer
@@ -31,22 +41,22 @@ const ProtectedRoute = ({ children, roleType }: ProtectedRouteProps) => {
 
     // Use session info from RoleContext first if available
     // This prevents unnecessary API calls
-    if (roleType === UserRole.MERCHANT && merchantSession) {
-      console.log('Using existing merchant session from context');
-      setIsAuthorized(true);
-      setIsChecking(false);
-      return;
-    } else if (roleType === UserRole.CUSTOMER && customerSession) {
-      console.log('Using existing customer session from context');
+    const relevantSession = roleType === UserRole.MERCHANT ? merchantSession : customerSession;
+    
+    if (relevantSession) {
+      console.log(`Using existing ${roleType} session from context`);
       setIsAuthorized(true);
       setIsChecking(false);
       return;
     }
     
     // Debounce the auth check to prevent multiple rapid calls
+    // Use a longer debounce time to prevent excessive calls
     debounceTimerRef.current = window.setTimeout(() => {
-      checkAuth();
-    }, 100);
+      if (isMountedRef.current) {
+        checkAuth();
+      }
+    }, 200);
     
     return () => {
       if (debounceTimerRef.current) {
@@ -69,9 +79,11 @@ const ProtectedRoute = ({ children, roleType }: ProtectedRouteProps) => {
       // Implement backoff for retry attempts (minimum 2 seconds between refresh attempts)
       const now = Date.now();
       const timeSinceLastRefresh = now - lastRefreshAttemptRef.current;
-      if (lastRefreshAttemptRef.current > 0 && timeSinceLastRefresh < 2000) {
+      if (lastRefreshAttemptRef.current > 0 && timeSinceLastRefresh < 3000) {
         console.log(`Too soon for another refresh attempt for ${roleType}, waiting...`);
-        setIsChecking(false);
+        if (isMountedRef.current) {
+          setIsChecking(false);
+        }
         return;
       }
       
@@ -81,21 +93,25 @@ const ProtectedRoute = ({ children, roleType }: ProtectedRouteProps) => {
       
       if (sessionError) {
         console.error(`Session error for ${roleType}:`, sessionError);
-        setIsAuthorized(false);
-        setIsChecking(false);
+        if (isMountedRef.current) {
+          setIsAuthorized(false);
+          setIsChecking(false);
+        }
         return;
       }
       
       if (!session) {
         // No session found
         console.log(`No session found for ${roleType}`);
-        setIsAuthorized(false);
-        setIsChecking(false);
+        if (isMountedRef.current) {
+          setIsAuthorized(false);
+          setIsChecking(false);
+        }
         return;
       }
       
       // Check if session is expiring soon and refresh if needed
-      // Only refresh if truly necessary
+      // Only refresh if truly necessary and not too frequently
       if (isSessionExpiringSoon(session.expires_at)) {
         console.log(`Session for ${roleType} is expiring soon, refreshing...`);
         
@@ -117,21 +133,27 @@ const ProtectedRoute = ({ children, roleType }: ProtectedRouteProps) => {
               // Still allow access if we have a valid session
               if (session && !isSessionExpiringSoon(session.expires_at)) {
                 console.log("Using existing session despite refresh failure");
-                setIsAuthorized(true);
-                setIsChecking(false);
+                if (isMountedRef.current) {
+                  setIsAuthorized(true);
+                  setIsChecking(false);
+                }
                 return;
               }
             }
             
-            setIsAuthorized(false);
-            setIsChecking(false);
+            if (isMountedRef.current) {
+              setIsAuthorized(false);
+              setIsChecking(false);
+            }
             return;
           }
           
           if (!refreshedSession) {
             console.log("No refreshed session returned");
-            setIsAuthorized(false);
-            setIsChecking(false);
+            if (isMountedRef.current) {
+              setIsAuthorized(false);
+              setIsChecking(false);
+            }
             return;
           }
           
@@ -140,8 +162,10 @@ const ProtectedRoute = ({ children, roleType }: ProtectedRouteProps) => {
         } catch (refreshError) {
           console.error(`Error during refresh for ${roleType}:`, refreshError);
           isRefreshingRef.current = false;
-          setIsAuthorized(false);
-          setIsChecking(false);
+          if (isMountedRef.current) {
+            setIsAuthorized(false);
+            setIsChecking(false);
+          }
           return;
         }
       }
@@ -152,8 +176,10 @@ const ProtectedRoute = ({ children, roleType }: ProtectedRouteProps) => {
       // If no specific role found, we'll still allow access during the transition period
       if (userRole && userRole !== roleType) {
         console.warn(`User role mismatch: expected ${roleType}, got ${userRole}`);
-        setIsAuthorized(false);
-        setIsChecking(false);
+        if (isMountedRef.current) {
+          setIsAuthorized(false);
+          setIsChecking(false);
+        }
         return;
       }
       
@@ -161,12 +187,16 @@ const ProtectedRoute = ({ children, roleType }: ProtectedRouteProps) => {
       setActiveRole(roleType);
       
       // User is authorized
-      setIsAuthorized(true);
-      setIsChecking(false);
+      if (isMountedRef.current) {
+        setIsAuthorized(true);
+        setIsChecking(false);
+      }
     } catch (error) {
       console.error(`Error during auth check for ${roleType}:`, error);
-      setIsAuthorized(false);
-      setIsChecking(false);
+      if (isMountedRef.current) {
+        setIsAuthorized(false);
+        setIsChecking(false);
+      }
     }
   };
   
