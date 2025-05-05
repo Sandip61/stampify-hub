@@ -18,12 +18,12 @@ const Home = () => {
       return;
     }
     
-    // Don't redirect if we're already at the right location
-    if (location.pathname === '/merchant' && activeRole === UserRole.MERCHANT && merchantSession) {
-      return;
-    }
-    
-    if (location.pathname === '/customer' && activeRole === UserRole.CUSTOMER && customerSession) {
+    // Don't proceed if we're already at an authenticated route
+    if (location.pathname.startsWith('/customer/') || 
+        location.pathname.startsWith('/merchant/') || 
+        location.pathname === '/customer' || 
+        location.pathname === '/merchant') {
+      console.log(`Already at authenticated route: ${location.pathname}, not redirecting`);
       return;
     }
     
@@ -42,22 +42,18 @@ const Home = () => {
         setRedirectAttempts(prev => prev + 1);
         
         if (activeRole === UserRole.MERCHANT && merchantSession) {
-          // If they're actively using the merchant role and have a merchant session
           console.log('Redirecting to /merchant (active merchant role with session)');
           hasRedirectedRef.current = true;
           navigate('/merchant', { replace: true });
         } else if (activeRole === UserRole.CUSTOMER && customerSession) {
-          // If they're actively using the customer role and have a customer session
           console.log('Redirecting to /customer (active customer role with session)');
           hasRedirectedRef.current = true;
           navigate('/customer', { replace: true });
         } else if (merchantSession) {
-          // If they have a merchant session but no active role preference
           console.log('Redirecting to /merchant (merchant session available)');
           hasRedirectedRef.current = true;
           navigate('/merchant', { replace: true });
         } else if (customerSession) {
-          // If they have a customer session but no active role preference
           console.log('Redirecting to /customer (customer session available)');
           hasRedirectedRef.current = true;
           navigate('/customer', { replace: true });
@@ -69,8 +65,8 @@ const Home = () => {
         }
       };
       
-      // Use a longer delay to ensure context is fully updated and reduce rapid redirects
-      const timeoutId = setTimeout(handleRedirect, 300);
+      // Use a longer delay to ensure context is fully updated
+      const timeoutId = setTimeout(handleRedirect, 500);
       return () => clearTimeout(timeoutId);
     }
   }, [activeRole, merchantSession, customerSession, isLoading, navigate, redirectAttempts, location.pathname]);
