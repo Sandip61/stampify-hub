@@ -64,12 +64,12 @@ export const fetchUserStampCards = async (userId: string): Promise<StampCard[]> 
       // Get merchant name by querying merchants table
       return {
         id: item.card_id,
-        businessId: item.card.merchant_id,
-        businessName: item.card.name.split(' ')[0] || "Business", // Temporary until we fetch business name
+        businessId: item.card?.merchant_id || "",
+        businessName: item.card?.name.split(' ')[0] || "Business", // Temporary until we fetch business name
         businessLogo,
-        totalStamps: item.card.total_stamps,
+        totalStamps: item.card?.total_stamps || 10,
         currentStamps: item.current_stamps,
-        reward: item.card.reward,
+        reward: item.card?.reward || "Free Item",
         color: businessColor,
         createdAt: item.created_at
       };
