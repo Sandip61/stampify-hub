@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUser } from "@/utils/auth";
+import { getUserTransactions, Transaction } from "@/utils/data";
 import { format } from "date-fns";
 import { 
   Receipt, 
@@ -21,15 +21,6 @@ interface TransactionCard {
   business_color?: string;
 }
 
-interface Transaction {
-  id: string;
-  type: "stamp" | "redeem";
-  count?: number;
-  timestamp: string;
-  reward_code?: string;
-  card: TransactionCard | TransactionCard[];
-}
-
 const Transactions = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,78 +29,12 @@ const Transactions = () => {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const user = await getCurrentUser();
-        if (!user) return;
-
-        const { data, error } = await supabase
-          .from("stamp_transactions")
-          .select(`
-            id,
-            type,
-            count,
-            reward_code,
-            timestamp,
-            card:card_id (
-              name,
-              business_logo,
-              business_color
-            )
-          `)
-          .eq("customer_id", user.id)
-          .order("timestamp", { ascending: false })
-          .limit(50);
-
-        if (error) {
-          console.error("Error loading transactions:", error);
-          toast.error("Could not load your transaction history");
-          return;
-        }
-
-        if (data) {
-          // Ensure data conforms to our Transaction interface
-          const typedTransactions: Transaction[] = data.map(item => {
-            // Create a default cardData object with empty values
-            let cardData: TransactionCard = {
-              name: '',
-              business_logo: '',
-              business_color: '#3B82F6'
-            };
-            
-            // Check if card data exists
-            if (item.card) {
-              // Handle case when card is an array
-              if (Array.isArray(item.card) && item.card.length > 0) {
-                cardData = {
-                  name: item.card[0]?.name || '',
-                  business_logo: item.card[0]?.business_logo || '',
-                  business_color: item.card[0]?.business_color || '#3B82F6'
-                };
-              } 
-              // Handle case when card is an object
-              else if (typeof item.card === 'object') {
-                cardData = {
-                  name: (item.card as any).name || '',
-                  business_logo: (item.card as any).business_logo || '',
-                  business_color: (item.card as any).business_color || '#3B82F6'
-                };
-              }
-            }
-            
-            return {
-              id: item.id,
-              type: item.type as "stamp" | "redeem",
-              count: item.count || 0,
-              reward_code: item.reward_code,
-              timestamp: item.timestamp,
-              card: cardData
-            };
-          });
-          
-          setTransactions(typedTransactions);
-        }
+        setLoading(true);
+        const data = await getUserTransactions();
+        setTransactions(data);
       } catch (error) {
-        console.error("Error:", error);
-        toast.error("Something went wrong while loading transactions");
+        console.error("Error loading transactions:", error);
+        toast.error("Could not load your transaction history");
       } finally {
         setLoading(false);
       }
@@ -132,15 +57,6 @@ const Transactions = () => {
       return "Redeemed reward";
     }
     return type;
-  };
-
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), "MMM d, yyyy 'at' h:mm a");
-    } catch (e) {
-      return dateString;
-    }
   };
 
   // Format relative time (today, yesterday, etc.)
@@ -264,68 +180,61 @@ const Transactions = () => {
               </div>
               
               <div className="bg-card border rounded-xl overflow-hidden">
-                {group.transactions.map((transaction, index) => {
-                  // Safely access card data regardless of whether it's an array or object
-                  const cardData = Array.isArray(transaction.card) ? 
-                    transaction.card[0] || { name: '', business_logo: '', business_color: '#3B82F6' } : 
-                    transaction.card;
-                  
-                  return (
-                    <div 
-                      key={transaction.id} 
-                      className={`p-4 hover:bg-muted/30 transition-colors ${
-                        index !== group.transactions.length - 1 ? "border-b" : ""
-                      }`}
-                    >
-                      <div className="flex items-center space-x-4">
-                        <div 
-                          className="h-12 w-12 flex items-center justify-center rounded-full overflow-hidden text-white"
-                          style={{ backgroundColor: cardData.business_color || '#3B82F6' }}
-                        >
-                          <span className="text-xl">{cardData.business_logo}</span>
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground">
-                            {cardData.name}
-                          </p>
-                          <div className="flex items-center mt-1">
-                            {transaction.type === "stamp" ? (
-                              <>
-                                <Stamp className="h-3.5 w-3.5 text-blue-500 mr-1.5" />
-                                <p className="text-sm text-muted-foreground">
-                                  {formatType(transaction.type, transaction.count)}
-                                </p>
-                              </>
-                            ) : (
-                              <>
-                                <BadgeCheck className="h-3.5 w-3.5 text-green-500 mr-1.5" />
-                                <p className="text-sm text-muted-foreground">
-                                  Reward redeemed
-                                </p>
-                              </>
-                            )}
-                          </div>
-                          {transaction.reward_code && (
-                            <div className="mt-2 rounded-md bg-muted px-2 py-1 text-xs inline-block">
-                              Code: <span className="font-mono font-medium">{transaction.reward_code}</span>
-                            </div>
+                {group.transactions.map((transaction, index) => (
+                  <div 
+                    key={transaction.id} 
+                    className={`p-4 hover:bg-muted/30 transition-colors ${
+                      index !== group.transactions.length - 1 ? "border-b" : ""
+                    }`}
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div 
+                        className="h-12 w-12 flex items-center justify-center rounded-full overflow-hidden text-white"
+                        style={{ backgroundColor: "#3B82F6" }}
+                      >
+                        <span className="text-xl">🏪</span>
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-foreground">
+                          {transaction.businessName}
+                        </p>
+                        <div className="flex items-center mt-1">
+                          {transaction.type === "stamp" ? (
+                            <>
+                              <Stamp className="h-3.5 w-3.5 text-blue-500 mr-1.5" />
+                              <p className="text-sm text-muted-foreground">
+                                {formatType(transaction.type, transaction.count)}
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <BadgeCheck className="h-3.5 w-3.5 text-green-500 mr-1.5" />
+                              <p className="text-sm text-muted-foreground">
+                                Reward redeemed
+                              </p>
+                            </>
                           )}
                         </div>
-                        
-                        <div className="text-right flex flex-col items-end">
-                          <div className="text-sm text-muted-foreground flex items-center">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {format(new Date(transaction.timestamp), "h:mm a")}
+                        {transaction.rewardCode && (
+                          <div className="mt-2 rounded-md bg-muted px-2 py-1 text-xs inline-block">
+                            Code: <span className="font-mono font-medium">{transaction.rewardCode}</span>
                           </div>
-                          <div className="mt-2">
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="text-right flex flex-col items-end">
+                        <div className="text-sm text-muted-foreground flex items-center">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {format(new Date(transaction.timestamp), "h:mm a")}
+                        </div>
+                        <div className="mt-2">
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         </div>
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </div>
           ))}

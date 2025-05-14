@@ -56,12 +56,12 @@ const StampCardDetail = () => {
   }, [id, navigate]);
 
   const handleAddStamp = async () => {
-    if (!card) return;
+    if (!card || !id) return;
     
     setAddingStamp(true);
     
     try {
-      const updatedCard = await addStamp(card.id);
+      const updatedCard = await addStamp(id);
       setCard(updatedCard);
       toast.success("Stamp added successfully");
     } catch (error) {
@@ -73,7 +73,7 @@ const StampCardDetail = () => {
 
   const confirmRedemption = () => {
     if (!card || card.currentStamps < card.totalStamps) {
-      toast.error(`You need ${card.totalStamps - card.currentStamps} more stamps to redeem this reward`);
+      toast.error(`You need ${card?.totalStamps && card?.currentStamps ? card.totalStamps - card.currentStamps : 0} more stamps to redeem this reward`);
       return;
     }
     
@@ -81,12 +81,12 @@ const StampCardDetail = () => {
   };
 
   const handleRedeemReward = async () => {
-    if (!card) return;
+    if (!card || !id) return;
     
     setRedeeming(true);
     
     try {
-      const { card: updatedCard, code, transaction } = await redeemReward(card.id);
+      const { card: updatedCard, code, transaction } = await redeemReward(id);
       setCard(updatedCard);
       setRewardCode(code);
       setRewardTransaction(transaction);

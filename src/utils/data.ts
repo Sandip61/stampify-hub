@@ -1,5 +1,13 @@
-
 import { getCurrentUser } from "./auth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { 
+  fetchUserStampCards, 
+  fetchStampCard, 
+  fetchUserTransactions, 
+  addStampToCard, 
+  redeemCardReward 
+} from "./dataSync";
 
 // Type definitions
 export interface StampCard {
@@ -23,7 +31,7 @@ export interface Business {
 
 export interface Transaction {
   id: string;
-  userId: string;
+  userId?: string;
   cardId: string;
   businessName: string;
   type: "stamp" | "redeem";
@@ -32,12 +40,12 @@ export interface Transaction {
   rewardCode?: string;
 }
 
-// Local storage keys
+// Local storage keys (kept for backward compatibility)
 const STAMP_CARDS_KEY = "stampify-stamp-cards";
 const TRANSACTIONS_KEY = "stampify-transactions";
 const BUSINESSES_KEY = "stampify-businesses";
 
-// Demo businesses
+// Demo businesses (kept for backward compatibility)
 const demoBusiness: Business[] = [
   {
     id: "b1",
@@ -77,8 +85,15 @@ const demoBusiness: Business[] = [
   }
 ];
 
-// Initialize demo data
+// Initialize demo data (kept for backward compatibility but marked as deprecated)
+/**
+ * @deprecated This method uses localStorage for demo data. 
+ * Use generateDummyData() from utils/generateDummyData.ts instead,
+ * which creates data in the Supabase database.
+ */
 export const initializeDemoData = async (): Promise<void> => {
+  console.warn("initializeDemoData() is deprecated. Use generateDummyData() instead which creates data in Supabase");
+  
   // Check if businesses exist
   if (!localStorage.getItem(BUSINESSES_KEY)) {
     localStorage.setItem(BUSINESSES_KEY, JSON.stringify(demoBusiness));
@@ -186,7 +201,7 @@ export const initializeDemoData = async (): Promise<void> => {
   }
 };
 
-// Helper function to generate a reward based on the business name
+// Helper function to generate a reward based on the business name (kept for backward compatibility)
 function generateReward(businessName: string, index: number): string {
   const rewards = [
     `Free ${businessName} Signature Item`,
@@ -200,7 +215,7 @@ function generateReward(businessName: string, index: number): string {
   return rewards[index % rewards.length];
 }
 
-// Helper function to generate a random date in the past
+// Helper function to generate a random date in the past (kept for backward compatibility)
 function getRandomPastDate(maxDaysAgo: number): Date {
   const date = new Date();
   const daysAgo = Math.floor(Math.random() * maxDaysAgo);
@@ -208,24 +223,64 @@ function getRandomPastDate(maxDaysAgo: number): Date {
   return date;
 }
 
-// Get all stamp cards for the current user
+/**
+ * Get all stamp cards for the current user
+ * Now uses Supabase as the data source
+ */
 export const getUserStampCards = async (): Promise<StampCard[]> => {
-  const user = await getCurrentUser();
-  if (!user) return [];
-  
-  const allCardsJson = localStorage.getItem(STAMP_CARDS_KEY);
-  const allCards = allCardsJson ? JSON.parse(allCardsJson) : {};
-  
-  return allCards[user.id] || [];
+  try {
+    const user = await getCurrentUser();
+    if (!user) return [];
+    
+    // Try to fetch from Supabase first
+    try {
+      const cards = await fetchUserStampCards(user.id);
+      return cards;
+    } catch (error) {
+      console.error("Error fetching from Supabase, falling back to localStorage:", error);
+      toast.error("Could not connect to server, using local data");
+      
+      // Fall back to localStorage if Supabase fails
+      const allCardsJson = localStorage.getItem(STAMP_CARDS_KEY);
+      const allCards = allCardsJson ? JSON.parse(allCardsJson) : {};
+      return allCards[user.id] || [];
+    }
+  } catch (error) {
+    console.error("Error in getUserStampCards:", error);
+    return [];
+  }
 };
 
-// Get a specific stamp card by ID
+/**
+ * Get a specific stamp card by ID
+ * Now uses Supabase as the data source
+ */
 export const getStampCard = async (cardId: string): Promise<StampCard | null> => {
-  const cards = await getUserStampCards();
-  return cards.find(card => card.id === cardId) || null;
+  try {
+    const user = await getCurrentUser();
+    if (!user) return null;
+    
+    // Try to fetch from Supabase first
+    try {
+      const card = await fetchStampCard(user.id, cardId);
+      return card;
+    } catch (error) {
+      console.error("Error fetching card from Supabase, falling back to localStorage:", error);
+      
+      // Fall back to localStorage if Supabase fails
+      const cards = await getUserStampCards();
+      return cards.find(card => card.id === cardId) || null;
+    }
+  } catch (error) {
+    console.error("Error in getStampCard:", error);
+    return null;
+  }
 };
 
-// Add a stamp to a card
+/**
+ * Add a stamp to a card
+ * Now uses Supabase as the data source
+ */
 export const addStamp = async (cardId: string, count: number = 1): Promise<StampCard> => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -235,55 +290,70 @@ export const addStamp = async (cardId: string, count: number = 1): Promise<Stamp
         return;
       }
       
-      const allCardsJson = localStorage.getItem(STAMP_CARDS_KEY);
-      const allCards = allCardsJson ? JSON.parse(allCardsJson) : {};
-      
-      const userCards = allCards[user.id] || [];
-      const cardIndex = userCards.findIndex((card: StampCard) => card.id === cardId);
-      
-      if (cardIndex === -1) {
-        reject(new Error("Card not found"));
+      // Try to update in Supabase first
+      try {
+        const updatedCard = await addStampToCard(user.id, cardId, count);
+        toast.success("Stamp added successfully");
+        resolve(updatedCard);
         return;
+      } catch (error) {
+        console.error("Error updating in Supabase, falling back to localStorage:", error);
+        toast.error("Could not connect to server, updating locally");
+        
+        // Fall back to localStorage if Supabase fails
+        const allCardsJson = localStorage.getItem(STAMP_CARDS_KEY);
+        const allCards = allCardsJson ? JSON.parse(allCardsJson) : {};
+        
+        const userCards = allCards[user.id] || [];
+        const cardIndex = userCards.findIndex((card: StampCard) => card.id === cardId);
+        
+        if (cardIndex === -1) {
+          reject(new Error("Card not found"));
+          return;
+        }
+        
+        const card = userCards[cardIndex];
+        const updatedCard = {
+          ...card,
+          currentStamps: Math.min(card.currentStamps + count, card.totalStamps)
+        };
+        
+        userCards[cardIndex] = updatedCard;
+        allCards[user.id] = userCards;
+        
+        localStorage.setItem(STAMP_CARDS_KEY, JSON.stringify(allCards));
+        
+        // Record transaction in localStorage
+        const allTransactionsJson = localStorage.getItem(TRANSACTIONS_KEY);
+        const allTransactions = allTransactionsJson ? JSON.parse(allTransactionsJson) : {};
+        
+        const userTransactions = allTransactions[user.id] || [];
+        userTransactions.push({
+          id: `tr-${Date.now()}`,
+          userId: user.id,
+          cardId: updatedCard.id,
+          businessName: updatedCard.businessName,
+          type: "stamp",
+          count,
+          timestamp: new Date().toISOString()
+        });
+        
+        allTransactions[user.id] = userTransactions;
+        localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(allTransactions));
+        
+        // Simulate network delay
+        setTimeout(() => resolve(updatedCard), 600);
       }
-      
-      const card = userCards[cardIndex];
-      const updatedCard = {
-        ...card,
-        currentStamps: Math.min(card.currentStamps + count, card.totalStamps)
-      };
-      
-      userCards[cardIndex] = updatedCard;
-      allCards[user.id] = userCards;
-      
-      localStorage.setItem(STAMP_CARDS_KEY, JSON.stringify(allCards));
-      
-      // Record transaction
-      const allTransactionsJson = localStorage.getItem(TRANSACTIONS_KEY);
-      const allTransactions = allTransactionsJson ? JSON.parse(allTransactionsJson) : {};
-      
-      const userTransactions = allTransactions[user.id] || [];
-      userTransactions.push({
-        id: `tr-${Date.now()}`,
-        userId: user.id,
-        cardId: updatedCard.id,
-        businessName: updatedCard.businessName,
-        type: "stamp",
-        count,
-        timestamp: new Date().toISOString()
-      });
-      
-      allTransactions[user.id] = userTransactions;
-      localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(allTransactions));
-      
-      // Simulate network delay
-      setTimeout(() => resolve(updatedCard), 600);
     } catch (error) {
       reject(error);
     }
   });
 };
 
-// Redeem a reward
+/**
+ * Redeem a reward
+ * Now uses Supabase as the data source
+ */
 export const redeemReward = async (cardId: string): Promise<{ card: StampCard, code: string, transaction: Transaction }> => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -293,79 +363,124 @@ export const redeemReward = async (cardId: string): Promise<{ card: StampCard, c
         return;
       }
       
-      const allCardsJson = localStorage.getItem(STAMP_CARDS_KEY);
-      const allCards = allCardsJson ? JSON.parse(allCardsJson) : {};
-      
-      const userCards = allCards[user.id] || [];
-      const cardIndex = userCards.findIndex((card: StampCard) => card.id === cardId);
-      
-      if (cardIndex === -1) {
-        reject(new Error("Card not found"));
+      // Try to redeem in Supabase first
+      try {
+        const result = await redeemCardReward(user.id, cardId);
+        toast.success("Reward redeemed successfully");
+        
+        // Convert transaction to expected format
+        const transactionData: Transaction = {
+          id: result.transaction.id,
+          cardId: result.transaction.card_id,
+          businessName: result.card.businessName,
+          type: "redeem",
+          timestamp: result.transaction.timestamp,
+          rewardCode: result.code
+        };
+        
+        resolve({
+          card: result.card,
+          code: result.code,
+          transaction: transactionData
+        });
         return;
+      } catch (error) {
+        console.error("Error redeeming in Supabase, falling back to localStorage:", error);
+        toast.error("Could not connect to server, updating locally");
+        
+        // Fall back to localStorage if Supabase fails
+        const allCardsJson = localStorage.getItem(STAMP_CARDS_KEY);
+        const allCards = allCardsJson ? JSON.parse(allCardsJson) : {};
+        
+        const userCards = allCards[user.id] || [];
+        const cardIndex = userCards.findIndex((card: StampCard) => card.id === cardId);
+        
+        if (cardIndex === -1) {
+          reject(new Error("Card not found"));
+          return;
+        }
+        
+        const card = userCards[cardIndex];
+        
+        if (card.currentStamps < card.totalStamps) {
+          reject(new Error("Not enough stamps to redeem"));
+          return;
+        }
+        
+        // Generate redemption code
+        const rewardCode = generateRedemptionCode();
+        
+        // Reset the card
+        const updatedCard = {
+          ...card,
+          currentStamps: 0
+        };
+        
+        userCards[cardIndex] = updatedCard;
+        allCards[user.id] = userCards;
+        
+        localStorage.setItem(STAMP_CARDS_KEY, JSON.stringify(allCards));
+        
+        // Record transaction
+        const allTransactionsJson = localStorage.getItem(TRANSACTIONS_KEY);
+        const allTransactions = allTransactionsJson ? JSON.parse(allTransactionsJson) : {};
+        
+        const userTransactions = allTransactions[user.id] || [];
+        const transaction: Transaction = {
+          id: `tr-${Date.now()}`,
+          userId: user.id,
+          cardId: updatedCard.id,
+          businessName: updatedCard.businessName,
+          type: "redeem",
+          timestamp: new Date().toISOString(),
+          rewardCode
+        };
+        
+        userTransactions.push(transaction);
+        allTransactions[user.id] = userTransactions;
+        localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(allTransactions));
+        
+        // Simulate network delay
+        setTimeout(() => resolve({ card: updatedCard, code: rewardCode, transaction }), 800);
       }
-      
-      const card = userCards[cardIndex];
-      
-      if (card.currentStamps < card.totalStamps) {
-        reject(new Error("Not enough stamps to redeem"));
-        return;
-      }
-      
-      // Generate redemption code
-      const rewardCode = generateRedemptionCode();
-      
-      // Reset the card
-      const updatedCard = {
-        ...card,
-        currentStamps: 0
-      };
-      
-      userCards[cardIndex] = updatedCard;
-      allCards[user.id] = userCards;
-      
-      localStorage.setItem(STAMP_CARDS_KEY, JSON.stringify(allCards));
-      
-      // Record transaction
-      const allTransactionsJson = localStorage.getItem(TRANSACTIONS_KEY);
-      const allTransactions = allTransactionsJson ? JSON.parse(allTransactionsJson) : {};
-      
-      const userTransactions = allTransactions[user.id] || [];
-      const transaction: Transaction = {
-        id: `tr-${Date.now()}`,
-        userId: user.id,
-        cardId: updatedCard.id,
-        businessName: updatedCard.businessName,
-        type: "redeem",
-        timestamp: new Date().toISOString(),
-        rewardCode
-      };
-      
-      userTransactions.push(transaction);
-      allTransactions[user.id] = userTransactions;
-      localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(allTransactions));
-      
-      // Simulate network delay
-      setTimeout(() => resolve({ card: updatedCard, code: rewardCode, transaction }), 800);
     } catch (error) {
       reject(error);
     }
   });
 };
 
-// Get all transactions for the current user
+/**
+ * Get all transactions for the current user
+ * Now uses Supabase as the data source
+ */
 export const getUserTransactions = async (): Promise<Transaction[]> => {
-  const user = await getCurrentUser();
-  if (!user) return [];
-  
-  const allTransactionsJson = localStorage.getItem(TRANSACTIONS_KEY);
-  const allTransactions = allTransactionsJson ? JSON.parse(allTransactionsJson) : {};
-  
-  return (allTransactions[user.id] || []).sort((a: Transaction, b: Transaction) => 
-    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  );
+  try {
+    const user = await getCurrentUser();
+    if (!user) return [];
+    
+    // Try to fetch from Supabase first
+    try {
+      const transactions = await fetchUserTransactions(user.id);
+      return transactions;
+    } catch (error) {
+      console.error("Error fetching transactions from Supabase, falling back to localStorage:", error);
+      toast.error("Could not connect to server, using local data");
+      
+      // Fall back to localStorage if Supabase fails
+      const allTransactionsJson = localStorage.getItem(TRANSACTIONS_KEY);
+      const allTransactions = allTransactionsJson ? JSON.parse(allTransactionsJson) : {};
+      
+      return (allTransactions[user.id] || []).sort((a: Transaction, b: Transaction) => 
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+    }
+  } catch (error) {
+    console.error("Error in getUserTransactions:", error);
+    return [];
+  }
 };
 
-// Helper function to generate a redemption code
+// Helper function to generate a redemption code (kept for backward compatibility)
 const generateRedemptionCode = (): string => {
   const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';

@@ -2,12 +2,14 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getCurrentUser, User } from "@/utils/auth";
-import { getUserStampCards, StampCard as StampCardType, getUserTransactions, Transaction, initializeDemoData } from "@/utils/data";
+import { getUserStampCards, StampCard as StampCardType } from "@/utils/data";
 import StampCard from "@/components/StampCard";
 import { Button } from "@/components/ui/button";
-import { Search, Scan, Plus, Store, CreditCard, SortDesc } from "lucide-react";
+import { Search, Scan, Store, CreditCard, SortDesc } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { generateDummyData } from "@/utils/generateDummyData";
+import { toast } from "sonner";
 
 const Cards = () => {
   const navigate = useNavigate();
@@ -25,10 +27,7 @@ const Cards = () => {
         setUser(currentUser);
         
         if (currentUser) {
-          // Initialize demo data if needed
-          await initializeDemoData();
-          
-          // Get user's stamp cards
+          // Load user's stamp cards directly from Supabase
           const userCards = await getUserStampCards();
           setCards(userCards);
           
@@ -39,6 +38,7 @@ const Cards = () => {
         }
       } catch (error) {
         console.error("Error loading cards:", error);
+        toast.error("Failed to load your loyalty cards");
       } finally {
         setIsLoading(false);
       }
@@ -46,6 +46,22 @@ const Cards = () => {
     
     checkAuth();
   }, []);
+
+  const handleGenerateDummyData = async () => {
+    try {
+      toast.info("Generating demo data...");
+      const success = await generateDummyData();
+      if (success) {
+        // Reload cards after demo data is generated
+        const userCards = await getUserStampCards();
+        setCards(userCards);
+        toast.success("Demo data created successfully!");
+      }
+    } catch (error) {
+      console.error("Error generating dummy data:", error);
+      toast.error("Failed to generate demo data");
+    }
+  };
 
   // Filter cards based on search term
   const filteredCards = cards.filter(card => 
@@ -179,18 +195,25 @@ const Cards = () => {
         )
       ) : (
         <div className="text-center py-12 px-4 bg-gray-50 rounded-lg border border-gray-100">
-          <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <Plus className="h-8 w-8 text-gray-400" />
+          <div className="mx-auto flex flex-col items-center gap-4 mb-4">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+              <CreditCard className="h-8 w-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium">No loyalty cards yet</h3>
+            <p className="text-muted-foreground mb-4 max-w-sm">
+              Visit your favorite businesses and scan their QR codes to collect stamps
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link to="/scan">
+                <Button variant="default">
+                  Scan QR Code
+                </Button>
+              </Link>
+              <Button variant="outline" onClick={handleGenerateDummyData}>
+                Generate Demo Data
+              </Button>
+            </div>
           </div>
-          <h3 className="text-lg font-medium mb-2">No loyalty cards yet</h3>
-          <p className="text-muted-foreground mb-4">
-            Visit your favorite businesses and scan their QR codes to collect stamps
-          </p>
-          <Link to="/scan">
-            <Button variant="default">
-              Scan QR Code
-            </Button>
-          </Link>
         </div>
       )}
       
@@ -207,13 +230,14 @@ const Cards = () => {
             <ul className="list-disc pl-5 space-y-2 mb-4">
               <li>Visit businesses with Stampify and scan their QR codes</li>
               <li>Browse the home screen to discover participating businesses</li>
-              <li>Explore special offers and promotions</li>
+              <li>Generate demo data to see how the app works</li>
             </ul>
             <p>
               Once you collect stamps, you'll be able to redeem rewards and track your progress right here!
             </p>
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-between">
+            <Button variant="outline" onClick={handleGenerateDummyData}>Generate Demo Data</Button>
             <Button onClick={() => setShowNoCardsModal(false)}>Got it</Button>
           </div>
         </DialogContent>

@@ -1,8 +1,9 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getCurrentUser, User } from "@/utils/auth";
-import { getUserStampCards, StampCard as StampCardType, initializeDemoData } from "@/utils/data";
+import { getUserStampCards, StampCard as StampCardType } from "@/utils/data";
 import StampCard from "@/components/StampCard";
 import { generateDummyData } from "@/utils/generateDummyData";
 import { Plus, RefreshCw, Gift, CreditCard } from "lucide-react";
@@ -25,10 +26,7 @@ const Dashboard = () => {
         
         setUser(currentUser);
         
-        // Initialize demo data
-        await initializeDemoData();
-        
-        // Load stamp cards
+        // Load stamp cards directly (no need to initialize demo data)
         loadStampCards();
       } catch (error) {
         console.error("Error checking authentication:", error);
@@ -56,6 +54,20 @@ const Dashboard = () => {
     setRefreshing(true);
     await loadStampCards();
     setRefreshing(false);
+  };
+
+  const handleGenerateDummyData = async () => {
+    try {
+      toast.info("Generating demo data...");
+      const success = await generateDummyData();
+      if (success) {
+        await loadStampCards();
+        toast.success("Demo data created successfully!");
+      }
+    } catch (error) {
+      console.error("Error generating dummy data:", error);
+      toast.error("Failed to generate demo data");
+    }
   };
 
   const handleCardClick = (cardId: string) => {
@@ -116,14 +128,12 @@ const Dashboard = () => {
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Your Loyalty Cards</h2>
           
-          {process.env.NODE_ENV === 'development' && (
-            <button
-              onClick={generateDummyData}
-              className="text-xs px-2 py-1 bg-muted/70 text-muted-foreground hover:bg-muted rounded-md transition-colors"
-            >
-              Generate Dummy Data
-            </button>
-          )}
+          <button
+            onClick={handleGenerateDummyData}
+            className="text-xs px-2 py-1 bg-muted/70 text-muted-foreground hover:bg-muted rounded-md transition-colors"
+          >
+            Generate Demo Data
+          </button>
         </div>
 
         {loading ? (
@@ -141,7 +151,7 @@ const Dashboard = () => {
               No loyalty cards yet
             </h3>
             <p className="text-muted-foreground mb-4">
-              Visit a participating merchant to get started
+              Visit a participating merchant to get started or click "Generate Demo Data"
             </p>
             <button
               onClick={() => navigate("/scan")}
