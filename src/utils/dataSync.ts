@@ -265,6 +265,7 @@ export const redeemCardReward = async (userId: string, cardId: string): Promise<
         card_id,
         current_stamps,
         card:card_id (
+          id,
           total_stamps,
           merchant_id
         )
