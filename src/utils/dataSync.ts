@@ -200,7 +200,10 @@ export const addStampToCard = async (userId: string, cardId: string, count: numb
         id,
         card_id,
         current_stamps,
-        card:card_id (total_stamps)
+        card:card_id (
+          total_stamps,
+          merchant_id
+        )
       `)
       .eq('customer_id', userId)
       .eq('card_id', cardId)
