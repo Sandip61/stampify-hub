@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@/utils/auth/types";
 import { StampCard, Transaction } from "@/utils/data";
@@ -267,7 +266,8 @@ export const redeemCardReward = async (userId: string, cardId: string): Promise<
         card:card_id (
           id,
           total_stamps,
-          merchant_id
+          merchant_id,
+          reward
         )
       `)
       .eq('customer_id', userId)
