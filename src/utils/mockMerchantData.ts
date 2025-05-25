@@ -10,9 +10,3 @@ export const mockMerchant = {
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString()
 };
-
-// No longer needed, as we're using Supabase directly
-export const initMockMerchantData = () => {
-  console.log("Mock initialization is deprecated. Using Supabase directly.");
-  return true;
-};

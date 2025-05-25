@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { getCurrentUser, User } from "@/utils/auth";
 import { getUserStampCards, StampCard as StampCardType } from "@/utils/data";
-import { generateDummyData } from "@/utils/generateDummyData";
 import { RefreshCw, Gift, CreditCard, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -70,12 +69,18 @@ const Dashboard = () => {
       const userCardIds = userCards.map(card => card.id);
 
       // Fetch all available stamp cards from merchants
-      const { data: allCards, error } = await supabase
+      let query = supabase
         .from("stamp_cards")
         .select("id, name, business_logo, business_color, reward, total_stamps")
         .eq("is_active", true)
-        .not("id", "in", `(${userCardIds.length > 0 ? userCardIds.join(',') : 'null'})`)
         .limit(6);
+
+      // Only exclude user cards if there are any
+      if (userCardIds.length > 0) {
+        query = query.not("id", "in", `(${userCardIds.join(',')})`);
+      }
+
+      const { data: allCards, error } = await query;
 
       if (error) {
         console.error("Error fetching discover businesses:", error);
@@ -97,23 +102,6 @@ const Dashboard = () => {
       loadDiscoverBusinesses()
     ]);
     setRefreshing(false);
-  };
-
-  const handleGenerateDummyData = async () => {
-    try {
-      toast.info("Generating demo data...");
-      const success = await generateDummyData();
-      if (success) {
-        await Promise.all([
-          loadStampCards(),
-          loadDiscoverBusinesses()
-        ]);
-        toast.success("Demo data created successfully!");
-      }
-    } catch (error) {
-      console.error("Error generating dummy data:", error);
-      toast.error("Failed to generate demo data");
-    }
   };
 
   return (
@@ -224,22 +212,6 @@ const Dashboard = () => {
             ))}
           </div>
         )}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="flex justify-center gap-4">
-        <button
-          onClick={() => navigate("/customer/scan-qr")}
-          className="flex items-center px-6 py-3 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-        >
-          Scan QR to Add Card
-        </button>
-        <button
-          onClick={handleGenerateDummyData}
-          className="px-4 py-3 bg-muted/70 text-muted-foreground hover:bg-muted rounded-md transition-colors text-sm"
-        >
-          Generate Demo Data
-        </button>
       </div>
     </div>
   );
