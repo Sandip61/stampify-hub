@@ -111,6 +111,10 @@ const AllBusinesses = () => {
     }
   };
 
+  const handleViewAllOffers = (businessId: string) => {
+    navigate(`/customer/business/${businessId}`);
+  };
+
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="flex items-center mb-6">
@@ -203,19 +207,24 @@ const AllBusinesses = () => {
                 </div>
               )}
 
-              {/* Show additional offers if any */}
+              {/* Show additional offers count with clickable link */}
               {business.stamp_cards.length > 1 && (
                 <div className="text-xs text-muted-foreground mb-4">
-                  +{business.stamp_cards.length - 1} more offer{business.stamp_cards.length - 1 !== 1 ? 's' : ''} available
+                  <button
+                    onClick={() => handleViewAllOffers(business.id)}
+                    className="text-primary hover:text-primary/80 underline cursor-pointer"
+                  >
+                    +{business.stamp_cards.length - 1} more offer{business.stamp_cards.length - 1 !== 1 ? 's' : ''} available
+                  </button>
                 </div>
               )}
 
               <div className="text-center">
                 <button
-                  onClick={() => navigate("/customer/scan-qr")}
+                  onClick={() => handleViewAllOffers(business.id)}
                   className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
                 >
-                  Visit & Start Collecting
+                  View All Offers
                 </button>
               </div>
             </div>

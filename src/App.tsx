@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import ScanQR from "./pages/ScanQR";
 import Dashboard from "./pages/Dashboard";
 import AllBusinesses from "./pages/AllBusinesses";
+import BusinessDetail from "./pages/BusinessDetail";
 
 // Merchant Pages
 import MerchantDashboard from "./pages/merchant/Dashboard";
@@ -61,6 +62,16 @@ const router = createBrowserRouter([
       <ProtectedRoute roleType={UserRole.CUSTOMER}>
         <MainLayout>
           <AllBusinesses />
+        </MainLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/customer/business/:businessId",
+    element: (
+      <ProtectedRoute roleType={UserRole.CUSTOMER}>
+        <MainLayout>
+          <BusinessDetail />
         </MainLayout>
       </ProtectedRoute>
     ),
