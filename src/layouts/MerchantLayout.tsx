@@ -1,4 +1,3 @@
-
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -11,16 +10,12 @@ import {
   UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import RoleSwitcher from "@/components/RoleSwitcher";
-import { useRole } from "@/contexts/RoleContext";
 
 interface MerchantLayoutProps {
   children: ReactNode;
 }
 
 const MerchantLayout = ({ children }: MerchantLayoutProps) => {
-  const { hasBothRoles } = useRole();
-
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
@@ -29,15 +24,9 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
           <div className="flex items-center flex-shrink-0 px-4 mb-5">
             <Link to="/merchant" className="flex items-center">
               <span className="text-xl mr-2">🏪</span>
-              <h1 className="text-xl font-bold">Stampify Merchant</h1>
+              <h1 className="text-xl font-bold">Dashboard</h1>
             </Link>
           </div>
-
-          {hasBothRoles && (
-            <div className="px-4 mb-4">
-              <RoleSwitcher />
-            </div>
-          )}
 
           <nav className="flex-1 px-2 pb-4 space-y-1">
             <NavItem to="/merchant" icon={<LayoutDashboard size={18} />} end>
@@ -77,7 +66,7 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
           <div className="flex items-center px-4 w-full justify-between">
             <Link to="/merchant" className="flex items-center">
               <span className="text-xl mr-2">🏪</span>
-              <h1 className="text-xl font-bold">Stampify Merchant</h1>
+              <h1 className="text-xl font-bold">Dashboard</h1>
             </Link>
             
             {/* Mobile menu button */}
