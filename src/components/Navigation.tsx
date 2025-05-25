@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Home, CreditCard, History, User, LogOut, ScanLine, Store } from "lucide-react";
@@ -164,7 +163,7 @@ const Navigation = () => {
             >
               <Store className="w-5 h-5" />
               <span className="text-xs">Stores</span>
-            </Button>
+            </button>
             <button 
               onClick={handleScanClick}
               className="flex flex-col items-center space-y-1 text-muted-foreground"
