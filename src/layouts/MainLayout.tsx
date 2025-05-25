@@ -24,7 +24,7 @@ const MainLayout = ({ children, hideNav = false }: MainLayoutProps) => {
         </div>
       )}
       
-      <main className={`flex-1 ${hideNav ? "" : "pt-12"}`}>{children}</main>
+      <main className={`flex-1 ${hideNav ? "" : "pt-16"}`}>{children}</main>
     </div>
   );
 };
