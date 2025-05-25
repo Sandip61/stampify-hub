@@ -19,8 +19,9 @@ const Navigation = () => {
       const currentPosition = window.scrollY;
       const isScrollingDown = currentPosition > lastScrollPosition;
 
-      // Only hide on scroll down when we're past a certain threshold
-      if (currentPosition > 60) {
+      // Show nav when scrolling up or when near the top
+      // Hide nav only when scrolling down and past a smaller threshold
+      if (currentPosition > 40) {
         setVisible(!isScrollingDown);
       } else {
         setVisible(true);
@@ -63,8 +64,11 @@ const Navigation = () => {
   return (
     <>
       {!isMobile && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b">
-          <nav className="flex items-center justify-between max-w-3xl mx-auto px-6 h-16">
+        <div className={cn(
+          "fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b transition-transform duration-300",
+          !visible && "-translate-y-full"
+        )}>
+          <nav className="flex items-center justify-between max-w-3xl mx-auto px-6 h-14">
             <div className="flex items-center space-x-1">
               <NavLink 
                 to="/" 
