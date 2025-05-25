@@ -14,6 +14,7 @@ import {
   Stamp
 } from "lucide-react";
 import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface TransactionCard {
   name: string;
@@ -106,142 +107,148 @@ const Transactions = () => {
   const groupedTransactions = groupTransactionsByDate();
 
   return (
-    <div className="container mx-auto py-6 px-4 max-w-3xl">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Transaction History</h1>
-        <div className="flex border rounded-lg overflow-hidden">
-          <button
-            onClick={() => setActiveFilter("all")}
-            className={`px-2 py-1.5 text-xs sm:px-3 sm:text-sm ${
-              activeFilter === "all" 
-                ? "bg-primary text-primary-foreground" 
-                : "bg-background hover:bg-muted/50"
-            }`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => setActiveFilter("stamp")}
-            className={`px-2 py-1.5 text-xs sm:px-3 sm:text-sm flex items-center ${
-              activeFilter === "stamp" 
-                ? "bg-primary text-primary-foreground" 
-                : "bg-background hover:bg-muted/50"
-            }`}
-          >
-            <Stamp className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
-            <span className="hidden sm:inline">Stamps</span>
-            <span className="sm:hidden">S</span>
-          </button>
-          <button
-            onClick={() => setActiveFilter("redeem")}
-            className={`px-2 py-1.5 text-xs sm:px-3 sm:text-sm flex items-center ${
-              activeFilter === "redeem" 
-                ? "bg-primary text-primary-foreground" 
-                : "bg-background hover:bg-muted/50"
-            }`}
-          >
-            <Gift className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
-            <span className="hidden sm:inline">Rewards</span>
-            <span className="sm:hidden">R</span>
-          </button>
-        </div>
-      </div>
-
-      {filteredTransactions.length === 0 ? (
-        <div className="text-center py-12 bg-card border rounded-xl">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-            <Receipt className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-xl font-medium text-foreground mb-2">No transactions yet</h3>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            {activeFilter === "all" 
-              ? "Your stamp collection and reward redemption history will appear here."
-              : activeFilter === "stamp"
-              ? "Your collected stamps will appear here."
-              : "Your redeemed rewards will appear here."}
-          </p>
-          {activeFilter !== "all" && (
+    <div className="h-screen pt-16 pb-20 px-4 flex flex-col">
+      <div className="max-w-3xl mx-auto h-full flex flex-col">
+        <div className="flex items-center justify-between mb-6 flex-shrink-0">
+          <h1 className="text-2xl font-bold">Transaction History</h1>
+          <div className="flex border rounded-lg overflow-hidden">
             <button
               onClick={() => setActiveFilter("all")}
-              className="mt-4 text-primary hover:underline inline-flex items-center"
+              className={`px-2 py-1.5 text-xs sm:px-3 sm:text-sm ${
+                activeFilter === "all" 
+                  ? "bg-primary text-primary-foreground" 
+                  : "bg-background hover:bg-muted/50"
+              }`}
             >
-              <ArrowLeft className="mr-1 h-4 w-4" />
-              Show all transactions
+              All
             </button>
-          )}
+            <button
+              onClick={() => setActiveFilter("stamp")}
+              className={`px-2 py-1.5 text-xs sm:px-3 sm:text-sm flex items-center ${
+                activeFilter === "stamp" 
+                  ? "bg-primary text-primary-foreground" 
+                  : "bg-background hover:bg-muted/50"
+              }`}
+            >
+              <Stamp className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
+              <span className="hidden sm:inline">Stamps</span>
+              <span className="sm:hidden">S</span>
+            </button>
+            <button
+              onClick={() => setActiveFilter("redeem")}
+              className={`px-2 py-1.5 text-xs sm:px-3 sm:text-sm flex items-center ${
+                activeFilter === "redeem" 
+                  ? "bg-primary text-primary-foreground" 
+                  : "bg-background hover:bg-muted/50"
+              }`}
+            >
+              <Gift className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
+              <span className="hidden sm:inline">Rewards</span>
+              <span className="sm:hidden">R</span>
+            </button>
+          </div>
         </div>
-      ) : (
-        <div className="space-y-6">
-          {groupedTransactions.map(group => (
-            <div key={group.date}>
-              <div className="flex items-center mb-2">
-                <CalendarDays className="h-4 w-4 text-muted-foreground mr-2" />
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  {formatRelativeDate(group.date)}
-                </h3>
-              </div>
-              
-              <div className="bg-card border rounded-xl overflow-hidden">
-                {group.transactions.map((transaction, index) => (
-                  <div 
-                    key={transaction.id} 
-                    className={`p-4 hover:bg-muted/30 transition-colors ${
-                      index !== group.transactions.length - 1 ? "border-b" : ""
-                    }`}
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div 
-                        className="h-12 w-12 flex items-center justify-center rounded-full overflow-hidden text-white"
-                        style={{ backgroundColor: "#3B82F6" }}
-                      >
-                        <span className="text-xl">🏪</span>
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground">
-                          {transaction.businessName}
-                        </p>
-                        <div className="flex items-center mt-1">
-                          {transaction.type === "stamp" ? (
-                            <>
-                              <Stamp className="h-3.5 w-3.5 text-blue-500 mr-1.5" />
-                              <p className="text-sm text-muted-foreground">
-                                {formatType(transaction.type, transaction.count)}
+
+        {filteredTransactions.length === 0 ? (
+          <div className="text-center py-12 bg-card border rounded-xl">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+              <Receipt className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-xl font-medium text-foreground mb-2">No transactions yet</h3>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              {activeFilter === "all" 
+                ? "Your stamp collection and reward redemption history will appear here."
+                : activeFilter === "stamp"
+                ? "Your collected stamps will appear here."
+                : "Your redeemed rewards will appear here."}
+            </p>
+            {activeFilter !== "all" && (
+              <button
+                onClick={() => setActiveFilter("all")}
+                className="mt-4 text-primary hover:underline inline-flex items-center"
+              >
+                <ArrowLeft className="mr-1 h-4 w-4" />
+                Show all transactions
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex-1 min-h-0">
+            <ScrollArea className="h-full">
+              <div className="space-y-6 pb-4">
+                {groupedTransactions.map(group => (
+                  <div key={group.date}>
+                    <div className="flex items-center mb-2">
+                      <CalendarDays className="h-4 w-4 text-muted-foreground mr-2" />
+                      <h3 className="text-sm font-medium text-muted-foreground">
+                        {formatRelativeDate(group.date)}
+                      </h3>
+                    </div>
+                    
+                    <div className="bg-card border rounded-xl overflow-hidden">
+                      {group.transactions.map((transaction, index) => (
+                        <div 
+                          key={transaction.id} 
+                          className={`p-4 hover:bg-muted/30 transition-colors ${
+                            index !== group.transactions.length - 1 ? "border-b" : ""
+                          }`}
+                        >
+                          <div className="flex items-center space-x-4">
+                            <div 
+                              className="h-12 w-12 flex items-center justify-center rounded-full overflow-hidden text-white"
+                              style={{ backgroundColor: "#3B82F6" }}
+                            >
+                              <span className="text-xl">🏪</span>
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-foreground">
+                                {transaction.businessName}
                               </p>
-                            </>
-                          ) : (
-                            <>
-                              <BadgeCheck className="h-3.5 w-3.5 text-green-500 mr-1.5" />
-                              <p className="text-sm text-muted-foreground">
-                                Reward redeemed
-                              </p>
-                            </>
-                          )}
-                        </div>
-                        {transaction.rewardCode && (
-                          <div className="mt-2 rounded-md bg-muted px-2 py-1 text-xs inline-block">
-                            Code: <span className="font-mono font-medium">{transaction.rewardCode}</span>
+                              <div className="flex items-center mt-1">
+                                {transaction.type === "stamp" ? (
+                                  <>
+                                    <Stamp className="h-3.5 w-3.5 text-blue-500 mr-1.5" />
+                                    <p className="text-sm text-muted-foreground">
+                                      {formatType(transaction.type, transaction.count)}
+                                    </p>
+                                  </>
+                                ) : (
+                                  <>
+                                    <BadgeCheck className="h-3.5 w-3.5 text-green-500 mr-1.5" />
+                                    <p className="text-sm text-muted-foreground">
+                                      Reward redeemed
+                                    </p>
+                                  </>
+                                )}
+                              </div>
+                              {transaction.rewardCode && (
+                                <div className="mt-2 rounded-md bg-muted px-2 py-1 text-xs inline-block">
+                                  Code: <span className="font-mono font-medium">{transaction.rewardCode}</span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="text-right flex flex-col items-end">
+                              <div className="text-sm text-muted-foreground flex items-center">
+                                <Clock className="h-3 w-3 mr-1" />
+                                {format(new Date(transaction.timestamp), "h:mm a")}
+                              </div>
+                              <div className="mt-2">
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            </div>
                           </div>
-                        )}
-                      </div>
-                      
-                      <div className="text-right flex flex-col items-end">
-                        <div className="text-sm text-muted-foreground flex items-center">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {format(new Date(transaction.timestamp), "h:mm a")}
                         </div>
-                        <div className="mt-2">
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            </ScrollArea>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
