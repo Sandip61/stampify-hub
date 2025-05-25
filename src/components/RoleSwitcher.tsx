@@ -2,13 +2,18 @@
 import { useRole } from '@/contexts/RoleContext';
 import { UserRole } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export const RoleSwitcher = () => {
   const { activeRole, setActiveRole, hasBothRoles } = useRole();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   // If user doesn't have both roles, don't render anything
   if (!hasBothRoles) return null;
+  
+  // Hide in mobile view
+  if (isMobile) return null;
   
   const handleRoleSwitch = () => {
     const newRole = activeRole === UserRole.CUSTOMER ? UserRole.MERCHANT : UserRole.CUSTOMER;
