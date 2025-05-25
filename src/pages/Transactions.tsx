@@ -112,7 +112,7 @@ const Transactions = () => {
         <div className="flex border rounded-lg overflow-hidden">
           <button
             onClick={() => setActiveFilter("all")}
-            className={`px-3 py-1.5 text-sm ${
+            className={`px-2 py-1.5 text-xs sm:px-3 sm:text-sm ${
               activeFilter === "all" 
                 ? "bg-primary text-primary-foreground" 
                 : "bg-background hover:bg-muted/50"
@@ -122,25 +122,27 @@ const Transactions = () => {
           </button>
           <button
             onClick={() => setActiveFilter("stamp")}
-            className={`px-3 py-1.5 text-sm flex items-center ${
+            className={`px-2 py-1.5 text-xs sm:px-3 sm:text-sm flex items-center ${
               activeFilter === "stamp" 
                 ? "bg-primary text-primary-foreground" 
                 : "bg-background hover:bg-muted/50"
             }`}
           >
-            <Stamp className="h-3.5 w-3.5 mr-1.5" />
-            Stamps
+            <Stamp className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
+            <span className="hidden sm:inline">Stamps</span>
+            <span className="sm:hidden">S</span>
           </button>
           <button
             onClick={() => setActiveFilter("redeem")}
-            className={`px-3 py-1.5 text-sm flex items-center ${
+            className={`px-2 py-1.5 text-xs sm:px-3 sm:text-sm flex items-center ${
               activeFilter === "redeem" 
                 ? "bg-primary text-primary-foreground" 
                 : "bg-background hover:bg-muted/50"
             }`}
           >
-            <Gift className="h-3.5 w-3.5 mr-1.5" />
-            Rewards
+            <Gift className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
+            <span className="hidden sm:inline">Rewards</span>
+            <span className="sm:hidden">R</span>
           </button>
         </div>
       </div>

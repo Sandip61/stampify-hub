@@ -44,6 +44,11 @@ const Navigation = () => {
     navigate('/scan-qr');
   };
 
+  const handleHistoryClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate('/transactions');
+  };
+
   if (isMobile === undefined) return null;
 
   const isAuthPage = ["/login", "/signup", "/forgot-password"].includes(location.pathname);
@@ -72,14 +77,12 @@ const Navigation = () => {
               >
                 Cards
               </NavLink>
-              <NavLink 
-                to="/history" 
-                className={({isActive}) => 
-                  cn("nav-link", isActive && "nav-link-active")
-                }
+              <button 
+                onClick={handleHistoryClick}
+                className="nav-link"
               >
                 History
-              </NavLink>
+              </button>
               <button 
                 onClick={handleScanClick}
                 className="nav-link"
@@ -142,16 +145,14 @@ const Navigation = () => {
               <ScanLine className="w-5 h-5" />
               <span className="text-xs">Scan</span>
             </button>
-            <NavLink 
-              to="/history" 
-              className={({isActive}) => 
-                cn("flex flex-col items-center space-y-1", 
-                isActive ? "text-foreground" : "text-muted-foreground")
-              }
+            <button 
+              onClick={handleHistoryClick}
+              className={cn("flex flex-col items-center space-y-1", 
+                location.pathname === "/transactions" ? "text-foreground" : "text-muted-foreground")}
             >
               <History className="w-5 h-5" />
               <span className="text-xs">History</span>
-            </NavLink>
+            </button>
             <NavLink 
               to="/profile" 
               className={({isActive}) => 

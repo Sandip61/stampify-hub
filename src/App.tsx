@@ -1,4 +1,5 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { RoleProvider } from "./contexts/RoleContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -14,7 +15,6 @@ import Profile from "./pages/Profile";
 import Transactions from "./pages/Transactions";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
-import History from "./pages/History";
 import ScanQR from "./pages/ScanQR";
 import Dashboard from "./pages/Dashboard";
 
@@ -116,11 +116,11 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/customer/history",
+    path: "/customer/transactions",
     element: (
       <ProtectedRoute roleType={UserRole.CUSTOMER}>
         <MainLayout>
-          <History />
+          <Transactions />
         </MainLayout>
       </ProtectedRoute>
     ),
@@ -131,16 +131,6 @@ const router = createBrowserRouter([
       <ProtectedRoute roleType={UserRole.CUSTOMER}>
         <MainLayout>
           <Profile />
-        </MainLayout>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/customer/transactions",
-    element: (
-      <ProtectedRoute roleType={UserRole.CUSTOMER}>
-        <MainLayout>
-          <Transactions />
         </MainLayout>
       </ProtectedRoute>
     ),
@@ -199,13 +189,10 @@ const router = createBrowserRouter([
       </MainLayout>
     ),
   },
+  // Redirect /history to /transactions
   {
     path: "/history",
-    element: (
-      <MainLayout>
-        <History />
-      </MainLayout>
-    ),
+    element: <Navigate to="/transactions" replace />,
   },
   {
     path: "/profile",

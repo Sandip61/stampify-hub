@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -5,7 +6,7 @@ import { getCurrentUser, User } from "@/utils/auth";
 import { getUserStampCards, StampCard as StampCardType } from "@/utils/data";
 import StampCard from "@/components/StampCard";
 import { generateDummyData } from "@/utils/generateDummyData";
-import { Plus, RefreshCw, Gift, CreditCard } from "lucide-react";
+import { RefreshCw, Gift, CreditCard } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -153,11 +154,10 @@ const Dashboard = () => {
               Visit a participating merchant to get started
             </p>
             <button
-              onClick={() => navigate("/scan")}
+              onClick={() => navigate("/scan-qr")}
               className="inline-flex items-center px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Card
+              Scan QR to Add Card
             </button>
           </div>
         ) : (
@@ -171,42 +171,6 @@ const Dashboard = () => {
                 <StampCard card={card} />
               </div>
             ))}
-          </div>
-        )}
-      </div>
-
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Recent Activity</h2>
-          <button
-            onClick={() => navigate("/transactions")}
-            className="text-sm text-primary hover:underline"
-          >
-            View All
-          </button>
-        </div>
-
-        {loading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-16 bg-muted/40 rounded-md animate-pulse"
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="bg-card border rounded-xl overflow-hidden">
-            {/* This would be populated with actual transaction data */}
-            <div className="p-8 text-center text-muted-foreground">
-              <p>Your recent activity will appear here</p>
-              <button
-                onClick={() => navigate("/transactions")}
-                className="mt-2 text-primary hover:underline text-sm"
-              >
-                View transaction history
-              </button>
-            </div>
           </div>
         )}
       </div>
