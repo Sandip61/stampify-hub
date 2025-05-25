@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -91,48 +92,52 @@ const Dashboard = () => {
 
       console.log("User merchant IDs (excluded from discover):", userMerchantIds);
 
-      // Get all merchants with their active stamp cards
-      const { data: allMerchantsWithCards, error: merchantsError } = await supabase
+      // First, get all merchants
+      const { data: allMerchants, error: merchantsError } = await supabase
         .from("merchants")
         .select(`
           id,
           business_name,
           business_logo,
           business_color,
-          created_at,
-          stamp_cards!inner(
-            id,
-            name,
-            reward,
-            total_stamps,
-            created_at,
-            is_active
-          )
+          created_at
         `)
-        .eq("stamp_cards.is_active", true);
+        .order("business_name");
 
-      console.log("All merchants with active cards query result:", allMerchantsWithCards, merchantsError);
+      console.log("All merchants fetched:", allMerchants, merchantsError);
 
       if (merchantsError) {
-        console.error("Error fetching merchants with cards:", merchantsError);
+        console.error("Error fetching merchants:", merchantsError);
         return;
       }
 
-      if (!allMerchantsWithCards || allMerchantsWithCards.length === 0) {
-        console.log("No merchants found with active stamp cards");
+      if (!allMerchants || allMerchants.length === 0) {
+        console.log("No merchants found");
         setDiscoverBusinesses([]);
         return;
       }
 
-      // Filter out merchants where user already has cards and prepare discover data
-      const discoverData = allMerchantsWithCards
-        .filter(merchant => !userMerchantIds.includes(merchant.id))
-        .map(merchant => {
-          // Get the latest card for this merchant
-          const latestCard = merchant.stamp_cards
-            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+      // Then, for each merchant, get their active stamp cards
+      const merchantsWithActiveCards = [];
+      
+      for (const merchant of allMerchants) {
+        const { data: stampCards, error: cardsError } = await supabase
+          .from("stamp_cards")
+          .select("id, name, reward, total_stamps, created_at")
+          .eq("merchant_id", merchant.id)
+          .eq("is_active", true)
+          .order("created_at", { ascending: false });
 
-          return {
+        if (cardsError) {
+          console.error(`Error fetching cards for merchant ${merchant.id}:`, cardsError);
+          continue;
+        }
+
+        if (stampCards && stampCards.length > 0) {
+          // Get the latest card for this merchant
+          const latestCard = stampCards[0];
+          
+          merchantsWithActiveCards.push({
             id: merchant.id,
             business_name: merchant.business_name,
             business_logo: merchant.business_logo,
@@ -141,8 +146,15 @@ const Dashboard = () => {
             latest_card_name: latestCard.name,
             total_stamps: latestCard.total_stamps,
             created_at: latestCard.created_at
-          };
-        })
+          });
+        }
+      }
+
+      console.log("Merchants with active cards:", merchantsWithActiveCards);
+
+      // Filter out merchants where user already has cards
+      const discoverData = merchantsWithActiveCards
+        .filter(merchant => !userMerchantIds.includes(merchant.id))
         .slice(0, 6); // Limit to 6 businesses
 
       console.log("Final discover businesses after filtering:", discoverData);
