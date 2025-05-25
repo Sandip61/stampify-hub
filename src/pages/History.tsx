@@ -68,9 +68,9 @@ const History = () => {
   }
 
   return (
-    <div className="min-h-screen pt-16 pb-20 px-4 flex flex-col">
-      <div className="max-w-2xl mx-auto flex-1 flex flex-col">
-        <header className="mb-8">
+    <div className="h-screen pt-16 pb-20 px-4 flex flex-col">
+      <div className="max-w-2xl mx-auto h-full flex flex-col">
+        <header className="mb-8 flex-shrink-0">
           <h1 className="text-2xl font-bold">Activity History</h1>
           <p className="text-muted-foreground mt-1">Your stamp collection history</p>
         </header>
@@ -86,51 +86,53 @@ const History = () => {
             </p>
           </div>
         ) : (
-          <ScrollArea className="flex-1">
-            <div className="space-y-8 pb-4">
-              {groupedTransactionsArray.map(group => (
-                <div key={group.date}>
-                  <div className="flex items-center mb-4">
-                    <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                    <h3 className="text-sm font-medium">{group.date}</h3>
-                  </div>
-                  
-                  <div className="bg-card rounded-xl border overflow-hidden">
-                    <div className="divide-y">
-                      {group.transactions.map(transaction => (
-                        <div key={transaction.id} className="p-4 flex items-center">
-                          <div className={`rounded-full p-2 mr-3 ${
-                            transaction.type === 'stamp' 
-                              ? 'bg-blue-500/10 text-blue-500' 
-                              : 'bg-green-500/10 text-green-500'
-                          }`}>
-                            {transaction.type === 'stamp' ? (
-                              <Stamp className="h-4 w-4" />
-                            ) : (
-                              <Gift className="h-4 w-4" />
-                            )}
+          <div className="flex-1 min-h-0">
+            <ScrollArea className="h-full">
+              <div className="space-y-8 pb-4">
+                {groupedTransactionsArray.map(group => (
+                  <div key={group.date}>
+                    <div className="flex items-center mb-4">
+                      <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <h3 className="text-sm font-medium">{group.date}</h3>
+                    </div>
+                    
+                    <div className="bg-card rounded-xl border overflow-hidden">
+                      <div className="divide-y">
+                        {group.transactions.map(transaction => (
+                          <div key={transaction.id} className="p-4 flex items-center">
+                            <div className={`rounded-full p-2 mr-3 ${
+                              transaction.type === 'stamp' 
+                                ? 'bg-blue-500/10 text-blue-500' 
+                                : 'bg-green-500/10 text-green-500'
+                            }`}>
+                              {transaction.type === 'stamp' ? (
+                                <Stamp className="h-4 w-4" />
+                              ) : (
+                                <Gift className="h-4 w-4" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">
+                                {transaction.businessName}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {transaction.type === 'stamp' 
+                                  ? `Added ${transaction.count || 1} stamp${(transaction.count || 1) > 1 ? 's' : ''}` 
+                                  : `Redeemed reward${transaction.rewardCode ? ` (${transaction.rewardCode})` : ''}`}
+                              </p>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(transaction.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
                           </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">
-                              {transaction.businessName}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {transaction.type === 'stamp' 
-                                ? `Added ${transaction.count || 1} stamp${(transaction.count || 1) > 1 ? 's' : ''}` 
-                                : `Redeemed reward${transaction.rewardCode ? ` (${transaction.rewardCode})` : ''}`}
-                            </p>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {new Date(transaction.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
         )}
       </div>
     </div>
