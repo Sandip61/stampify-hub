@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -92,6 +91,20 @@ const Dashboard = () => {
 
       console.log("User merchant IDs (excluded from discover):", userMerchantIds);
 
+      // Debug: Check total count of merchants
+      const { count: totalMerchants, error: countError } = await supabase
+        .from("merchants")
+        .select("*", { count: "exact", head: true });
+
+      console.log("Total merchants in database:", totalMerchants, countError);
+
+      // Debug: Check total count of stamp cards
+      const { count: totalCards, error: cardsCountError } = await supabase
+        .from("stamp_cards")
+        .select("*", { count: "exact", head: true });
+
+      console.log("Total stamp cards in database:", totalCards, cardsCountError);
+
       // First, get all merchants
       const { data: allMerchants, error: merchantsError } = await supabase
         .from("merchants")
@@ -112,7 +125,7 @@ const Dashboard = () => {
       }
 
       if (!allMerchants || allMerchants.length === 0) {
-        console.log("No merchants found");
+        console.log("No merchants found - you may need to create some merchants first");
         setDiscoverBusinesses([]);
         return;
       }
@@ -121,12 +134,16 @@ const Dashboard = () => {
       const merchantsWithActiveCards = [];
       
       for (const merchant of allMerchants) {
+        console.log(`Checking stamp cards for merchant: ${merchant.business_name} (${merchant.id})`);
+        
         const { data: stampCards, error: cardsError } = await supabase
           .from("stamp_cards")
           .select("id, name, reward, total_stamps, created_at")
           .eq("merchant_id", merchant.id)
           .eq("is_active", true)
           .order("created_at", { ascending: false });
+
+        console.log(`Stamp cards for ${merchant.business_name}:`, stampCards, cardsError);
 
         if (cardsError) {
           console.error(`Error fetching cards for merchant ${merchant.id}:`, cardsError);
@@ -250,7 +267,7 @@ const Dashboard = () => {
         ) : discoverBusinesses.length === 0 ? (
           <div className="text-center py-8 bg-muted/20 rounded-xl">
             <p className="text-muted-foreground">
-              No new businesses to discover at the moment
+              No businesses available to discover. You may need to create some merchants and stamp cards first.
             </p>
           </div>
         ) : (
