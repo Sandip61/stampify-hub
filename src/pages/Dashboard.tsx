@@ -65,8 +65,11 @@ const Dashboard = () => {
       const user = await getCurrentUser();
       if (!user) return;
 
+      console.log("Starting merchant discovery for user:", user.id);
+
       // Get user's existing cards to find which merchants they already have cards from
       const userCards = await getUserStampCards();
+      console.log("User's existing stamp cards:", userCards);
       
       // Get merchant IDs from user's existing customer_stamp_cards
       const { data: userCustomerCards, error: userCardsError } = await supabase
@@ -88,74 +91,46 @@ const Dashboard = () => {
 
       console.log("User merchant IDs (excluded from discover):", userMerchantIds);
 
-      // First, let's see all merchants to debug
-      const { data: allMerchants, error: allMerchantsError } = await supabase
-        .from("merchants")
-        .select("id, business_name");
-      
-      console.log("All merchants in database:", allMerchants);
-
-      // Check which merchants have active stamp cards - FIXED QUERY
-      const { data: merchantsWithCards, error: merchantsCardsError } = await supabase
-        .from("merchants")
-        .select(`
-          id,
-          business_name,
-          stamp_cards(id, is_active, name, reward)
-        `)
-        .eq("stamp_cards.is_active", true);
-
-      console.log("Merchants with active stamp cards:", merchantsWithCards);
-
-      // Fetch merchants with their latest stamp card offer
-      let merchantQuery = supabase
+      // Get all merchants with their active stamp cards
+      const { data: allMerchantsWithCards, error: merchantsError } = await supabase
         .from("merchants")
         .select(`
           id,
           business_name,
           business_logo,
           business_color,
-          created_at
+          created_at,
+          stamp_cards!inner(
+            id,
+            name,
+            reward,
+            total_stamps,
+            created_at,
+            is_active
+          )
         `)
-        .limit(6);
+        .eq("stamp_cards.is_active", true);
 
-      // Only exclude merchants where user already has cards if there are any
-      if (userMerchantIds.length > 0) {
-        merchantQuery = merchantQuery.not("id", "in", `(${userMerchantIds.join(',')})`);
-      }
+      console.log("All merchants with active cards query result:", allMerchantsWithCards, merchantsError);
 
-      const { data: merchants, error: merchantError } = await merchantQuery;
-
-      console.log("Merchants fetched for discover:", merchants);
-
-      if (merchantError) {
-        console.error("Error fetching merchants:", merchantError);
+      if (merchantsError) {
+        console.error("Error fetching merchants with cards:", merchantsError);
         return;
       }
 
-      if (!merchants || merchants.length === 0) {
+      if (!allMerchantsWithCards || allMerchantsWithCards.length === 0) {
+        console.log("No merchants found with active stamp cards");
         setDiscoverBusinesses([]);
         return;
       }
 
-      // For each merchant, get their latest active stamp card
-      const businessesWithOffers = await Promise.all(
-        merchants.map(async (merchant) => {
-          const { data: latestCard, error: cardError } = await supabase
-            .from("stamp_cards")
-            .select("name, reward, total_stamps, created_at")
-            .eq("merchant_id", merchant.id)
-            .eq("is_active", true)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .single();
-
-          console.log(`Latest card for ${merchant.business_name}:`, latestCard, cardError);
-
-          if (cardError || !latestCard) {
-            // Merchant has no active cards, skip
-            return null;
-          }
+      // Filter out merchants where user already has cards and prepare discover data
+      const discoverData = allMerchantsWithCards
+        .filter(merchant => !userMerchantIds.includes(merchant.id))
+        .map(merchant => {
+          // Get the latest card for this merchant
+          const latestCard = merchant.stamp_cards
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
           return {
             id: merchant.id,
@@ -168,15 +143,10 @@ const Dashboard = () => {
             created_at: latestCard.created_at
           };
         })
-      );
+        .slice(0, 6); // Limit to 6 businesses
 
-      // Filter out null values and sort by latest offer creation
-      const validBusinesses = businessesWithOffers
-        .filter((business): business is DiscoverBusiness => business !== null)
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-      console.log("Final discover businesses:", validBusinesses);
-      setDiscoverBusinesses(validBusinesses);
+      console.log("Final discover businesses after filtering:", discoverData);
+      setDiscoverBusinesses(discoverData);
     } catch (error) {
       console.error("Error loading discover businesses:", error);
     } finally {
