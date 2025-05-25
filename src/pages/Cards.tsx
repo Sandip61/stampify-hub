@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getCurrentUser, User } from "@/utils/auth";
@@ -99,8 +98,8 @@ const Cards = () => {
   }
 
   return (
-    <div className="container max-w-3xl mx-auto px-4 py-6">
-      <header className="mb-6">
+    <div className="container max-w-3xl mx-auto px-4 py-4">
+      <header className="mb-4">
         <h1 className="text-2xl font-bold mb-2">My Loyalty Cards</h1>
         <p className="text-muted-foreground">
           Manage all your loyalty cards and rewards in one place
@@ -162,7 +161,7 @@ const Cards = () => {
             ))}
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {Object.entries(groupedByBusiness).map(([businessName, businessCards]) => (
               <div key={businessName} className="space-y-4">
                 <div className="flex items-center gap-2">
@@ -187,7 +186,7 @@ const Cards = () => {
           </div>
         )
       ) : (
-        <div className="text-center py-12 px-4 bg-gray-50 rounded-lg border border-gray-100">
+        <div className="text-center py-8 px-4 bg-gray-50 rounded-lg border border-gray-100">
           <div className="mx-auto flex flex-col items-center gap-4 mb-4">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
               <CreditCard className="h-8 w-8 text-gray-400" />

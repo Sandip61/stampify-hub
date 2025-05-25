@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -176,8 +177,8 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container mx-auto py-4 px-4">
+      <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <button
           onClick={handleRefresh}
@@ -189,7 +190,7 @@ const Dashboard = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="bg-card border rounded-xl p-5">
           <div className="flex items-center text-primary mb-2">
             <CreditCard className="h-5 w-5 mr-2" />
@@ -226,7 +227,7 @@ const Dashboard = () => {
       </div>
 
       {/* Discover Businesses Section */}
-      <div className="mb-8">
+      <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Discover Businesses</h2>
           <button

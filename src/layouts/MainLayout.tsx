@@ -19,12 +19,12 @@ const MainLayout = ({ children, hideNav = false }: MainLayoutProps) => {
       
       {/* Show role switcher for users with dual roles */}
       {!hideNav && hasBothRoles && (
-        <div className="flex justify-center mt-2 mb-4">
+        <div className="flex justify-center mt-1 mb-2">
           <RoleSwitcher />
         </div>
       )}
       
-      <main className={`flex-1 ${hideNav ? "" : "pt-16"}`}>{children}</main>
+      <main className={`flex-1 ${hideNav ? "" : "pt-12"}`}>{children}</main>
     </div>
   );
 };
