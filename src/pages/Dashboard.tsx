@@ -86,6 +86,27 @@ const Dashboard = () => {
         ?.map(card => card.card?.merchant_id)
         .filter(Boolean) || [];
 
+      console.log("User merchant IDs (excluded from discover):", userMerchantIds);
+
+      // First, let's see all merchants to debug
+      const { data: allMerchants, error: allMerchantsError } = await supabase
+        .from("merchants")
+        .select("id, business_name");
+      
+      console.log("All merchants in database:", allMerchants);
+
+      // Check which merchants have active stamp cards
+      const { data: merchantsWithCards, error: merchantsCardsError } = await supabase
+        .from("merchants")
+        .select(`
+          id,
+          business_name,
+          stamp_cards!inner(id, is_active, name, reward)
+        `)
+        .eq("stamp_cards.is_active", true);
+
+      console.log("Merchants with active stamp cards:", merchantsWithCards);
+
       // Fetch merchants with their latest stamp card offer
       let merchantQuery = supabase
         .from("merchants")
@@ -104,6 +125,8 @@ const Dashboard = () => {
       }
 
       const { data: merchants, error: merchantError } = await merchantQuery;
+
+      console.log("Merchants fetched for discover:", merchants);
 
       if (merchantError) {
         console.error("Error fetching merchants:", merchantError);
@@ -126,6 +149,8 @@ const Dashboard = () => {
             .order("created_at", { ascending: false })
             .limit(1)
             .single();
+
+          console.log(`Latest card for ${merchant.business_name}:`, latestCard, cardError);
 
           if (cardError || !latestCard) {
             // Merchant has no active cards, skip
@@ -150,6 +175,7 @@ const Dashboard = () => {
         .filter((business): business is DiscoverBusiness => business !== null)
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
+      console.log("Final discover businesses:", validBusinesses);
       setDiscoverBusinesses(validBusinesses);
     } catch (error) {
       console.error("Error loading discover businesses:", error);
