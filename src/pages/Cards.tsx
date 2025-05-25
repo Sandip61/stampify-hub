@@ -6,7 +6,6 @@ import { getUserStampCards, StampCard as StampCardType } from "@/utils/data";
 import StampCard from "@/components/StampCard";
 import { Button } from "@/components/ui/button";
 import { Search, Scan, Store, CreditCard, SortDesc } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { generateDummyData } from "@/utils/generateDummyData";
 import { toast } from "sonner";
@@ -17,7 +16,6 @@ const Cards = () => {
   const [cards, setCards] = useState<StampCardType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showNoCardsModal, setShowNoCardsModal] = useState(false);
   const [viewMode, setViewMode] = useState<"all" | "grouped">("all");
 
   useEffect(() => {
@@ -30,11 +28,6 @@ const Cards = () => {
           // Load user's stamp cards directly from Supabase
           const userCards = await getUserStampCards();
           setCards(userCards);
-          
-          // Show modal if no cards
-          if (userCards.length === 0) {
-            setShowNoCardsModal(true);
-          }
         }
       } catch (error) {
         console.error("Error loading cards:", error);
@@ -216,32 +209,6 @@ const Cards = () => {
           </div>
         </div>
       )}
-      
-      {/* Welcome modal */}
-      <Dialog open={showNoCardsModal} onOpenChange={setShowNoCardsModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Welcome to Stampify!</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="mb-4">
-              It looks like you don't have any loyalty cards yet. To get started, you can:
-            </p>
-            <ul className="list-disc pl-5 space-y-2 mb-4">
-              <li>Visit businesses with Stampify and scan their QR codes</li>
-              <li>Browse the home screen to discover participating businesses</li>
-              <li>Generate demo data to see how the app works</li>
-            </ul>
-            <p>
-              Once you collect stamps, you'll be able to redeem rewards and track your progress right here!
-            </p>
-          </div>
-          <div className="flex justify-between">
-            <Button variant="outline" onClick={handleGenerateDummyData}>Generate Demo Data</Button>
-            <Button onClick={() => setShowNoCardsModal(false)}>Got it</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
