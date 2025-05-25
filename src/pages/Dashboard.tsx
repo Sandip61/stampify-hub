@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -151,7 +150,7 @@ const Dashboard = () => {
               No loyalty cards yet
             </h3>
             <p className="text-muted-foreground mb-4">
-              Visit a participating merchant to get started or click "Generate Demo Data"
+              Visit a participating merchant to get started
             </p>
             <button
               onClick={() => navigate("/scan")}
