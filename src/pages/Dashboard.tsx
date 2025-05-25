@@ -91,59 +91,57 @@ const Dashboard = () => {
 
       console.log("User merchant IDs (excluded from discover):", userMerchantIds);
 
-      // Use optimized single query to fetch merchants with their active stamp cards
-      console.log("Executing optimized single query for merchants with active stamp cards...");
-      
-      const { data: merchantsWithCards, error: merchantsError } = await supabase
+      // First, get all merchants
+      const { data: allMerchants, error: merchantsError } = await supabase
         .from("merchants")
-        .select(`
-          id,
-          business_name,
-          business_logo,
-          business_color,
-          created_at,
-          stamp_cards!inner (
-            id,
-            name,
-            reward,
-            total_stamps,
-            created_at
-          )
-        `)
-        .eq("stamp_cards.is_active", true)
+        .select("*")
         .order("business_name");
 
-      console.log("Merchants with active cards query result:", merchantsWithCards, merchantsError);
-
       if (merchantsError) {
-        console.error("Error fetching merchants with active cards:", merchantsError);
+        console.error("Error fetching merchants:", merchantsError);
         setDiscoverBusinesses([]);
         return;
       }
 
-      if (!merchantsWithCards || merchantsWithCards.length === 0) {
-        console.log("No merchants with active stamp cards found");
+      if (!allMerchants || allMerchants.length === 0) {
+        console.log("No merchants found");
         setDiscoverBusinesses([]);
         return;
       }
 
-      // Process the nested results to create discover business data
-      const discoverData: DiscoverBusiness[] = merchantsWithCards
+      // Then get active stamp cards for all merchants
+      const { data: activeCards, error: cardsError } = await supabase
+        .from("stamp_cards")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+
+      if (cardsError) {
+        console.error("Error fetching active stamp cards:", cardsError);
+        setDiscoverBusinesses([]);
+        return;
+      }
+
+      console.log("All merchants:", allMerchants);
+      console.log("Active stamp cards:", activeCards);
+
+      // Process the data to create discover business data
+      const discoverData: DiscoverBusiness[] = allMerchants
         .map((merchant: any) => {
           // Skip merchants where user already has cards
           if (userMerchantIds.includes(merchant.id)) {
             return null;
           }
 
-          // Get the latest (most recent) stamp card for this merchant
-          const sortedCards = merchant.stamp_cards.sort((a: any, b: any) => 
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          );
-          const latestCard = sortedCards[0];
-
-          if (!latestCard) {
+          // Find active cards for this merchant
+          const merchantCards = activeCards?.filter(card => card.merchant_id === merchant.id) || [];
+          
+          if (merchantCards.length === 0) {
             return null;
           }
+
+          // Get the latest (most recent) stamp card for this merchant
+          const latestCard = merchantCards[0]; // Already sorted by created_at desc
 
           return {
             id: merchant.id,
