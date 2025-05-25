@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -66,12 +65,28 @@ const Dashboard = () => {
       const user = await getCurrentUser();
       if (!user) return;
 
-      // Get user's existing cards to avoid showing them in discover
+      // Get user's existing cards to find which merchants they already have cards from
       const userCards = await getUserStampCards();
-      const userMerchantIds = userCards.map(card => card.merchantId).filter(Boolean);
+      
+      // Get merchant IDs from user's existing customer_stamp_cards
+      const { data: userCustomerCards, error: userCardsError } = await supabase
+        .from("customer_stamp_cards")
+        .select(`
+          card_id,
+          card:stamp_cards(merchant_id)
+        `)
+        .eq("customer_id", user.id);
+
+      if (userCardsError) {
+        console.error("Error fetching user cards:", userCardsError);
+      }
+
+      // Extract merchant IDs where user already has cards
+      const userMerchantIds = userCustomerCards
+        ?.map(card => card.card?.merchant_id)
+        .filter(Boolean) || [];
 
       // Fetch merchants with their latest stamp card offer
-      // Use a subquery to get the latest stamp card for each merchant
       let merchantQuery = supabase
         .from("merchants")
         .select(`
