@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { customerSupabase, merchantSupabase, UserRole } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
