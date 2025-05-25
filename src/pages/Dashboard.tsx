@@ -95,13 +95,13 @@ const Dashboard = () => {
       
       console.log("All merchants in database:", allMerchants);
 
-      // Check which merchants have active stamp cards
+      // Check which merchants have active stamp cards - FIXED QUERY
       const { data: merchantsWithCards, error: merchantsCardsError } = await supabase
         .from("merchants")
         .select(`
           id,
           business_name,
-          stamp_cards!inner(id, is_active, name, reward)
+          stamp_cards(id, is_active, name, reward)
         `)
         .eq("stamp_cards.is_active", true);
 
