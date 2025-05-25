@@ -1,9 +1,9 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUser } from "@/utils/auth";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Business {
   id: string;
@@ -116,7 +116,7 @@ const AllBusinesses = () => {
   };
 
   return (
-    <div className="container mx-auto py-6 px-4">
+    <div className="container mx-auto py-6 px-4 h-screen flex flex-col">
       <div className="flex items-center mb-6">
         <button
           onClick={() => navigate("/customer")}
@@ -148,89 +148,91 @@ const AllBusinesses = () => {
         </div>
       )}
 
-      {/* Businesses Grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div
-              key={i}
-              className="h-40 bg-muted/40 rounded-xl animate-pulse"
-            />
-          ))}
-        </div>
-      ) : filteredBusinesses.length === 0 ? (
-        <div className="text-center py-12 bg-muted/20 rounded-xl">
-          <h3 className="text-xl font-medium text-muted-foreground mb-2">
-            {searchTerm ? "No businesses found" : "No businesses available"}
-          </h3>
-          <p className="text-muted-foreground">
-            {searchTerm 
-              ? "Try adjusting your search terms" 
-              : "Check back later for participating businesses"
-            }
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredBusinesses.map((business) => (
-            <div
-              key={business.id}
-              className="bg-card border rounded-xl p-6 hover:shadow-lg transition-shadow"
-            >
-              <div className="flex items-center mb-4">
-                <div
-                  className="w-16 h-16 flex items-center justify-center rounded-full text-white text-2xl mr-4"
-                  style={{ backgroundColor: business.business_color }}
-                >
-                  {business.business_logo}
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-lg">{business.business_name}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {business.stamp_cards.length} offer{business.stamp_cards.length !== 1 ? 's' : ''} available
-                  </p>
-                </div>
-              </div>
-
-              {/* Show latest/featured offer */}
-              {business.stamp_cards.length > 0 && (
-                <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 mb-4">
-                  <div className="text-sm font-medium mb-1">
-                    {business.stamp_cards[0].name}
+      {/* Scrollable Businesses Content */}
+      <ScrollArea className="flex-1">
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={i}
+                className="h-40 bg-muted/40 rounded-xl animate-pulse"
+              />
+            ))}
+          </div>
+        ) : filteredBusinesses.length === 0 ? (
+          <div className="text-center py-12 bg-muted/20 rounded-xl">
+            <h3 className="text-xl font-medium text-muted-foreground mb-2">
+              {searchTerm ? "No businesses found" : "No businesses available"}
+            </h3>
+            <p className="text-muted-foreground">
+              {searchTerm 
+                ? "Try adjusting your search terms" 
+                : "Check back later for participating businesses"
+              }
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-4">
+            {filteredBusinesses.map((business) => (
+              <div
+                key={business.id}
+                className="bg-card border rounded-xl p-6 hover:shadow-lg transition-shadow"
+              >
+                <div className="flex items-center mb-4">
+                  <div
+                    className="w-16 h-16 flex items-center justify-center rounded-full text-white text-2xl mr-4"
+                    style={{ backgroundColor: business.business_color }}
+                  >
+                    {business.business_logo}
                   </div>
-                  <p className="text-sm font-medium text-center">
-                    🎁 <span className="font-bold">{business.stamp_cards[0].reward}</span>
-                  </p>
-                  <p className="text-xs text-muted-foreground text-center mt-1">
-                    Collect {business.stamp_cards[0].total_stamps} stamps
-                  </p>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-lg">{business.business_name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {business.stamp_cards.length} offer{business.stamp_cards.length !== 1 ? 's' : ''} available
+                    </p>
+                  </div>
                 </div>
-              )}
 
-              {/* Show additional offers count with clickable link */}
-              {business.stamp_cards.length > 1 && (
-                <div className="text-xs text-muted-foreground mb-4">
+                {/* Show latest/featured offer */}
+                {business.stamp_cards.length > 0 && (
+                  <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 mb-4">
+                    <div className="text-sm font-medium mb-1">
+                      {business.stamp_cards[0].name}
+                    </div>
+                    <p className="text-sm font-medium text-center">
+                      🎁 <span className="font-bold">{business.stamp_cards[0].reward}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground text-center mt-1">
+                      Collect {business.stamp_cards[0].total_stamps} stamps
+                    </p>
+                  </div>
+                )}
+
+                {/* Show additional offers count with clickable link */}
+                {business.stamp_cards.length > 1 && (
+                  <div className="text-xs text-muted-foreground mb-4">
+                    <button
+                      onClick={() => handleViewAllOffers(business.id)}
+                      className="text-primary hover:text-primary/80 underline cursor-pointer"
+                    >
+                      +{business.stamp_cards.length - 1} more offer{business.stamp_cards.length - 1 !== 1 ? 's' : ''} available
+                    </button>
+                  </div>
+                )}
+
+                <div className="text-center">
                   <button
                     onClick={() => handleViewAllOffers(business.id)}
-                    className="text-primary hover:text-primary/80 underline cursor-pointer"
+                    className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
                   >
-                    +{business.stamp_cards.length - 1} more offer{business.stamp_cards.length - 1 !== 1 ? 's' : ''} available
+                    View All Offers
                   </button>
                 </div>
-              )}
-
-              <div className="text-center">
-                <button
-                  onClick={() => handleViewAllOffers(business.id)}
-                  className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
-                >
-                  View All Offers
-                </button>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </ScrollArea>
     </div>
   );
 };
