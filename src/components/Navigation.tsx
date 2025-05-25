@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Home, CreditCard, History, User, LogOut, ScanLine } from "lucide-react";
+import { Home, CreditCard, History, User, LogOut, ScanLine, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { logoutUser } from "@/utils/auth";
@@ -49,6 +49,11 @@ const Navigation = () => {
     navigate('/transactions');
   };
 
+  const handleBusinessesClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate('/customer/businesses');
+  };
+
   if (isMobile === undefined) return null;
 
   const isAuthPage = ["/login", "/signup", "/forgot-password"].includes(location.pathname);
@@ -77,6 +82,12 @@ const Navigation = () => {
               >
                 Cards
               </NavLink>
+              <button 
+                onClick={handleBusinessesClick}
+                className="nav-link"
+              >
+                Businesses
+              </button>
               <button 
                 onClick={handleHistoryClick}
                 className="nav-link"
@@ -139,6 +150,14 @@ const Navigation = () => {
               <span className="text-xs">Cards</span>
             </NavLink>
             <button 
+              onClick={handleBusinessesClick}
+              className={cn("flex flex-col items-center space-y-1", 
+                location.pathname === "/customer/businesses" ? "text-foreground" : "text-muted-foreground")}
+            >
+              <Store className="w-5 h-5" />
+              <span className="text-xs">Stores</span>
+            </button>
+            <button 
               onClick={handleScanClick}
               className="flex flex-col items-center space-y-1 text-muted-foreground"
             >
@@ -163,13 +182,6 @@ const Navigation = () => {
               <User className="w-5 h-5" />
               <span className="text-xs">Profile</span>
             </NavLink>
-            <button 
-              onClick={handleLogout}
-              className="flex flex-col items-center space-y-1 text-muted-foreground"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="text-xs">Logout</span>
-            </button>
           </nav>
         </div>
       )}

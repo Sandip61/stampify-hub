@@ -1,4 +1,3 @@
-
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { RoleProvider } from "./contexts/RoleContext";
@@ -17,6 +16,7 @@ import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import ScanQR from "./pages/ScanQR";
 import Dashboard from "./pages/Dashboard";
+import AllBusinesses from "./pages/AllBusinesses";
 
 // Merchant Pages
 import MerchantDashboard from "./pages/merchant/Dashboard";
@@ -51,6 +51,16 @@ const router = createBrowserRouter([
       <ProtectedRoute roleType={UserRole.CUSTOMER}>
         <MainLayout>
           <Dashboard />
+        </MainLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/customer/businesses",
+    element: (
+      <ProtectedRoute roleType={UserRole.CUSTOMER}>
+        <MainLayout>
+          <AllBusinesses />
         </MainLayout>
       </ProtectedRoute>
     ),
