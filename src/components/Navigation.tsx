@@ -20,9 +20,9 @@ const Navigation = () => {
       const isScrollingDown = currentPosition > lastScrollPosition;
 
       // Show nav when scrolling up or when near the top
-      // Hide nav only when scrolling down and past a smaller threshold
-      if (currentPosition > 40) {
-        setVisible(!isScrollingDown);
+      // Hide nav only when scrolling down and past a threshold
+      if (currentPosition > 50) {
+        setVisible(!isScrollingDown || currentPosition < 10);
       } else {
         setVisible(true);
       }
@@ -30,8 +30,12 @@ const Navigation = () => {
       setLastScrollPosition(currentPosition);
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    const throttledScroll = () => {
+      requestAnimationFrame(handleScroll);
+    };
+
+    window.addEventListener("scroll", throttledScroll, { passive: true });
+    return () => window.removeEventListener("scroll", throttledScroll);
   }, [lastScrollPosition]);
 
   const handleLogout = () => {
@@ -65,7 +69,7 @@ const Navigation = () => {
     <>
       {!isMobile && (
         <div className={cn(
-          "fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b transition-transform duration-300",
+          "fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b transition-transform duration-300 ease-out",
           !visible && "-translate-y-full"
         )}>
           <nav className="flex items-center justify-between max-w-3xl mx-auto px-6 h-14">
@@ -128,7 +132,7 @@ const Navigation = () => {
       {isMobile && (
         <div 
           className={cn(
-            "fixed bottom-0 left-0 right-0 z-50 bg-background border-t transition-transform duration-300",
+            "fixed bottom-0 left-0 right-0 z-50 bg-background border-t transition-transform duration-300 ease-out",
             !visible && "translate-y-full"
           )}
         >
@@ -160,7 +164,7 @@ const Navigation = () => {
             >
               <Store className="w-5 h-5" />
               <span className="text-xs">Stores</span>
-            </button>
+            </Button>
             <button 
               onClick={handleScanClick}
               className="flex flex-col items-center space-y-1 text-muted-foreground"
