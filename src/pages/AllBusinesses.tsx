@@ -7,12 +7,19 @@ import { getCurrentUser } from "@/utils/auth";
 
 interface Business {
   id: string;
-  name: string;
+  business_name: string;
   business_logo: string;
   business_color: string;
-  reward: string;
-  total_stamps: number;
-  description?: string;
+  email?: string;
+  created_at: string;
+  stamp_cards: {
+    id: string;
+    name: string;
+    reward: string;
+    total_stamps: number;
+    description?: string;
+    created_at: string;
+  }[];
 }
 
 const AllBusinesses = () => {
@@ -28,8 +35,11 @@ const AllBusinesses = () => {
 
   useEffect(() => {
     const filtered = businesses.filter(business =>
-      business.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      business.reward.toLowerCase().includes(searchTerm.toLowerCase())
+      business.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      business.stamp_cards.some(card =>
+        card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        card.reward.toLowerCase().includes(searchTerm.toLowerCase())
+      )
     );
     setFilteredBusinesses(filtered);
   }, [searchTerm, businesses]);
@@ -42,18 +52,58 @@ const AllBusinesses = () => {
         return;
       }
 
-      const { data, error } = await supabase
-        .from("stamp_cards")
-        .select("id, name, business_logo, business_color, reward, total_stamps, description")
-        .eq("is_active", true)
-        .order("name");
+      // Fetch merchants with their active stamp cards
+      const { data: merchants, error: merchantError } = await supabase
+        .from("merchants")
+        .select(`
+          id,
+          business_name,
+          business_logo,
+          business_color,
+          email,
+          created_at
+        `)
+        .order("business_name");
 
-      if (error) {
-        console.error("Error fetching businesses:", error);
+      if (merchantError) {
+        console.error("Error fetching merchants:", merchantError);
         return;
       }
 
-      setBusinesses(data || []);
+      if (!merchants) {
+        setBusinesses([]);
+        return;
+      }
+
+      // For each merchant, get their active stamp cards
+      const businessesWithCards = await Promise.all(
+        merchants.map(async (merchant) => {
+          const { data: stampCards, error: cardsError } = await supabase
+            .from("stamp_cards")
+            .select("id, name, reward, total_stamps, description, created_at")
+            .eq("merchant_id", merchant.id)
+            .eq("is_active", true)
+            .order("created_at", { ascending: false });
+
+          if (cardsError) {
+            console.error("Error fetching stamp cards for merchant:", merchant.id, cardsError);
+            return {
+              ...merchant,
+              stamp_cards: []
+            };
+          }
+
+          return {
+            ...merchant,
+            stamp_cards: stampCards || []
+          };
+        })
+      );
+
+      // Filter out businesses with no active stamp cards
+      const validBusinesses = businessesWithCards.filter(business => business.stamp_cards.length > 0);
+      
+      setBusinesses(validBusinesses);
     } catch (error) {
       console.error("Error loading businesses:", error);
     } finally {
@@ -78,7 +128,7 @@ const AllBusinesses = () => {
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <input
           type="text"
-          placeholder="Search businesses or rewards..."
+          placeholder="Search businesses or offers..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -131,24 +181,34 @@ const AllBusinesses = () => {
                   {business.business_logo}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-lg">{business.name}</h3>
+                  <h3 className="font-bold text-lg">{business.business_name}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Collect {business.total_stamps} stamps
+                    {business.stamp_cards.length} offer{business.stamp_cards.length !== 1 ? 's' : ''} available
                   </p>
                 </div>
               </div>
 
-              {business.description && (
-                <p className="text-sm text-muted-foreground mb-4">
-                  {business.description}
-                </p>
+              {/* Show latest/featured offer */}
+              {business.stamp_cards.length > 0 && (
+                <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 mb-4">
+                  <div className="text-sm font-medium mb-1">
+                    {business.stamp_cards[0].name}
+                  </div>
+                  <p className="text-sm font-medium text-center">
+                    🎁 <span className="font-bold">{business.stamp_cards[0].reward}</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground text-center mt-1">
+                    Collect {business.stamp_cards[0].total_stamps} stamps
+                  </p>
+                </div>
               )}
 
-              <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 mb-4">
-                <p className="text-sm font-medium text-center">
-                  🎁 <span className="font-bold">{business.reward}</span>
-                </p>
-              </div>
+              {/* Show additional offers if any */}
+              {business.stamp_cards.length > 1 && (
+                <div className="text-xs text-muted-foreground mb-4">
+                  +{business.stamp_cards.length - 1} more offer{business.stamp_cards.length - 1 !== 1 ? 's' : ''} available
+                </div>
+              )}
 
               <div className="text-center">
                 <button

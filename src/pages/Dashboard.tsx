@@ -9,11 +9,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface DiscoverBusiness {
   id: string;
-  name: string;
+  business_name: string;
   business_logo: string;
   business_color: string;
-  reward: string;
+  latest_offer: string;
+  latest_card_name: string;
   total_stamps: number;
+  created_at: string;
 }
 
 const Dashboard = () => {
@@ -66,28 +68,74 @@ const Dashboard = () => {
 
       // Get user's existing cards to avoid showing them in discover
       const userCards = await getUserStampCards();
-      const userCardIds = userCards.map(card => card.id);
+      const userMerchantIds = userCards.map(card => card.merchantId).filter(Boolean);
 
-      // Fetch all available stamp cards from merchants
-      let query = supabase
-        .from("stamp_cards")
-        .select("id, name, business_logo, business_color, reward, total_stamps")
-        .eq("is_active", true)
+      // Fetch merchants with their latest stamp card offer
+      // Use a subquery to get the latest stamp card for each merchant
+      let merchantQuery = supabase
+        .from("merchants")
+        .select(`
+          id,
+          business_name,
+          business_logo,
+          business_color,
+          created_at
+        `)
         .limit(6);
 
-      // Only exclude user cards if there are any
-      if (userCardIds.length > 0) {
-        query = query.not("id", "in", `(${userCardIds.join(',')})`);
+      // Only exclude merchants where user already has cards if there are any
+      if (userMerchantIds.length > 0) {
+        merchantQuery = merchantQuery.not("id", "in", `(${userMerchantIds.join(',')})`);
       }
 
-      const { data: allCards, error } = await query;
+      const { data: merchants, error: merchantError } = await merchantQuery;
 
-      if (error) {
-        console.error("Error fetching discover businesses:", error);
+      if (merchantError) {
+        console.error("Error fetching merchants:", merchantError);
         return;
       }
 
-      setDiscoverBusinesses(allCards || []);
+      if (!merchants || merchants.length === 0) {
+        setDiscoverBusinesses([]);
+        return;
+      }
+
+      // For each merchant, get their latest active stamp card
+      const businessesWithOffers = await Promise.all(
+        merchants.map(async (merchant) => {
+          const { data: latestCard, error: cardError } = await supabase
+            .from("stamp_cards")
+            .select("name, reward, total_stamps, created_at")
+            .eq("merchant_id", merchant.id)
+            .eq("is_active", true)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+
+          if (cardError || !latestCard) {
+            // Merchant has no active cards, skip
+            return null;
+          }
+
+          return {
+            id: merchant.id,
+            business_name: merchant.business_name,
+            business_logo: merchant.business_logo,
+            business_color: merchant.business_color,
+            latest_offer: latestCard.reward,
+            latest_card_name: latestCard.name,
+            total_stamps: latestCard.total_stamps,
+            created_at: latestCard.created_at
+          };
+        })
+      );
+
+      // Filter out null values and sort by latest offer creation
+      const validBusinesses = businessesWithOffers
+        .filter((business): business is DiscoverBusiness => business !== null)
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setDiscoverBusinesses(validBusinesses);
     } catch (error) {
       console.error("Error loading discover businesses:", error);
     } finally {
@@ -196,17 +244,20 @@ const Dashboard = () => {
                   >
                     {business.business_logo}
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-sm">{business.name}</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {business.total_stamps} stamps required
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-sm truncate">{business.business_name}</h3>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {business.latest_card_name}
                     </p>
                   </div>
                 </div>
-                <div className="bg-muted/50 rounded-lg p-3">
+                <div className="bg-muted/50 rounded-lg p-3 mb-2">
                   <p className="text-sm font-medium text-center">
-                    🎁 {business.reward}
+                    🎁 <span className="truncate">{business.latest_offer}</span>
                   </p>
+                </div>
+                <div className="text-xs text-muted-foreground text-center">
+                  Collect {business.total_stamps} stamps
                 </div>
               </div>
             ))}
