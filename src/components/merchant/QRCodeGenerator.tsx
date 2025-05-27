@@ -58,6 +58,21 @@ const QRCodeGenerator = ({ cardId, onQRCodeGenerated }: QRCodeGeneratorProps) =>
     }
   };
 
+  const handleExpiryHoursChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '' || value === '0') {
+      setExpiryHours(0);
+    } else {
+      setExpiryHours(Number(value));
+    }
+  };
+
+  const handleExpiryHoursFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (e.target.value === '0') {
+      e.target.select();
+    }
+  };
+
   return (
     <div className="p-6 border rounded-lg bg-white shadow-sm">
       <h2 className="text-lg font-medium mb-4">Generate QR Code</h2>
@@ -73,8 +88,10 @@ const QRCodeGenerator = ({ cardId, onQRCodeGenerated }: QRCodeGeneratorProps) =>
               type="number"
               min="1"
               max="72"
-              value={expiryHours}
-              onChange={(e) => setExpiryHours(Number(e.target.value))}
+              value={expiryHours || ''}
+              onChange={handleExpiryHoursChange}
+              onFocus={handleExpiryHoursFocus}
+              placeholder="Enter hours (1-72)"
               className="w-full px-3 py-2 border rounded-md"
             />
           </div>
