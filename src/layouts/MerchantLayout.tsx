@@ -1,6 +1,6 @@
 
 import { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Building2,
   CreditCard,
@@ -25,6 +25,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 interface MerchantLayoutProps {
@@ -56,6 +57,9 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
 };
 
 const AppSidebar = () => {
+  const location = useLocation();
+  const { setOpen } = useSidebar();
+
   const menuItems = [
     {
       title: "Dashboard",
@@ -90,11 +94,16 @@ const AppSidebar = () => {
     },
   ];
 
+  const handleMenuClick = () => {
+    // Close the sidebar when a menu item is clicked
+    setOpen(false);
+  };
+
   return (
     <Sidebar variant="inset">
       <SidebarHeader>
         <div className="flex items-center px-2 py-2">
-          <Link to="/merchant" className="flex items-center">
+          <Link to="/merchant" className="flex items-center" onClick={handleMenuClick}>
             <span className="text-xl mr-2">🏪</span>
             <span className="text-lg font-bold">Dashboard</span>
           </Link>
@@ -113,7 +122,7 @@ const AppSidebar = () => {
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild isActive={isActive}>
-                      <Link to={item.url}>
+                      <Link to={item.url} onClick={handleMenuClick}>
                         <item.icon />
                         <span>{item.title}</span>
                       </Link>
