@@ -1,5 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { merchantSupabase } from "@/integrations/supabase/client";
 import { QRCodeGenerationOptions, QRCode } from "./types";
 import { AppError, ErrorType, handleError, handleSupabaseError } from "@/utils/errors";
 
@@ -29,7 +29,7 @@ export const generateStampQRCode = async (
     }
 
     // Get the current merchant
-    const { data: authData, error: authError } = await supabase.auth.getUser();
+    const { data: authData, error: authError } = await merchantSupabase.auth.getUser();
     if (authError || !authData.user) {
       throw new AppError(
         ErrorType.UNAUTHORIZED,
@@ -40,7 +40,7 @@ export const generateStampQRCode = async (
     const merchantId = authData.user.id;
 
     // Check if the card belongs to the merchant
-    const { data: cardData, error: cardError } = await supabase
+    const { data: cardData, error: cardError } = await merchantSupabase
       .from("stamp_cards")
       .select("id")
       .eq("id", cardId)
@@ -62,7 +62,7 @@ export const generateStampQRCode = async (
     const code = crypto.randomUUID();
 
     // Create the QR code in the database
-    const { data: qrCode, error: qrError } = await supabase
+    const { data: qrCode, error: qrError } = await merchantSupabase
       .from("stamp_qr_codes")
       .insert({
         merchant_id: merchantId,
@@ -107,7 +107,7 @@ export const fetchActiveQRCodes = async (cardId: string): Promise<QRCode[]> => {
     }
 
     // Get the current merchant
-    const { data: authData, error: authError } = await supabase.auth.getUser();
+    const { data: authData, error: authError } = await merchantSupabase.auth.getUser();
     if (authError || !authData.user) {
       throw new AppError(
         ErrorType.UNAUTHORIZED,
@@ -118,7 +118,7 @@ export const fetchActiveQRCodes = async (cardId: string): Promise<QRCode[]> => {
     const merchantId = authData.user.id;
 
     // Check if the card belongs to the merchant
-    const { data: cardData, error: cardError } = await supabase
+    const { data: cardData, error: cardError } = await merchantSupabase
       .from("stamp_cards")
       .select("id")
       .eq("id", cardId)
@@ -134,7 +134,7 @@ export const fetchActiveQRCodes = async (cardId: string): Promise<QRCode[]> => {
 
     // Get active QR codes (not expired and not used if single-use)
     const now = new Date().toISOString();
-    const { data: qrCodes, error: qrError } = await supabase
+    const { data: qrCodes, error: qrError } = await merchantSupabase
       .from("stamp_qr_codes")
       .select("*")
       .eq("card_id", cardId)
@@ -167,7 +167,7 @@ export const deleteQRCode = async (qrCodeId: string): Promise<void> => {
     }
 
     // Get the current merchant
-    const { data: authData, error: authError } = await supabase.auth.getUser();
+    const { data: authData, error: authError } = await merchantSupabase.auth.getUser();
     if (authError || !authData.user) {
       throw new AppError(
         ErrorType.UNAUTHORIZED,
@@ -178,7 +178,7 @@ export const deleteQRCode = async (qrCodeId: string): Promise<void> => {
     const merchantId = authData.user.id;
 
     // Check if the QR code belongs to the merchant
-    const { data: qrData, error: qrError } = await supabase
+    const { data: qrData, error: qrError } = await merchantSupabase
       .from("stamp_qr_codes")
       .select("id, merchant_id")
       .eq("id", qrCodeId)
@@ -199,7 +199,7 @@ export const deleteQRCode = async (qrCodeId: string): Promise<void> => {
     }
 
     // Delete the QR code
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await merchantSupabase
       .from("stamp_qr_codes")
       .delete()
       .eq("id", qrCodeId);
