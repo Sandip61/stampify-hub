@@ -138,13 +138,13 @@
     @apply text-foreground after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-foreground after:rounded-full;
   }
 
-  /* New class for merchant layout */
+  /* Updated merchant layout classes without borders */
   .merchant-layout {
     @apply bg-gradient-to-br from-teal-50 via-white to-amber-50;
   }
 
   .merchant-card {
-    @apply bg-white/80 backdrop-blur-sm border border-teal-100 rounded-xl shadow-md hover:shadow-lg transition-all duration-300;
+    @apply bg-white/80 backdrop-blur-sm rounded-xl shadow-md hover:shadow-lg transition-all duration-300;
   }
 
   .merchant-sidebar {
@@ -160,11 +160,7 @@
   }
 
   .merchant-mobile-nav {
-    @apply bg-white/90 backdrop-blur-md border-t border-teal-100 shadow-lg;
-  }
-
-  .gradient-border {
-    @apply relative after:absolute after:inset-0 after:p-px after:rounded-xl after:bg-gradient-to-r after:from-teal-300 after:to-amber-300 after:-z-10;
+    @apply bg-white/90 backdrop-blur-md shadow-lg;
   }
 }
 
