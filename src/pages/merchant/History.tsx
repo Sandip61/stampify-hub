@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Clock } from "lucide-react";
@@ -14,6 +13,7 @@ export interface TransactionHistory {
   reward_code?: string;
   cardName?: string;
   customerEmail?: string;
+  customerName?: string;
   card_name?: string;
 }
 
@@ -28,7 +28,8 @@ const MerchantHistory = () => {
           .from('stamp_transactions')
           .select(`
             *,
-            stamp_cards!inner(name)
+            stamp_cards!inner(name),
+            profiles(email, name)
           `)
           .order('timestamp', { ascending: false });
 
@@ -40,7 +41,9 @@ const MerchantHistory = () => {
         if (data) {
           const formattedTransactions = data.map(transaction => ({
             ...transaction,
-            card_name: transaction.stamp_cards?.name
+            card_name: transaction.stamp_cards?.name,
+            customerEmail: transaction.profiles?.email,
+            customerName: transaction.profiles?.name
           }));
           setTransactions(formattedTransactions);
         }

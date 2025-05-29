@@ -20,11 +20,21 @@ export const getTransactionTypeDetails = (type: string) => {
 };
 
 export const getTransactionDescription = (transaction: TransactionHistory) => {
+  const getCustomerDisplay = () => {
+    if (transaction.customerEmail) {
+      return transaction.customerEmail;
+    }
+    if (transaction.customerName) {
+      return transaction.customerName;
+    }
+    return transaction.customer_id;
+  };
+
   switch (transaction.type) {
     case 'stamp':
-      return `Added ${transaction.count || 1} stamp${(transaction.count || 1) > 1 ? 's' : ''} for ${transaction.customer_id}`;
+      return `Added ${transaction.count || 1} stamp${(transaction.count || 1) > 1 ? 's' : ''} for ${getCustomerDisplay()}`;
     case 'redeem':
-      return `Reward redeemed by ${transaction.customer_id}`;
+      return `Reward redeemed by ${getCustomerDisplay()}`;
     case 'card_created':
       return 'New Stamp Card Created';
     case 'card_updated':
