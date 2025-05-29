@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
     
-    // Get the authenticated user (merchant)
+    // Get the authenticated user (could be customer or merchant)
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       throw new Error('No authorization header')
@@ -46,9 +46,10 @@ Deno.serve(async (req) => {
     let cardId = body.cardId
     let customerEmail = body.customerEmail
     let customerId = body.customerId
+    let merchantId = user.id // Default to authenticated user
     const count = body.count || 1
 
-    // If QR code is provided, parse it
+    // If QR code is provided, parse it and validate
     if (body.qrCode) {
       try {
         const qrData = JSON.parse(body.qrCode)
@@ -56,10 +57,70 @@ Deno.serve(async (req) => {
           throw new Error('Invalid QR code format')
         }
         cardId = qrData.card_id
+        
+        // For QR codes, we need to validate the QR code exists and get the merchant_id
+        const { data: qrCodeData, error: qrError } = await supabase
+          .from('stamp_qr_codes')
+          .select('merchant_id, card_id, expires_at, is_used, is_single_use')
+          .eq('code', qrData.code)
+          .eq('card_id', qrData.card_id)
+          .single()
+
+        if (qrError || !qrCodeData) {
+          console.error('QR code validation error:', qrError)
+          return new Response(
+            JSON.stringify({ error: 'Invalid or expired QR code' }),
+            { status: 400, headers: corsHeaders }
+          )
+        }
+
+        // Check if QR code is expired
+        if (qrCodeData.expires_at && new Date(qrCodeData.expires_at) < new Date()) {
+          return new Response(
+            JSON.stringify({ error: 'QR code has expired' }),
+            { status: 400, headers: corsHeaders }
+          )
+        }
+
+        // Check if single-use QR code has already been used
+        if (qrCodeData.is_single_use && qrCodeData.is_used) {
+          return new Response(
+            JSON.stringify({ error: 'QR code has already been used' }),
+            { status: 400, headers: corsHeaders }
+          )
+        }
+
+        merchantId = qrCodeData.merchant_id
+
+        // Mark single-use QR code as used
+        if (qrCodeData.is_single_use) {
+          await supabase
+            .from('stamp_qr_codes')
+            .update({ is_used: true })
+            .eq('code', qrData.code)
+        }
+
       } catch (e) {
+        console.error('QR code parsing error:', e)
         return new Response(
           JSON.stringify({ error: 'Invalid QR code format' }),
           { status: 400, headers: corsHeaders }
+        )
+      }
+    } else {
+      // For direct method, verify the user is the merchant who owns the card
+      const { data: card, error: cardError } = await supabase
+        .from('stamp_cards')
+        .select('merchant_id')
+        .eq('id', cardId)
+        .eq('merchant_id', user.id)
+        .single()
+
+      if (cardError || !card) {
+        console.error('Card verification error:', cardError)
+        return new Response(
+          JSON.stringify({ error: 'Card not found or access denied' }),
+          { status: 404, headers: corsHeaders }
         )
       }
     }
@@ -78,18 +139,17 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Get the stamp card and verify it belongs to the merchant
+    // Get the stamp card details
     const { data: card, error: cardError } = await supabase
       .from('stamp_cards')
       .select('*')
       .eq('id', cardId)
-      .eq('merchant_id', user.id)
       .single()
 
     if (cardError || !card) {
-      console.error('Card error:', cardError)
+      console.error('Card fetch error:', cardError)
       return new Response(
-        JSON.stringify({ error: 'Card not found or access denied' }),
+        JSON.stringify({ error: 'Card not found' }),
         { status: 404, headers: corsHeaders }
       )
     }
@@ -174,7 +234,7 @@ Deno.serve(async (req) => {
       .insert({
         card_id: cardId,
         customer_id: customerId || 'unregistered',
-        merchant_id: user.id,
+        merchant_id: merchantId,
         type: rewardEarned ? 'reward' : 'stamp',
         count: count,
         reward_code: rewardCode,
@@ -191,8 +251,8 @@ Deno.serve(async (req) => {
     // Create/update merchant customer record
     if (customerEmail) {
       const merchantCustomerData = {
-        merchant_id: user.id,
-        merchant_user_id: user.id,
+        merchant_id: merchantId,
+        merchant_user_id: merchantId,
         customer_id: customerId,
         customer_email: customerEmail,
         customer_name: customerId ? null : customerEmail.split('@')[0], // Use email prefix for unregistered
@@ -204,7 +264,7 @@ Deno.serve(async (req) => {
       const { data: existingCustomer } = await supabase
         .from('merchant_customers')
         .select('*')
-        .eq('merchant_id', user.id)
+        .eq('merchant_id', merchantId)
         .eq('customer_email', customerEmail)
         .single()
 
