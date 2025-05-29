@@ -29,7 +29,7 @@ const MerchantHistory = () => {
           .select(`
             *,
             stamp_cards!inner(name),
-            profiles(email, name)
+            profiles!stamp_transactions_customer_id_fkey(email, name)
           `)
           .order('timestamp', { ascending: false });
 
