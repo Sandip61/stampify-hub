@@ -1,196 +1,231 @@
-
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Bell, BellOff, Download, LogOut } from "lucide-react";
 import { toast } from "sonner";
-import { getCurrentUser, updateUserProfile, User, logoutUser } from "@/utils/auth";
-import { getUserStampCards, getUserTransactions } from "@/utils/data";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { User, Mail, Calendar, LogOut, Edit2, Check, X } from "lucide-react";
+
+interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  created_at: string;
+  notifications_enabled: boolean;
+}
 
 const Profile = () => {
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const loadUser = async () => {
-      const currentUser = await getCurrentUser();
-      if (!currentUser) {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
         navigate("/login");
         return;
       }
 
-      setUser(currentUser);
-      setIsLoading(false);
-    };
-    
-    loadUser();
-  }, [navigate]);
+      const { data: profileData, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
 
-  const toggleNotifications = async () => {
-    if (!user || isSaving) return;
-    
-    setIsSaving(true);
-    
-    try {
-      const updatedUser = await updateUserProfile(user.id, {
-        notificationsEnabled: !user.notificationsEnabled
+      if (error) throw error;
+
+      setProfile({
+        id: user.id,
+        name: profileData?.name || "",
+        email: user.email || "",
+        created_at: user.created_at,
+        notifications_enabled: profileData?.notifications_enabled || false,
       });
-      
-      setUser(updatedUser);
-      toast.success(updatedUser.notificationsEnabled 
-        ? "Notifications enabled" 
-        : "Notifications disabled"
-      );
     } catch (error) {
-      toast.error("Failed to update settings");
+      console.error("Error fetching profile:", error);
+      toast.error("Failed to load profile");
     } finally {
-      setIsSaving(false);
+      setLoading(false);
     }
   };
 
-  const exportUserData = () => {
-    if (!user) return;
-    
-    const cards = getUserStampCards();
-    const transactions = getUserTransactions();
-    
-    const userData = {
-      profile: user,
-      cards,
-      transactions
-    };
-    
-    // Create a download link
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(userData, null, 2));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "stampify-data.json");
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-    
-    toast.success("Your data has been exported");
-  };
-
-  const handleLogout = async () => {
+  const handleSignOut = async () => {
     try {
-      await logoutUser();
-      toast.success("Logged out successfully");
-      navigate("/login");
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      toast.success("Signed out successfully");
+      navigate("/");
     } catch (error) {
-      toast.error("Failed to log out");
+      console.error("Error signing out:", error);
+      toast.error("Failed to sign out");
     }
   };
 
-  if (isLoading || !user) {
+  const startEditing = () => {
+    setName(profile?.name || "");
+    setEditing(true);
+  };
+
+  const saveProfile = async () => {
+    if (!profile) return;
+    
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ name })
+        .eq("id", profile.id);
+
+      if (error) throw error;
+
+      setProfile({ ...profile, name });
+      setEditing(false);
+      toast.success("Profile updated successfully");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+    setName(profile?.name || "");
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-screen pt-16 pb-20 px-4 max-w-3xl mx-auto animate-fade-in">
-        <div className="h-screen flex items-center justify-center">
-          <div className="w-12 h-12 rounded-full border-t-2 border-primary animate-spin" />
-        </div>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="pt-6">
+            <p className="text-center text-gray-600">Profile not found</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pt-16 pb-20 px-4 max-w-3xl mx-auto animate-fade-in">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold">Your Profile</h1>
-        <p className="text-muted-foreground mt-1">Manage your account</p>
-      </div>
-
-      <div className="bg-card rounded-xl border overflow-hidden mb-6">
-        <div className="border-b px-4 py-3">
-          <h3 className="font-medium">Account Information</h3>
-        </div>
-        <div className="p-4 space-y-3">
-          <div className="flex justify-between">
-            <span className="text-sm text-muted-foreground">Name</span>
-            <span className="text-sm font-medium">{user.name}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-sm text-muted-foreground">Email</span>
-            <span className="text-sm font-medium">{user.email}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-sm text-muted-foreground">Account ID</span>
-            <span className="text-sm font-medium">{user.id}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-card rounded-xl border overflow-hidden mb-6">
-        <div className="border-b px-4 py-3">
-          <h3 className="font-medium">Notification Settings</h3>
-        </div>
-        <div className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Push Notifications</p>
-              <p className="text-sm text-muted-foreground">
-                Receive updates about your stamp cards
-              </p>
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Profile Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              {editing ? (
+                <div className="flex gap-2">
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Enter your name"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={saveProfile}
+                    disabled={saving}
+                    className="px-3"
+                  >
+                    {saving ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    ) : (
+                      <Check className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={cancelEditing}
+                    className="px-3"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    value={profile.name || "Not set"}
+                    readOnly
+                    className="bg-gray-50"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={startEditing}
+                    className="px-3"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
-            <button 
-              onClick={toggleNotifications}
-              className="inline-flex items-center justify-center w-12 h-6 rounded-full transition-colors"
-              style={{
-                backgroundColor: user.notificationsEnabled ? 'var(--primary)' : 'var(--muted)'
-              }}
-              disabled={isSaving}
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-gray-400" />
+                <Input
+                  id="email"
+                  value={profile.email}
+                  readOnly
+                  className="bg-gray-50"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="created">Member Since</Label>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-gray-400" />
+                <Input
+                  id="created"
+                  value={new Date(profile.created_at).toLocaleDateString()}
+                  readOnly
+                  className="bg-gray-50"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <Button
+              onClick={handleSignOut}
+              variant="destructive"
+              className="w-full flex items-center gap-2"
             >
-              <div 
-                className="w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform"
-                style={{
-                  transform: user.notificationsEnabled ? 'translateX(6px)' : 'translateX(-6px)'
-                }}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-card rounded-xl border overflow-hidden mb-6">
-        <div className="border-b px-4 py-3">
-          <h3 className="font-medium">Data & Privacy</h3>
-        </div>
-        <div className="p-4">
-          <button
-            onClick={exportUserData}
-            className="inline-flex items-center px-4 py-2 rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export Your Data
-          </button>
-          <p className="text-xs text-muted-foreground mt-2">
-            Download a copy of your personal data including your profile, stamp cards, and activity history.
-          </p>
-        </div>
-      </div>
-
-      <div className="bg-card rounded-xl border overflow-hidden mb-6">
-        <div className="border-b px-4 py-3">
-          <h3 className="font-medium">Account Actions</h3>
-        </div>
-        <div className="p-4">
-          <button
-            onClick={handleLogout}
-            className="inline-flex items-center px-4 py-2 rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Log Out
-          </button>
-        </div>
-      </div>
-
-      <div className="bg-card rounded-xl border overflow-hidden">
-        <div className="border-b px-4 py-3">
-          <h3 className="font-medium">App Version</h3>
-        </div>
-        <div className="p-4">
-          <p className="text-sm text-muted-foreground">Stampify v1.0.0</p>
-        </div>
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { processScannedQRCode } from '@/utils/stamps';
 import { toast } from 'sonner';
@@ -14,22 +14,34 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [scanning, setScanning] = useState(false);
-  const [errorCooldown, setErrorCooldown] = useState(false);
+  const [scanCooldown, setScanCooldown] = useState(false);
   const mountedRef = useRef(false);
   const qrCodeRef = useRef<Html5Qrcode | null>(null);
-  const lastErrorTimeRef = useRef<number | null>(null);
+  const lastScannedCodeRef = useRef<string | null>(null);
+  const lastScanTimeRef = useRef<number | null>(null);
   const isMobile = useIsMobile();
   
   const onScanSuccess = async (decodedText: string) => {
     // Prevent processing if component unmounted, already processing, or in cooldown
-    if (!mountedRef.current || scanResult || processing) return;
+    if (!mountedRef.current || scanResult || processing || scanCooldown) return;
     
     try {
       const now = Date.now();
-      const cooldownDuration = 10000; // 10 seconds
+      const cooldownDuration = 5000; // 5 seconds cooldown between scans
+      const sameDuplicateWindow = 10000; // 10 seconds to prevent same QR code duplicate scanning
 
-      // Check if we're still within cooldown
-      if (lastErrorTimeRef.current && now - lastErrorTimeRef.current < cooldownDuration) {
+      // Check if we're still within cooldown period
+      if (lastScanTimeRef.current && now - lastScanTimeRef.current < cooldownDuration) {
+        console.log("Scan blocked: Still in cooldown period");
+        return;
+      }
+
+      // Check if this is the same QR code scanned recently (prevent duplicates)
+      if (lastScannedCodeRef.current === decodedText && 
+          lastScanTimeRef.current && 
+          now - lastScanTimeRef.current < sameDuplicateWindow) {
+        console.log("Scan blocked: Same QR code scanned recently");
+        toast.info("Please wait before scanning again");
         return;
       }
 
@@ -40,22 +52,25 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           throw new Error();
         }
       } catch {
-        // Set timestamp for last error
-        lastErrorTimeRef.current = now;
-
         toast.error('Invalid QR code format. Please scan a valid stamp card QR code.');
         return;
       }
 
-      // If QR code is valid, proceed
+      // Set cooldown and processing state
+      setScanCooldown(true);
       setProcessing(true);
       setScanResult(decodedText);
       
+      // Update last scan tracking
+      lastScannedCodeRef.current = decodedText;
+      lastScanTimeRef.current = now;
+
       const user = await getCurrentUser();
       if (!user) {
         toast.error('Please log in to collect stamps');
         setProcessing(false);
         setScanResult(null);
+        setScanCooldown(false);
         return;
       }
 
@@ -63,14 +78,21 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
       if (result.rewardEarned) {
         toast.success(`Congratulations! You've earned a reward: ${result.stampCard.card.reward}`);
       } else {
-        toast.success(`Added ${result.stampCard.current_stamps} stamps!`);
+        toast.success(`Added stamps! Total: ${result.stampCard.current_stamps}/${result.stampCard.card.total_stamps}`);
       }
 
       onScanComplete?.();
+
+      // Keep cooldown active for a few more seconds after successful scan
+      setTimeout(() => {
+        setScanCooldown(false);
+      }, 3000);
+      
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to process QR code');
       setScanResult(null);
       setProcessing(false);
+      setScanCooldown(false);
     }
   };
 
@@ -102,7 +124,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           
           // Use a responsive scan config that works well on all devices
           const scanConfig = {
-            fps: 10,
+            fps: 5, // Reduced FPS to prevent rapid scanning
             qrbox: undefined, // No QR box overlay for full screen scanning
             aspectRatio: 1,   // Use a 1:1 aspect ratio
           };
@@ -176,13 +198,22 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         </div>
       )}
 
+      {/* Cooldown indicator */}
+      {scanCooldown && !processing && (
+        <div className="absolute bottom-32 left-0 right-0 p-4 flex items-center justify-center text-white z-30">
+          <div className="bg-blue-500/80 backdrop-blur-sm px-4 py-2 rounded-lg">
+            <span>Please wait before scanning again...</span>
+          </div>
+        </div>
+      )}
+
       {/* Success message */}
-      {scanResult && !processing && (
+      {scanResult && !processing && !scanCooldown && (
         <div className="absolute bottom-32 left-0 right-0 mx-4 p-4 bg-green-50 border-t border-green-200 flex items-start rounded-lg z-30">
           <CheckCircle className="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-green-800 font-medium">QR Code Scanned!</p>
-            <p className="text-sm text-green-600">Processing your stamps...</p>
+            <p className="text-sm text-green-600">Stamps have been processed</p>
           </div>
         </div>
       )}
@@ -193,8 +224,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           Starting camera...
         </div>
       )}
-      
-      {/* Removed the error cooldown visual indicator as requested */}
     </div>
   );
 };
