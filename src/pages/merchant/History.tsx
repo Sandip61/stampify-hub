@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Clock } from "lucide-react";
@@ -29,7 +30,7 @@ const MerchantHistory = () => {
           .select(`
             *,
             stamp_cards!inner(name),
-            profiles!stamp_transactions_customer_id_fkey(email, name)
+            profiles(email, name)
           `)
           .order('timestamp', { ascending: false });
 
