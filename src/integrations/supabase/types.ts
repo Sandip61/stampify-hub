@@ -44,6 +44,59 @@ export type Database = {
           },
         ]
       }
+      merchant_customers: {
+        Row: {
+          created_at: string
+          customer_email: string
+          customer_id: string | null
+          customer_name: string | null
+          first_interaction_at: string
+          id: string
+          last_interaction_at: string
+          merchant_id: string
+          merchant_user_id: string
+          total_rewards_redeemed: number
+          total_stamps_earned: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email: string
+          customer_id?: string | null
+          customer_name?: string | null
+          first_interaction_at?: string
+          id?: string
+          last_interaction_at?: string
+          merchant_id: string
+          merchant_user_id: string
+          total_rewards_redeemed?: number
+          total_stamps_earned?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string
+          customer_id?: string | null
+          customer_name?: string | null
+          first_interaction_at?: string
+          id?: string
+          last_interaction_at?: string
+          merchant_id?: string
+          merchant_user_id?: string
+          total_rewards_redeemed?: number
+          total_stamps_earned?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_customers_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchants: {
         Row: {
           business_color: string

@@ -22,21 +22,18 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   const isMobile = useIsMobile();
   
   const onScanSuccess = async (decodedText: string) => {
-    // Prevent processing if component unmounted, already processing, or in cooldown
     if (!mountedRef.current || scanResult || processing || scanCooldown) return;
     
     try {
       const now = Date.now();
-      const cooldownDuration = 5000; // 5 seconds cooldown between scans
-      const sameDuplicateWindow = 10000; // 10 seconds to prevent same QR code duplicate scanning
+      const cooldownDuration = 5000;
+      const sameDuplicateWindow = 10000;
 
-      // Check if we're still within cooldown period
       if (lastScanTimeRef.current && now - lastScanTimeRef.current < cooldownDuration) {
         console.log("Scan blocked: Still in cooldown period");
         return;
       }
 
-      // Check if this is the same QR code scanned recently (prevent duplicates)
       if (lastScannedCodeRef.current === decodedText && 
           lastScanTimeRef.current && 
           now - lastScanTimeRef.current < sameDuplicateWindow) {
@@ -56,12 +53,10 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         return;
       }
 
-      // Set cooldown and processing state
       setScanCooldown(true);
       setProcessing(true);
       setScanResult(decodedText);
       
-      // Update last scan tracking
       lastScannedCodeRef.current = decodedText;
       lastScanTimeRef.current = now;
 
@@ -74,7 +69,13 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         return;
       }
 
-      const result = await processScannedQRCode(decodedText, user.id);
+      const result = await processScannedQRCode(
+        decodedText, 
+        user.id, 
+        user.email, 
+        1
+      );
+      
       if (result.rewardEarned) {
         toast.success(`Congratulations! You've earned a reward: ${result.stampCard.card.reward}`);
       } else {
@@ -83,7 +84,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
 
       onScanComplete?.();
 
-      // Keep cooldown active for a few more seconds after successful scan
       setTimeout(() => {
         setScanCooldown(false);
       }, 3000);
@@ -97,7 +97,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   };
 
   const onScanFailure = (error: string) => {
-    // Only log unexpected errors
     if (!error.includes('No QR code found')) {
       console.warn('QR Scan error:', error);
     }
@@ -107,7 +106,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
     mountedRef.current = true;
     const qrRegionId = 'qr-reader';
     
-    // Add a small delay to ensure the DOM element is fully mounted
     const timer = setTimeout(() => {
       try {
         const element = document.getElementById(qrRegionId);
@@ -116,17 +114,15 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
           const qrCode = new Html5Qrcode(qrRegionId);
           qrCodeRef.current = qrCode;
           
-          // Determine which camera to use - always prioritize back camera for mobile
           const cameraOptions = [
-            { facingMode: "environment" }, // Back camera (preferred for mobile)
-            { facingMode: "user" }         // Front camera (fallback)
+            { facingMode: "environment" },
+            { facingMode: "user" }
           ];
           
-          // Use a responsive scan config that works well on all devices
           const scanConfig = {
-            fps: 5, // Reduced FPS to prevent rapid scanning
-            qrbox: undefined, // No QR box overlay for full screen scanning
-            aspectRatio: 1,   // Use a 1:1 aspect ratio
+            fps: 5,
+            qrbox: undefined,
+            aspectRatio: 1,
           };
           
           const tryCamera = async (cameraIndex = 0) => {
@@ -147,11 +143,11 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
               console.log(`Camera ${cameraIndex + 1} started successfully`);
             } catch (err) {
               console.log(`Camera ${cameraIndex + 1} failed:`, err);
-              tryCamera(cameraIndex + 1); // Try next camera option
+              tryCamera(cameraIndex + 1);
             }
           };
           
-          tryCamera(0); // Start with first camera option (back camera)
+          tryCamera(0);
         } else {
           console.error("QR reader element not found in the DOM");
         }
@@ -174,7 +170,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
 
   return (
     <div className="absolute inset-0 w-full h-full min-h-screen overflow-hidden bg-black">
-      {/* Camera view with improved positioning */}
       <div 
         id="qr-reader" 
         className="w-full h-full" 
@@ -190,7 +185,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         }}
       />
       
-      {/* Processing indicator */}
       {processing && (
         <div className="absolute bottom-32 left-0 right-0 p-4 flex items-center justify-center text-white z-30">
           <div className="mr-2 h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
@@ -198,7 +192,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         </div>
       )}
 
-      {/* Cooldown indicator */}
       {scanCooldown && !processing && (
         <div className="absolute bottom-32 left-0 right-0 p-4 flex items-center justify-center text-white z-30">
           <div className="bg-blue-500/80 backdrop-blur-sm px-4 py-2 rounded-lg">
@@ -207,7 +200,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         </div>
       )}
 
-      {/* Success message */}
       {scanResult && !processing && !scanCooldown && (
         <div className="absolute bottom-32 left-0 right-0 mx-4 p-4 bg-green-50 border-t border-green-200 flex items-start rounded-lg z-30">
           <CheckCircle className="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" />
@@ -218,7 +210,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         </div>
       )}
 
-      {/* Camera status indicator */}
       {!scanning && (
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white bg-black/70 px-4 py-2 rounded">
           Starting camera...
