@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { 
@@ -36,11 +35,11 @@ interface MerchantCustomer {
   last_interaction_at: string;
 }
 
-// Define the interface for transaction data
+// Updated interface to match actual transaction types from database
 interface MerchantTransaction {
   id: string;
   customer_id: string;
-  type: 'stamp' | 'reward';
+  type: string; // Allow any string type from database
   count: number | null;
   timestamp: string;
   reward_code: string | null;
@@ -65,7 +64,7 @@ const MerchantCustomers = () => {
     try {
       setIsLoading(true);
       
-      // Load customers
+      // Load customers from new merchant_customers table
       const { data: customersData, error: customersError } = await merchantSupabase
         .from('merchant_customers')
         .select('*')
@@ -283,7 +282,7 @@ const MerchantCustomers = () => {
                             variant={transaction.type === 'reward' ? 'default' : 'secondary'}
                             className="text-xs"
                           >
-                            {transaction.type === 'reward' ? 'Reward' : 'Stamp'}
+                            {transaction.type === 'reward' ? 'Reward' : transaction.type}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-1 text-sm text-muted-foreground mb-1">
