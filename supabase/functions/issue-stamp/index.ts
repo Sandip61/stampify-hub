@@ -42,6 +42,8 @@ Deno.serve(async (req) => {
 
     const body: StampRequest = await req.json()
     console.log('Received request:', body)
+    console.log('Authenticated user ID:', user.id)
+    console.log('User metadata:', user.user_metadata)
 
     let cardId = body.cardId
     let customerEmail = body.customerEmail
@@ -108,21 +110,56 @@ Deno.serve(async (req) => {
         )
       }
     } else {
-      // For direct method, verify the user is the merchant who owns the card
-      const { data: card, error: cardError } = await supabase
-        .from('stamp_cards')
-        .select('merchant_id')
-        .eq('id', cardId)
-        .eq('merchant_id', user.id)
+      // For direct method, verify the user is a merchant who owns the card
+      console.log('=== DIRECT METHOD VERIFICATION ===')
+      console.log('Checking if user is merchant for card:', cardId)
+      
+      // First check if the user exists in the merchants table
+      const { data: merchantData, error: merchantError } = await supabase
+        .from('merchants')
+        .select('id')
+        .eq('id', user.id)
         .single()
 
-      if (cardError || !card) {
-        console.error('Card verification error:', cardError)
+      console.log('Merchant lookup result:', merchantData)
+      console.log('Merchant lookup error:', merchantError)
+
+      if (merchantError || !merchantData) {
+        console.error('User is not a merchant:', merchantError)
         return new Response(
-          JSON.stringify({ error: 'Card not found or access denied' }),
+          JSON.stringify({ error: 'User is not registered as a merchant' }),
+          { status: 403, headers: corsHeaders }
+        )
+      }
+
+      // Then verify the card belongs to this merchant
+      const { data: card, error: cardError } = await supabase
+        .from('stamp_cards')
+        .select('merchant_id, name')
+        .eq('id', cardId)
+        .single()
+
+      console.log('Card lookup result:', card)
+      console.log('Card lookup error:', cardError)
+
+      if (cardError || !card) {
+        console.error('Card not found:', cardError)
+        return new Response(
+          JSON.stringify({ error: 'Card not found' }),
           { status: 404, headers: corsHeaders }
         )
       }
+
+      if (card.merchant_id !== user.id) {
+        console.error('Card does not belong to merchant. Card merchant_id:', card.merchant_id, 'User ID:', user.id)
+        return new Response(
+          JSON.stringify({ error: 'Access denied - card belongs to different merchant' }),
+          { status: 403, headers: corsHeaders }
+        )
+      }
+
+      console.log('=== VERIFICATION PASSED ===')
+      merchantId = user.id
     }
 
     if (!cardId) {
