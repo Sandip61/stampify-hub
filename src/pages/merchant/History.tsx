@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Clock } from "lucide-react";
@@ -25,27 +24,51 @@ const MerchantHistory = () => {
   useEffect(() => {
     const loadHistory = async () => {
       try {
-        const { data, error } = await supabase
+        // First get transactions with stamp card names
+        const { data: transactionData, error: transactionError } = await supabase
           .from('stamp_transactions')
           .select(`
             *,
-            stamp_cards!inner(name),
-            profiles!customer_id(email, name)
+            stamp_cards!inner(name)
           `)
           .order('timestamp', { ascending: false });
 
-        if (error) {
-          console.error("Error fetching transaction history:", error);
-          throw error;
+        if (transactionError) {
+          console.error("Error fetching transactions:", transactionError);
+          throw transactionError;
         }
 
-        if (data) {
-          const formattedTransactions = data.map(transaction => ({
-            ...transaction,
-            card_name: transaction.stamp_cards?.name,
-            customerEmail: transaction.profiles?.email,
-            customerName: transaction.profiles?.name
-          }));
+        if (transactionData) {
+          // Get unique customer IDs from transactions
+          const customerIds = [...new Set(transactionData.map(t => t.customer_id))];
+          
+          // Fetch customer profiles separately
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, email, name')
+            .in('id', customerIds);
+
+          if (profileError) {
+            console.error("Error fetching profiles:", profileError);
+          }
+
+          // Create a map of customer ID to profile data
+          const profileMap = new Map();
+          profileData?.forEach(profile => {
+            profileMap.set(profile.id, profile);
+          });
+
+          // Combine transaction data with profile data
+          const formattedTransactions = transactionData.map(transaction => {
+            const profile = profileMap.get(transaction.customer_id);
+            return {
+              ...transaction,
+              card_name: transaction.stamp_cards?.name,
+              customerEmail: profile?.email,
+              customerName: profile?.name
+            };
+          });
+          
           setTransactions(formattedTransactions);
         }
         
