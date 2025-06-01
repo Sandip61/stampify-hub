@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { 
@@ -64,28 +65,55 @@ const MerchantDashboard = () => {
 
   const fetchRecentTransactions = async (merchantId: string) => {
     try {
-      const { data: transactionData, error } = await merchantSupabase
+      // First, get recent transactions
+      const { data: transactionData, error: transactionError } = await merchantSupabase
         .from('stamp_transactions')
         .select(`
           *,
-          stamp_cards!inner(name),
-          profiles(email, name)
+          stamp_cards!inner(name)
         `)
         .eq('merchant_id', merchantId)
         .order('timestamp', { ascending: false })
         .limit(5);
 
-      if (error) {
-        console.error("Error fetching recent transactions:", error);
+      if (transactionError) {
+        console.error("Error fetching recent transactions:", transactionError);
         return [];
       }
 
-      return transactionData?.map(transaction => ({
-        ...transaction,
-        card_name: transaction.stamp_cards?.name,
-        customerEmail: transaction.profiles?.email,
-        customerName: transaction.profiles?.name
-      })) || [];
+      if (!transactionData || transactionData.length === 0) {
+        return [];
+      }
+
+      // Get unique customer IDs
+      const customerIds = [...new Set(transactionData.map(t => t.customer_id))];
+      
+      // Fetch customer profiles separately
+      const { data: customerProfiles, error: profilesError } = await merchantSupabase
+        .from('profiles')
+        .select('id, email, name')
+        .in('id', customerIds);
+
+      if (profilesError) {
+        console.error("Error fetching customer profiles:", profilesError);
+      }
+
+      // Create a map of customer profiles for quick lookup
+      const profilesMap = new Map();
+      customerProfiles?.forEach(profile => {
+        profilesMap.set(profile.id, profile);
+      });
+
+      // Combine transaction data with customer profiles
+      return transactionData.map(transaction => {
+        const customerProfile = profilesMap.get(transaction.customer_id);
+        return {
+          ...transaction,
+          card_name: transaction.stamp_cards?.name,
+          customerEmail: customerProfile?.email,
+          customerName: customerProfile?.name
+        };
+      });
     } catch (error) {
       console.error("Error in fetchRecentTransactions:", error);
       return [];
