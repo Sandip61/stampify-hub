@@ -72,7 +72,7 @@ export const issueStampsToCustomer = async (
 
     if (!accessToken) {
       throw new AppError(
-        ErrorType.AUTH_SESSION_EXPIRED,
+        ErrorType.AUTH_TOKEN_EXPIRED,
         "Merchant session not found. Please login again."
       );
     }
@@ -218,7 +218,7 @@ export const redeemStampReward = async (rewardCode: string): Promise<RedeemRespo
       );
     }
 
-    const { data, error } = await supabase.functions.invoke('redeem-reward', {
+    const { data, error } = await merchantSupabase.functions.invoke('redeem-reward', {
       body: { rewardCode: formattedCode }
     });
 
