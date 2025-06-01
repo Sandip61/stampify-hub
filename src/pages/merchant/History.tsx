@@ -1,5 +1,6 @@
+
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { merchantSupabase } from "@/integrations/supabase/client";
 import { Clock } from "lucide-react";
 import { TransactionGroup } from "@/components/merchant/TransactionGroup";
 
@@ -24,13 +25,23 @@ const MerchantHistory = () => {
   useEffect(() => {
     const loadHistory = async () => {
       try {
-        // First get transactions with stamp card names
-        const { data: transactionData, error: transactionError } = await supabase
+        // Get current merchant user using merchantSupabase
+        const { data: { user }, error: authError } = await merchantSupabase.auth.getUser();
+        if (authError || !user) {
+          console.error("Auth error:", authError);
+          throw new Error("No authenticated merchant user");
+        }
+
+        console.log("Merchant user ID for history:", user.id);
+
+        // First get transactions with stamp card names, filtered by merchant_id
+        const { data: transactionData, error: transactionError } = await merchantSupabase
           .from('stamp_transactions')
           .select(`
             *,
             stamp_cards!inner(name)
           `)
+          .eq('merchant_id', user.id)
           .order('timestamp', { ascending: false });
 
         if (transactionError) {
@@ -38,12 +49,12 @@ const MerchantHistory = () => {
           throw transactionError;
         }
 
-        if (transactionData) {
+        if (transactionData && transactionData.length > 0) {
           // Get unique customer IDs from transactions
           const customerIds = [...new Set(transactionData.map(t => t.customer_id))];
           
           // Fetch customer profiles separately
-          const { data: profileData, error: profileError } = await supabase
+          const { data: profileData, error: profileError } = await merchantSupabase
             .from('profiles')
             .select('id, email, name')
             .in('id', customerIds);
@@ -70,6 +81,8 @@ const MerchantHistory = () => {
           });
           
           setTransactions(formattedTransactions);
+        } else {
+          setTransactions([]);
         }
         
         setIsLoading(false);
