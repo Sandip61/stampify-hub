@@ -8,7 +8,7 @@ import {
   PlusCircle,
   ArrowUpRight
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { merchantSupabase } from "@/integrations/supabase/client";
 import { StampCard } from "@/types/StampCard";
 
 // Placeholder for analytics data structure
@@ -51,14 +51,17 @@ const MerchantDashboard = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          throw new Error("No authenticated user");
+        // Get current merchant user using merchantSupabase
+        const { data: { user }, error: authError } = await merchantSupabase.auth.getUser();
+        if (authError || !user) {
+          console.error("Auth error:", authError);
+          throw new Error("No authenticated merchant user");
         }
 
+        console.log("Merchant user ID:", user.id);
+
         // Fetch actual stamp cards from Supabase
-        const { data: cardsData, error: cardsError } = await supabase
+        const { data: cardsData, error: cardsError } = await merchantSupabase
           .from("stamp_cards")
           .select("*")
           .eq("merchant_id", user.id)
@@ -75,7 +78,7 @@ const MerchantDashboard = () => {
         }
 
         // Fetch merchant customers to get total customer count
-        const { data: merchantCustomersData, error: customersError } = await supabase
+        const { data: merchantCustomersData, error: customersError } = await merchantSupabase
           .from("merchant_customers")
           .select("*")
           .eq("merchant_id", user.id);
@@ -86,13 +89,14 @@ const MerchantDashboard = () => {
         }
 
         const totalCustomers = merchantCustomersData?.length ?? 0;
+        console.log("Total customers found:", totalCustomers);
 
         // Fetch all customer_stamp_cards for this merchant's cards
         const cardIds = cardsData?.map(card => card.id) ?? [];
         let customerStampCards: any[] = [];
         
         if (cardIds.length > 0) {
-          const { data: cscData, error: cscError } = await supabase
+          const { data: cscData, error: cscError } = await merchantSupabase
             .from("customer_stamp_cards")
             .select("*, card:stamp_cards!inner(total_stamps, merchant_id)")
             .in("card_id", cardIds);
