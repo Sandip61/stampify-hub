@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { 
@@ -9,7 +8,8 @@ import {
   PlusCircle,
   ArrowUpRight,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  Building2
 } from "lucide-react";
 import { merchantSupabase } from "@/integrations/supabase/client";
 import { StampCard } from "@/types/StampCard";
@@ -62,6 +62,9 @@ const MerchantDashboard = () => {
   const [stampCards, setStampCards] = useState<StampCard[]>([]);
   const [activityData, setActivityData] = useState<ActivityDataPoint[]>([]);
   const [activeCustomers, setActiveCustomers] = useState(0);
+  const [merchantName, setMerchantName] = useState<string>("");
+  const [merchantLogo, setMerchantLogo] = useState<string>("🏪");
+  const [merchantColor, setMerchantColor] = useState<string>("#3B82F6");
 
   const fetchRecentTransactions = async (merchantId: string) => {
     try {
@@ -204,6 +207,21 @@ const MerchantDashboard = () => {
         }
 
         console.log("Merchant user ID:", user.id);
+
+        // Fetch merchant profile data
+        const { data: merchantData, error: merchantError } = await merchantSupabase
+          .from("merchants")
+          .select("business_name, business_logo, business_color")
+          .eq("id", user.id)
+          .single();
+
+        if (merchantError) {
+          console.error("Error fetching merchant data:", merchantError);
+        } else if (merchantData) {
+          setMerchantName(merchantData.business_name || "Your Business");
+          setMerchantLogo(merchantData.business_logo || "🏪");
+          setMerchantColor(merchantData.business_color || "#3B82F6");
+        }
 
         // Fetch all data in parallel
         const [
@@ -351,8 +369,24 @@ const MerchantDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header with merchant name */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Dashboard</h1>
+        
+        {/* Merchant name display in the center */}
+        <div className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 rounded-lg shadow-sm">
+          <div 
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium mr-3 shadow-sm"
+            style={{ backgroundColor: merchantColor }}
+          >
+            {merchantLogo}
+          </div>
+          <div className="text-center">
+            <p className="text-sm text-gray-600 font-medium">Welcome back!</p>
+            <h2 className="text-lg font-bold text-gray-800">{merchantName}</h2>
+          </div>
+        </div>
+
         <div className="flex gap-2">
           <Link
             to="/merchant/cards/new"
