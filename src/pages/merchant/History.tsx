@@ -30,7 +30,7 @@ const MerchantHistory = () => {
           .select(`
             *,
             stamp_cards!inner(name),
-            profiles(email, name)
+            profiles!customer_id(email, name)
           `)
           .order('timestamp', { ascending: false });
 
