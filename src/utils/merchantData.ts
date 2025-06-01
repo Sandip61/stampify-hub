@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { handleSupabaseError, ErrorType } from "@/utils/errors";
@@ -121,11 +120,12 @@ export const getMerchantStampCards = async () => {
 
 export const createMerchantStampCard = async (cardData: Omit<MerchantStampCard, "id" | "createdAt" | "updatedAt" | "merchantId">) => {
   try {
+    console.log("=== STAMP CARD CREATION DEBUG START ===");
     console.log("Creating stamp card with data:", cardData);
     
     // Get current session and check JWT contents
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    console.log("Current session:", session);
+    console.log("Current session exists:", !!session);
     console.log("Session error:", sessionError);
     
     if (sessionError || !session) {
@@ -133,20 +133,31 @@ export const createMerchantStampCard = async (cardData: Omit<MerchantStampCard, 
       throw new Error("No merchant session found. Please log in again.");
     }
     
-    // Log JWT metadata to see if role is set correctly
+    // Log JWT metadata to see if role is set correctly (fix TypeScript error)
     console.log("User metadata:", session.user.user_metadata);
-    console.log("Raw user metadata:", session.user.raw_user_meta_data);
-    console.log("Auth UID:", session.user.id);
+    console.log("User ID (auth.uid()):", session.user.id);
+    console.log("User email:", session.user.email);
     
-    const merchant = await getCurrentMerchant();
-    console.log("Current merchant from getCurrentMerchant:", merchant);
+    // Check if user has merchant role in metadata
+    const userRole = session.user.user_metadata?.role;
+    const isMerchant = session.user.user_metadata?.is_merchant;
+    console.log("Role from JWT metadata:", userRole);
+    console.log("Is merchant from JWT metadata:", isMerchant);
     
-    if (!merchant) {
-      console.error("No merchant found");
-      throw new Error("No merchant found. Please log in again.");
+    // Verify the user exists in merchants table
+    const { data: merchantExists, error: merchantCheckError } = await supabase
+      .from("merchants")
+      .select("id")
+      .eq("id", session.user.id)
+      .maybeSingle();
+    
+    console.log("Merchant exists in database:", !!merchantExists);
+    console.log("Merchant check error:", merchantCheckError);
+    
+    if (!merchantExists) {
+      console.error("User not found in merchants table");
+      throw new Error("User is not registered as a merchant");
     }
-    
-    console.log("Merchant ID vs Auth UID:", { merchantId: merchant.id, authUid: session.user.id });
 
     const insertData = {
       name: cardData.name,
@@ -157,11 +168,12 @@ export const createMerchantStampCard = async (cardData: Omit<MerchantStampCard, 
       business_color: cardData.color,
       is_active: cardData.isActive,
       expiry_days: cardData.expiryDays,
-      merchant_id: session.user.id // Use auth.uid() directly instead of merchant.id
+      merchant_id: session.user.id // This should match auth.uid() in RLS policy
     };
     
     console.log("Insert data prepared:", insertData);
-    console.log("About to insert with merchant_id:", session.user.id);
+    console.log("merchant_id being set to:", session.user.id);
+    console.log("=== ABOUT TO ATTEMPT INSERT ===");
 
     const { data, error } = await supabase
       .from("stamp_cards")
@@ -170,6 +182,7 @@ export const createMerchantStampCard = async (cardData: Omit<MerchantStampCard, 
       .single();
 
     if (error) {
+      console.error("=== INSERT FAILED ===");
       console.error("Database error details:", error);
       console.error("Error code:", error.code);
       console.error("Error message:", error.message);
@@ -178,7 +191,9 @@ export const createMerchantStampCard = async (cardData: Omit<MerchantStampCard, 
       throw error;
     }
     
+    console.log("=== INSERT SUCCESSFUL ===");
     console.log("Stamp card created successfully:", data);
+    console.log("=== STAMP CARD CREATION DEBUG END ===");
     return data;
   } catch (error) {
     console.error("Error in createMerchantStampCard:", error);
