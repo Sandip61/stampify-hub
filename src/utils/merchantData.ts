@@ -1,4 +1,3 @@
-
 import { merchantSupabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { handleSupabaseError, ErrorType } from "@/utils/errors";
@@ -76,8 +75,8 @@ export const getMerchantStampCard = async (cardId: string) => {
       description: data.description || "",
       totalStamps: data.total_stamps,
       reward: data.reward,
-      logo: data.business_logo || "🏪",
-      color: data.business_color || "#3B82F6",
+      logo: data.business_logo, // Don't use fallback here
+      color: data.business_color, // Don't use fallback here
       isActive: data.is_active,
       expiryDays: data.expiry_days,
       createdAt: data.created_at,
@@ -105,8 +104,8 @@ export const getMerchantStampCards = async () => {
       description: card.description || "",
       totalStamps: card.total_stamps,
       reward: card.reward,
-      logo: card.business_logo || "🏪",
-      color: card.business_color || "#3B82F6",
+      logo: card.business_logo, // Don't use fallback here
+      color: card.business_color, // Don't use fallback here
       isActive: card.is_active,
       expiryDays: card.expiry_days,
       createdAt: card.created_at,
@@ -165,8 +164,8 @@ export const createMerchantStampCard = async (cardData: Omit<MerchantStampCard, 
       description: cardData.description,
       total_stamps: cardData.totalStamps,
       reward: cardData.reward,
-      business_logo: cardData.logo,
-      business_color: cardData.color,
+      business_logo: cardData.logo || null, // Don't use hardcoded default
+      business_color: cardData.color || null, // Don't use hardcoded default
       is_active: cardData.isActive,
       expiry_days: cardData.expiryDays,
       merchant_id: session.user.id // This should match auth.uid() in RLS policy

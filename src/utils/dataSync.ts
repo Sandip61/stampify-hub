@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@/utils/auth/types";
 import { StampCard, Transaction } from "@/utils/data";
@@ -42,6 +43,10 @@ export const fetchUserStampCards = async (userId: string): Promise<StampCard[]> 
           reward,
           business_logo,
           business_color
+        ),
+        merchant:card(merchant_id) (
+          business_logo,
+          business_color
         )
       `)
       .eq('customer_id', userId);
@@ -55,16 +60,22 @@ export const fetchUserStampCards = async (userId: string): Promise<StampCard[]> 
       return [];
     }
 
-    // Transform data to match the StampCard interface
+    // Transform data to match the StampCard interface with proper priority
     return customerCards.map((item: any) => {
-      const businessLogo = item.card?.business_logo || "🏪";
-      const businessColor = item.card?.business_color || "#3B82F6";
+      // Priority: stamp card logo > merchant logo > fallback
+      const businessLogo = item.card?.business_logo || 
+                          item.merchant?.business_logo || 
+                          "🏪";
       
-      // Get merchant name by querying merchants table
+      // Priority: stamp card color > merchant color > fallback
+      const businessColor = item.card?.business_color || 
+                           item.merchant?.business_color || 
+                           "#3B82F6";
+      
       return {
         id: item.card_id,
         businessId: item.card?.merchant_id || "",
-        businessName: item.card?.name.split(' ')[0] || "Business", // Temporary until we fetch business name
+        businessName: item.card?.name.split(' ')[0] || "Business",
         businessLogo,
         totalStamps: item.card?.total_stamps || 10,
         currentStamps: item.current_stamps,
@@ -114,7 +125,7 @@ export const fetchStampCard = async (userId: string, cardId: string): Promise<St
       return null;
     }
 
-    // Get merchant details
+    // Get merchant details for fallback
     const { data: merchant } = await supabase
       .from('merchants')
       .select('business_name, business_logo, business_color')
@@ -122,8 +133,16 @@ export const fetchStampCard = async (userId: string, cardId: string): Promise<St
       .single();
 
     const businessName = merchant?.business_name || customerCard.card.name.split(' ')[0] || "Business";
-    const businessLogo = customerCard.card.business_logo || merchant?.business_logo || "🏪";
-    const businessColor = customerCard.card.business_color || merchant?.business_color || "#3B82F6";
+    
+    // Priority: stamp card logo > merchant logo > fallback
+    const businessLogo = customerCard.card.business_logo || 
+                        merchant?.business_logo || 
+                        "🏪";
+    
+    // Priority: stamp card color > merchant color > fallback
+    const businessColor = customerCard.card.business_color || 
+                         merchant?.business_color || 
+                         "#3B82F6";
 
     // Transform data to match the StampCard interface
     return {

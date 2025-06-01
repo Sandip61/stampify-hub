@@ -18,7 +18,7 @@ const MerchantCardForm = () => {
   const [totalStamps, setTotalStamps] = useState(10);
   const [reward, setReward] = useState("");
   const [color, setColor] = useState("#3B82F6");
-  const [logo, setLogo] = useState("🏪");
+  const [logo, setLogo] = useState(""); // Start with empty logo, let user choose
   const [isActive, setIsActive] = useState(true);
   const [expiryDays, setExpiryDays] = useState<number | undefined>(undefined);
   
@@ -338,6 +338,9 @@ const MerchantCardForm = () => {
                     </button>
                   ))}
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Select a logo for your stamp card
+                </p>
               </div>
               
               <div className="space-y-2">
@@ -405,7 +408,7 @@ const MerchantCardForm = () => {
                         className="flex items-center justify-center w-12 h-12 rounded-full text-2xl"
                         style={{ backgroundColor: color }}
                       >
-                        {logo}
+                        {logo || "?"} 
                       </div>
                     </div>
                     
