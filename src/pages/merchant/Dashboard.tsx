@@ -6,10 +6,16 @@ import {
   Users, 
   Gift,
   PlusCircle,
-  ArrowUpRight
+  ArrowUpRight,
+  TrendingUp,
+  TrendingDown
 } from "lucide-react";
 import { merchantSupabase } from "@/integrations/supabase/client";
 import { StampCard } from "@/types/StampCard";
+import { TransactionItem } from "@/components/merchant/TransactionItem";
+import { TransactionHistory } from "@/pages/merchant/History";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
 
 // Placeholder for analytics data structure
 interface AnalyticsData {
@@ -42,11 +48,120 @@ interface Transaction {
   rewardCode?: string;
 }
 
+interface ActivityDataPoint {
+  date: string;
+  stamps: number;
+  redemptions: number;
+}
+
 const MerchantDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
-  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<TransactionHistory[]>([]);
   const [stampCards, setStampCards] = useState<StampCard[]>([]);
+  const [activityData, setActivityData] = useState<ActivityDataPoint[]>([]);
+  const [activeCustomers, setActiveCustomers] = useState(0);
+
+  const fetchRecentTransactions = async (merchantId: string) => {
+    try {
+      const { data: transactionData, error } = await merchantSupabase
+        .from('stamp_transactions')
+        .select(`
+          *,
+          stamp_cards!inner(name),
+          profiles(email, name)
+        `)
+        .eq('merchant_id', merchantId)
+        .order('timestamp', { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error("Error fetching recent transactions:", error);
+        return [];
+      }
+
+      return transactionData?.map(transaction => ({
+        ...transaction,
+        card_name: transaction.stamp_cards?.name,
+        customerEmail: transaction.profiles?.email,
+        customerName: transaction.profiles?.name
+      })) || [];
+    } catch (error) {
+      console.error("Error in fetchRecentTransactions:", error);
+      return [];
+    }
+  };
+
+  const fetchActivityData = async (merchantId: string) => {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const { data, error } = await merchantSupabase
+        .from('stamp_transactions')
+        .select('timestamp, type, count')
+        .eq('merchant_id', merchantId)
+        .gte('timestamp', thirtyDaysAgo.toISOString())
+        .order('timestamp', { ascending: true });
+
+      if (error) {
+        console.error("Error fetching activity data:", error);
+        return [];
+      }
+
+      // Group by date and aggregate
+      const dailyData: { [key: string]: { stamps: number; redemptions: number } } = {};
+      
+      data?.forEach(transaction => {
+        const date = new Date(transaction.timestamp).toISOString().split('T')[0];
+        if (!dailyData[date]) {
+          dailyData[date] = { stamps: 0, redemptions: 0 };
+        }
+        
+        if (transaction.type === 'stamp') {
+          dailyData[date].stamps += transaction.count || 1;
+        } else if (transaction.type === 'redeem') {
+          dailyData[date].redemptions += 1;
+        }
+      });
+
+      // Convert to array and get last 7 days
+      return Object.entries(dailyData)
+        .map(([date, data]) => ({
+          date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          stamps: data.stamps,
+          redemptions: data.redemptions
+        }))
+        .slice(-7);
+    } catch (error) {
+      console.error("Error in fetchActivityData:", error);
+      return [];
+    }
+  };
+
+  const fetchActiveCustomers = async (merchantId: string) => {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const { data, error } = await merchantSupabase
+        .from('stamp_transactions')
+        .select('customer_id')
+        .eq('merchant_id', merchantId)
+        .gte('timestamp', thirtyDaysAgo.toISOString());
+
+      if (error) {
+        console.error("Error fetching active customers:", error);
+        return 0;
+      }
+
+      const uniqueCustomers = new Set(data?.map(t => t.customer_id) || []);
+      return uniqueCustomers.size;
+    } catch (error) {
+      console.error("Error in fetchActiveCustomers:", error);
+      return 0;
+    }
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -60,39 +175,62 @@ const MerchantDashboard = () => {
 
         console.log("Merchant user ID:", user.id);
 
-        // Fetch actual stamp cards from Supabase
-        const { data: cardsData, error: cardsError } = await merchantSupabase
-          .from("stamp_cards")
-          .select("*")
-          .eq("merchant_id", user.id)
-          .order("created_at", { ascending: false });
-        
-        if (cardsError) {
-          console.error("Error fetching stamp cards:", cardsError);
-          throw cardsError;
+        // Fetch all data in parallel
+        const [
+          cardsData,
+          merchantCustomersData,
+          recentTransactionsData,
+          activityChartData,
+          activeCustomersCount
+        ] = await Promise.all([
+          // Fetch stamp cards
+          merchantSupabase
+            .from("stamp_cards")
+            .select("*")
+            .eq("merchant_id", user.id)
+            .order("created_at", { ascending: false }),
+          
+          // Fetch merchant customers
+          merchantSupabase
+            .from("merchant_customers")
+            .select("*")
+            .eq("merchant_id", user.id),
+          
+          // Fetch recent transactions
+          fetchRecentTransactions(user.id),
+          
+          // Fetch activity data
+          fetchActivityData(user.id),
+          
+          // Fetch active customers count
+          fetchActiveCustomers(user.id)
+        ]);
+
+        if (cardsData.error) {
+          console.error("Error fetching stamp cards:", cardsData.error);
+          throw cardsData.error;
         }
         
-        if (cardsData) {
-          setStampCards(cardsData);
-          console.log("Stamp cards fetched:", cardsData);
+        if (cardsData.data) {
+          setStampCards(cardsData.data);
+          console.log("Stamp cards fetched:", cardsData.data);
         }
 
-        // Fetch merchant customers to get total customer count
-        const { data: merchantCustomersData, error: customersError } = await merchantSupabase
-          .from("merchant_customers")
-          .select("*")
-          .eq("merchant_id", user.id);
-
-        if (customersError) {
-          console.error("Error fetching merchant customers:", customersError);
-          throw customersError;
+        if (merchantCustomersData.error) {
+          console.error("Error fetching merchant customers:", merchantCustomersData.error);
+          throw merchantCustomersData.error;
         }
 
-        const totalCustomers = merchantCustomersData?.length ?? 0;
+        const totalCustomers = merchantCustomersData.data?.length ?? 0;
         console.log("Total customers found:", totalCustomers);
 
+        // Set recent transactions and activity data
+        setRecentTransactions(recentTransactionsData);
+        setActivityData(activityChartData);
+        setActiveCustomers(activeCustomersCount);
+
         // Fetch all customer_stamp_cards for this merchant's cards
-        const cardIds = cardsData?.map(card => card.id) ?? [];
+        const cardIds = cardsData.data?.map(card => card.id) ?? [];
         let customerStampCards: any[] = [];
         
         if (cardIds.length > 0) {
@@ -124,20 +262,16 @@ const MerchantDashboard = () => {
 
         // Update analytics
         setAnalytics({
-          totalStampCards: cardsData ? cardsData.length : 0,
+          totalStampCards: cardsData.data ? cardsData.data.length : 0,
           totalRedemptions: numRedeemed,
           totalCustomers: totalCustomers,
-          activeCustomers: 0,
+          activeCustomers: activeCustomersCount,
           redemptionRate: redemptionRate,
           retentionRate: 0,
-          transactionsByDay: [
-            { date: new Date().toISOString(), stamps: 0, redemptions: 0 }
-          ],
+          transactionsByDay: activityChartData,
           transactionsByCard: []
         });
         
-        // Fetch recent transactions (if we had them)
-        setRecentTransactions([]);
         setIsLoading(false);
       } catch (error) {
         console.error("Error loading merchant data:", error);
@@ -151,9 +285,7 @@ const MerchantDashboard = () => {
           activeCustomers: 0,
           redemptionRate: 0,
           retentionRate: 0,
-          transactionsByDay: [
-            { date: new Date().toISOString(), stamps: 0, redemptions: 0 }
-          ],
+          transactionsByDay: [],
           transactionsByCard: []
         });
       }
@@ -233,6 +365,11 @@ const MerchantDashboard = () => {
             <div>
               <p className="text-sm text-muted-foreground">Total Customers</p>
               <h3 className="text-2xl font-bold mt-1">{analytics.totalCustomers}</h3>
+              <div className="flex items-center mt-1">
+                <span className="text-xs text-muted-foreground">
+                  {activeCustomers} active (30d)
+                </span>
+              </div>
             </div>
             <div className="rounded-full p-2 bg-blue-500/10 text-blue-500">
               <Users className="h-5 w-5" />
@@ -258,26 +395,66 @@ const MerchantDashboard = () => {
         {/* Activity chart */}
         <div className="md:col-span-2 bg-card border rounded-xl p-5">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-semibold">Recent Activity</h3>
+            <h3 className="font-semibold">Recent Activity (Last 7 days)</h3>
             <Link to="/merchant/analytics" className="text-sm text-primary flex items-center">
               View Details <ArrowUpRight className="ml-1 h-3 w-3" />
             </Link>
           </div>
           
-          <div className="h-64 flex items-center justify-center">
-            <p className="text-muted-foreground">No activity data available yet.</p>
-          </div>
+          {activityData.length > 0 ? (
+            <div className="h-64">
+              <ChartContainer
+                config={{
+                  stamps: {
+                    label: "Stamps",
+                    color: "#3B82F6",
+                  },
+                  redemptions: {
+                    label: "Redemptions",
+                    color: "#10B981",
+                  },
+                }}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={activityData}>
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="stamps" fill="#3B82F6" />
+                    <Bar dataKey="redemptions" fill="#10B981" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
+          ) : (
+            <div className="h-64 flex items-center justify-center">
+              <p className="text-muted-foreground">No activity data available yet.</p>
+            </div>
+          )}
         </div>
 
         {/* Recent transactions */}
         <div className="bg-card border rounded-xl overflow-hidden">
-          <div className="p-4 border-b">
+          <div className="p-4 border-b flex justify-between items-center">
             <h3 className="font-semibold">Recent Transactions</h3>
+            {recentTransactions.length > 0 && (
+              <Link to="/merchant/history" className="text-sm text-primary">
+                View All
+              </Link>
+            )}
           </div>
           
-          <div className="p-8 text-center text-muted-foreground">
-            <p>No transactions yet</p>
-          </div>
+          {recentTransactions.length > 0 ? (
+            <div className="divide-y">
+              {recentTransactions.map(transaction => (
+                <TransactionItem key={transaction.id} transaction={transaction} />
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-muted-foreground">
+              <p>No transactions yet</p>
+            </div>
+          )}
         </div>
       </div>
 
