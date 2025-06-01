@@ -1,4 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
+
+import { merchantSupabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { handleSupabaseError, ErrorType } from "@/utils/errors";
 import { getCurrentMerchant } from "@/utils/merchantAuth";
@@ -61,7 +62,7 @@ export interface AnalyticsData {
 
 export const getMerchantStampCard = async (cardId: string) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await merchantSupabase
       .from("stamp_cards")
       .select("*")
       .eq("id", cardId)
@@ -91,7 +92,7 @@ export const getMerchantStampCard = async (cardId: string) => {
 
 export const getMerchantStampCards = async () => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await merchantSupabase
       .from("stamp_cards")
       .select("*")
       .order("created_at", { ascending: false });
@@ -124,7 +125,7 @@ export const createMerchantStampCard = async (cardData: Omit<MerchantStampCard, 
     console.log("Creating stamp card with data:", cardData);
     
     // Get current session and check JWT contents
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    const { data: { session }, error: sessionError } = await merchantSupabase.auth.getSession();
     console.log("Current session exists:", !!session);
     console.log("Session error:", sessionError);
     
@@ -145,7 +146,7 @@ export const createMerchantStampCard = async (cardData: Omit<MerchantStampCard, 
     console.log("Is merchant from JWT metadata:", isMerchant);
     
     // Verify the user exists in merchants table
-    const { data: merchantExists, error: merchantCheckError } = await supabase
+    const { data: merchantExists, error: merchantCheckError } = await merchantSupabase
       .from("merchants")
       .select("id")
       .eq("id", session.user.id)
@@ -175,7 +176,7 @@ export const createMerchantStampCard = async (cardData: Omit<MerchantStampCard, 
     console.log("merchant_id being set to:", session.user.id);
     console.log("=== ABOUT TO ATTEMPT INSERT ===");
 
-    const { data, error } = await supabase
+    const { data, error } = await merchantSupabase
       .from("stamp_cards")
       .insert(insertData)
       .select()
@@ -214,7 +215,7 @@ export const updateMerchantStampCard = async (cardId: string, cardData: Partial<
     if (cardData.isActive !== undefined) updateData.is_active = cardData.isActive;
     if (cardData.expiryDays !== undefined) updateData.expiry_days = cardData.expiryDays;
 
-    const { data, error } = await supabase
+    const { data, error } = await merchantSupabase
       .from("stamp_cards")
       .update(updateData)
       .eq("id", cardId)
@@ -231,7 +232,7 @@ export const updateMerchantStampCard = async (cardId: string, cardData: Partial<
 
 export const deleteMerchantStampCard = async (cardId: string) => {
   try {
-    const { error } = await supabase
+    const { error } = await merchantSupabase
       .from("stamp_cards")
       .delete()
       .eq("id", cardId);
@@ -246,7 +247,7 @@ export const deleteMerchantStampCard = async (cardId: string) => {
 
 export const getMerchantTransactions = async () => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await merchantSupabase
       .from("stamp_transactions")
       .select(`
         *,
@@ -283,7 +284,7 @@ export const getMerchantTransactions = async () => {
 
 export const getMerchantCustomers = async () => {
   try {
-    const { data: customerData, error: customerError } = await supabase
+    const { data: customerData, error: customerError } = await merchantSupabase
       .from("profiles")
       .select("*");
 
