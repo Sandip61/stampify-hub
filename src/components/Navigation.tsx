@@ -1,8 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Home, CreditCard, History, User, LogOut, ScanLine, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useRole } from "@/contexts/RoleContext";
+import { UserRole } from "@/integrations/supabase/client";
 import { logoutUser } from "@/utils/auth";
 import { toast } from "sonner";
 
@@ -10,6 +13,7 @@ const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { activeRole } = useRole();
   const [visible, setVisible] = useState(true);
   const [lastScrollPosition, setLastScrollPosition] = useState(0);
 
@@ -45,17 +49,21 @@ const Navigation = () => {
 
   const handleScanClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    navigate('/scan-qr');
+    navigate(`/${activeRole}/scan-qr`);
   };
 
   const handleHistoryClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    navigate('/transactions');
+    if (activeRole === UserRole.CUSTOMER) {
+      navigate('/customer/transactions');
+    } else {
+      navigate('/merchant/history');
+    }
   };
 
   const handleBusinessesClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    navigate('/customer/businesses');
+    navigate(`/${activeRole}/businesses`);
   };
 
   if (isMobile === undefined) return null;
@@ -63,6 +71,13 @@ const Navigation = () => {
   const isAuthPage = ["/login", "/signup", "/forgot-password"].includes(location.pathname);
   
   if (isAuthPage) return null;
+
+  // Generate role-aware paths
+  const homePath = activeRole === UserRole.CUSTOMER ? "/customer" : "/merchant";
+  const cardsPath = activeRole === UserRole.CUSTOMER ? "/customer/cards" : "/merchant/cards";
+  const profilePath = activeRole === UserRole.CUSTOMER ? "/customer/profile" : "/merchant/profile";
+  const businessesPath = `/${activeRole}/businesses`;
+  const historyPath = activeRole === UserRole.CUSTOMER ? "/customer/transactions" : "/merchant/history";
 
   return (
     <>
@@ -74,7 +89,7 @@ const Navigation = () => {
           <nav className="flex items-center justify-between max-w-3xl mx-auto px-6 h-14">
             <div className="flex items-center space-x-1">
               <NavLink 
-                to="/" 
+                to={homePath}
                 className={({isActive}) => 
                   cn("nav-link", isActive && "nav-link-active")
                 }
@@ -82,7 +97,7 @@ const Navigation = () => {
                 Home
               </NavLink>
               <NavLink 
-                to="/cards" 
+                to={cardsPath}
                 className={({isActive}) => 
                   cn("nav-link", isActive && "nav-link-active")
                 }
@@ -110,7 +125,7 @@ const Navigation = () => {
             </div>
             <div className="flex items-center space-x-1">
               <NavLink 
-                to="/profile" 
+                to={profilePath}
                 className={({isActive}) => 
                   cn("nav-link", isActive && "nav-link-active")
                 }
@@ -137,7 +152,7 @@ const Navigation = () => {
         >
           <nav className="flex items-center justify-between px-6 h-16">
             <NavLink 
-              to="/" 
+              to={homePath}
               className={({isActive}) => 
                 cn("flex flex-col items-center space-y-1", 
                 isActive ? "text-foreground" : "text-muted-foreground")
@@ -147,7 +162,7 @@ const Navigation = () => {
               <span className="text-xs">Home</span>
             </NavLink>
             <NavLink 
-              to="/cards" 
+              to={cardsPath}
               className={({isActive}) => 
                 cn("flex flex-col items-center space-y-1", 
                 isActive ? "text-foreground" : "text-muted-foreground")
@@ -159,7 +174,7 @@ const Navigation = () => {
             <button 
               onClick={handleBusinessesClick}
               className={cn("flex flex-col items-center space-y-1", 
-                location.pathname === "/customer/businesses" ? "text-foreground" : "text-muted-foreground")}
+                location.pathname === businessesPath ? "text-foreground" : "text-muted-foreground")}
             >
               <Store className="w-5 h-5" />
               <span className="text-xs">Stores</span>
@@ -174,13 +189,13 @@ const Navigation = () => {
             <button 
               onClick={handleHistoryClick}
               className={cn("flex flex-col items-center space-y-1", 
-                location.pathname === "/transactions" ? "text-foreground" : "text-muted-foreground")}
+                location.pathname === historyPath ? "text-foreground" : "text-muted-foreground")}
             >
               <History className="w-5 h-5" />
               <span className="text-xs">History</span>
             </button>
             <NavLink 
-              to="/profile" 
+              to={profilePath}
               className={({isActive}) => 
                 cn("flex flex-col items-center space-y-1", 
                 isActive ? "text-foreground" : "text-muted-foreground")
