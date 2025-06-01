@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@/utils/auth/types";
 import { StampCard, Transaction } from "@/utils/data";
@@ -35,18 +34,18 @@ export const fetchUserStampCards = async (userId: string): Promise<StampCard[]> 
         card_id,
         current_stamps,
         created_at,
-        card:card_id (
+        card_details:stamp_cards!card_id (
           id,
           name,
           merchant_id,
           total_stamps,
           reward,
           business_logo,
-          business_color
-        ),
-        merchant:card(merchant_id) (
-          business_logo,
-          business_color
+          business_color,
+          merchant_info:merchants!merchant_id (
+            business_logo,
+            business_color
+          )
         )
       `)
       .eq('customer_id', userId);
@@ -63,23 +62,23 @@ export const fetchUserStampCards = async (userId: string): Promise<StampCard[]> 
     // Transform data to match the StampCard interface with proper priority
     return customerCards.map((item: any) => {
       // Priority: stamp card logo > merchant logo > fallback
-      const businessLogo = item.card?.business_logo || 
-                          item.merchant?.business_logo || 
+      const businessLogo = item.card_details?.business_logo || 
+                          item.card_details?.merchant_info?.business_logo || 
                           "🏪";
       
       // Priority: stamp card color > merchant color > fallback
-      const businessColor = item.card?.business_color || 
-                           item.merchant?.business_color || 
+      const businessColor = item.card_details?.business_color || 
+                           item.card_details?.merchant_info?.business_color || 
                            "#3B82F6";
       
       return {
         id: item.card_id,
-        businessId: item.card?.merchant_id || "",
-        businessName: item.card?.name.split(' ')[0] || "Business",
+        businessId: item.card_details?.merchant_id || "",
+        businessName: item.card_details?.name?.split(' ')[0] || "Business",
         businessLogo,
-        totalStamps: item.card?.total_stamps || 10,
+        totalStamps: item.card_details?.total_stamps || 10,
         currentStamps: item.current_stamps,
-        reward: item.card?.reward || "Free Item",
+        reward: item.card_details?.reward || "Free Item",
         color: businessColor,
         createdAt: item.created_at
       };
@@ -102,14 +101,19 @@ export const fetchStampCard = async (userId: string, cardId: string): Promise<St
         card_id,
         current_stamps,
         created_at,
-        card:card_id (
+        card_details:stamp_cards!card_id (
           id,
           name,
           merchant_id,
           total_stamps,
           reward,
           business_logo,
-          business_color
+          business_color,
+          merchant_info:merchants!merchant_id (
+            business_name,
+            business_logo,
+            business_color
+          )
         )
       `)
       .eq('customer_id', userId)
@@ -125,34 +129,28 @@ export const fetchStampCard = async (userId: string, cardId: string): Promise<St
       return null;
     }
 
-    // Get merchant details for fallback
-    const { data: merchant } = await supabase
-      .from('merchants')
-      .select('business_name, business_logo, business_color')
-      .eq('id', customerCard.card.merchant_id)
-      .single();
-
-    const businessName = merchant?.business_name || customerCard.card.name.split(' ')[0] || "Business";
+    const businessName = customerCard.card_details?.merchant_info?.business_name || 
+                        customerCard.card_details?.name?.split(' ')[0] || "Business";
     
     // Priority: stamp card logo > merchant logo > fallback
-    const businessLogo = customerCard.card.business_logo || 
-                        merchant?.business_logo || 
+    const businessLogo = customerCard.card_details?.business_logo || 
+                        customerCard.card_details?.merchant_info?.business_logo || 
                         "🏪";
     
     // Priority: stamp card color > merchant color > fallback
-    const businessColor = customerCard.card.business_color || 
-                         merchant?.business_color || 
+    const businessColor = customerCard.card_details?.business_color || 
+                         customerCard.card_details?.merchant_info?.business_color || 
                          "#3B82F6";
 
     // Transform data to match the StampCard interface
     return {
       id: customerCard.card_id,
-      businessId: customerCard.card.merchant_id,
+      businessId: customerCard.card_details?.merchant_id || "",
       businessName,
       businessLogo,
-      totalStamps: customerCard.card.total_stamps,
+      totalStamps: customerCard.card_details?.total_stamps || 10,
       currentStamps: customerCard.current_stamps,
-      reward: customerCard.card.reward,
+      reward: customerCard.card_details?.reward || "Free Item",
       color: businessColor,
       createdAt: customerCard.created_at
     };
