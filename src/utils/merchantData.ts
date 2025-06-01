@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { handleSupabaseError, ErrorType } from "@/utils/errors";
@@ -122,13 +123,30 @@ export const createMerchantStampCard = async (cardData: Omit<MerchantStampCard, 
   try {
     console.log("Creating stamp card with data:", cardData);
     
-    const merchant = await getCurrentMerchant();
-    console.log("Current merchant:", merchant);
+    // Get current session and check JWT contents
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    console.log("Current session:", session);
+    console.log("Session error:", sessionError);
     
-    if (!merchant) {
-      console.error("No merchant session found");
+    if (sessionError || !session) {
+      console.error("No valid session found");
       throw new Error("No merchant session found. Please log in again.");
     }
+    
+    // Log JWT metadata to see if role is set correctly
+    console.log("User metadata:", session.user.user_metadata);
+    console.log("Raw user metadata:", session.user.raw_user_meta_data);
+    console.log("Auth UID:", session.user.id);
+    
+    const merchant = await getCurrentMerchant();
+    console.log("Current merchant from getCurrentMerchant:", merchant);
+    
+    if (!merchant) {
+      console.error("No merchant found");
+      throw new Error("No merchant found. Please log in again.");
+    }
+    
+    console.log("Merchant ID vs Auth UID:", { merchantId: merchant.id, authUid: session.user.id });
 
     const insertData = {
       name: cardData.name,
@@ -139,10 +157,11 @@ export const createMerchantStampCard = async (cardData: Omit<MerchantStampCard, 
       business_color: cardData.color,
       is_active: cardData.isActive,
       expiry_days: cardData.expiryDays,
-      merchant_id: merchant.id
+      merchant_id: session.user.id // Use auth.uid() directly instead of merchant.id
     };
     
     console.log("Insert data prepared:", insertData);
+    console.log("About to insert with merchant_id:", session.user.id);
 
     const { data, error } = await supabase
       .from("stamp_cards")
