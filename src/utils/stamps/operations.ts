@@ -1,4 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
+
+import { merchantSupabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
   AppError, 
@@ -65,11 +66,18 @@ export const issueStampsToCustomer = async (
 
     console.log("Calling issue-stamp function with:", options);
 
-    // Get the session first to access the token
-    const { data: sessionData } = await supabase.auth.getSession();
+    // Get the merchant session to access the token
+    const { data: sessionData } = await merchantSupabase.auth.getSession();
     const accessToken = sessionData.session?.access_token;
 
-    // Online mode - proceed with direct Edge Function call
+    if (!accessToken) {
+      throw new AppError(
+        ErrorType.AUTH_SESSION_EXPIRED,
+        "Merchant session not found. Please login again."
+      );
+    }
+
+    // Online mode - proceed with direct Edge Function call using merchant authentication
     const response = await fetch('https://ctutwgntxhpuxtfkkdiy.functions.supabase.co/issue-stamp', {
       method: 'POST',
       headers: {

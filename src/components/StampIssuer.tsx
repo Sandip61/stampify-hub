@@ -66,7 +66,9 @@ const StampIssuer: React.FC<StampIssuerProps> = ({ cardId }) => {
       // Extract the specific error message if possible
       let errorMessage = "Failed to issue stamps. Please try again later.";
       
-      if (error instanceof Error) {
+      if (error instanceof AppError) {
+        errorMessage = error.getUserFriendlyMessage();
+      } else if (error instanceof Error) {
         // Try to parse JSON error message from Edge Function if it exists
         try {
           const errorObj = JSON.parse(error.message);
