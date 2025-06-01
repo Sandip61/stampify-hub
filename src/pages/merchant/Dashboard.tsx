@@ -65,7 +65,7 @@ const MerchantDashboard = () => {
 
   const fetchRecentTransactions = async (merchantId: string) => {
     try {
-      // First, get recent transactions
+      // First get transactions with stamp card names
       const { data: transactionData, error: transactionError } = await merchantSupabase
         .from('stamp_transactions')
         .select(`
@@ -85,35 +85,37 @@ const MerchantDashboard = () => {
         return [];
       }
 
-      // Get unique customer IDs
+      // Get unique customer IDs from transactions
       const customerIds = [...new Set(transactionData.map(t => t.customer_id))];
       
       // Fetch customer profiles separately
-      const { data: customerProfiles, error: profilesError } = await merchantSupabase
+      const { data: profileData, error: profileError } = await merchantSupabase
         .from('profiles')
         .select('id, email, name')
         .in('id', customerIds);
 
-      if (profilesError) {
-        console.error("Error fetching customer profiles:", profilesError);
+      if (profileError) {
+        console.error("Error fetching profiles:", profileError);
       }
 
-      // Create a map of customer profiles for quick lookup
-      const profilesMap = new Map();
-      customerProfiles?.forEach(profile => {
-        profilesMap.set(profile.id, profile);
+      // Create a map of customer ID to profile data
+      const profileMap = new Map();
+      profileData?.forEach(profile => {
+        profileMap.set(profile.id, profile);
       });
 
-      // Combine transaction data with customer profiles
-      return transactionData.map(transaction => {
-        const customerProfile = profilesMap.get(transaction.customer_id);
+      // Combine transaction data with profile data
+      const formattedTransactions = transactionData.map(transaction => {
+        const profile = profileMap.get(transaction.customer_id);
         return {
           ...transaction,
           card_name: transaction.stamp_cards?.name,
-          customerEmail: customerProfile?.email,
-          customerName: customerProfile?.name
+          customerEmail: profile?.email,
+          customerName: profile?.name
         };
       });
+      
+      return formattedTransactions;
     } catch (error) {
       console.error("Error in fetchRecentTransactions:", error);
       return [];
