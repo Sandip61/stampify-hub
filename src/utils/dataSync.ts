@@ -35,12 +35,16 @@ export const fetchUserStampCards = async (userId: string): Promise<StampCard[]> 
         card_id,
         current_stamps,
         created_at,
-        stamp_cards:card_id (
+        card:card_id (
           id,
           name,
           merchant_id,
           total_stamps,
           reward,
+          business_logo,
+          business_color
+        ),
+        merchant:card(merchant_id) (
           business_logo,
           business_color
         )
@@ -57,56 +61,29 @@ export const fetchUserStampCards = async (userId: string): Promise<StampCard[]> 
     }
 
     // Transform data to match the StampCard interface with proper priority
-    const transformedCards = await Promise.all(customerCards.map(async (item: any) => {
-      let businessLogo = "🏪"; // Default fallback
-      let businessColor = "#3B82F6"; // Default fallback
-      let businessName = "Business"; // Default fallback
-
-      // Priority 1: Use stamp card logo/color if available
-      if (item.stamp_cards?.business_logo) {
-        businessLogo = item.stamp_cards.business_logo;
-      }
-      if (item.stamp_cards?.business_color) {
-        businessColor = item.stamp_cards.business_color;
-      }
-
-      // Priority 2: If no stamp card logo/color, get from merchant
-      if (!item.stamp_cards?.business_logo || !item.stamp_cards?.business_color) {
-        try {
-          const { data: merchant } = await supabase
-            .from('merchants')
-            .select('business_name, business_logo, business_color')
-            .eq('id', item.stamp_cards?.merchant_id)
-            .single();
-
-          if (merchant) {
-            if (!item.stamp_cards?.business_logo && merchant.business_logo) {
-              businessLogo = merchant.business_logo;
-            }
-            if (!item.stamp_cards?.business_color && merchant.business_color) {
-              businessColor = merchant.business_color;
-            }
-            businessName = merchant.business_name || item.stamp_cards?.name?.split(' ')[0] || "Business";
-          }
-        } catch (merchantError) {
-          console.error("Error fetching merchant data:", merchantError);
-        }
-      }
-
+    return customerCards.map((item: any) => {
+      // Priority: stamp card logo > merchant logo > fallback
+      const businessLogo = item.card?.business_logo || 
+                          item.merchant?.business_logo || 
+                          "🏪";
+      
+      // Priority: stamp card color > merchant color > fallback
+      const businessColor = item.card?.business_color || 
+                           item.merchant?.business_color || 
+                           "#3B82F6";
+      
       return {
         id: item.card_id,
-        businessId: item.stamp_cards?.merchant_id || "",
-        businessName,
+        businessId: item.card?.merchant_id || "",
+        businessName: item.card?.name.split(' ')[0] || "Business",
         businessLogo,
-        totalStamps: item.stamp_cards?.total_stamps || 10,
+        totalStamps: item.card?.total_stamps || 10,
         currentStamps: item.current_stamps,
-        reward: item.stamp_cards?.reward || "Free Item",
+        reward: item.card?.reward || "Free Item",
         color: businessColor,
         createdAt: item.created_at
       };
-    }));
-
-    return transformedCards;
+    });
   } catch (error) {
     console.error("Error in fetchUserStampCards:", error);
     throw error;
@@ -125,7 +102,7 @@ export const fetchStampCard = async (userId: string, cardId: string): Promise<St
         card_id,
         current_stamps,
         created_at,
-        stamp_cards:card_id (
+        card:card_id (
           id,
           name,
           merchant_id,
@@ -148,50 +125,34 @@ export const fetchStampCard = async (userId: string, cardId: string): Promise<St
       return null;
     }
 
-    let businessLogo = "🏪"; // Default fallback
-    let businessColor = "#3B82F6"; // Default fallback
-    let businessName = "Business"; // Default fallback
+    // Get merchant details for fallback
+    const { data: merchant } = await supabase
+      .from('merchants')
+      .select('business_name, business_logo, business_color')
+      .eq('id', customerCard.card.merchant_id)
+      .single();
 
-    // Priority 1: Use stamp card logo/color if available
-    if (customerCard.stamp_cards?.business_logo) {
-      businessLogo = customerCard.stamp_cards.business_logo;
-    }
-    if (customerCard.stamp_cards?.business_color) {
-      businessColor = customerCard.stamp_cards.business_color;
-    }
-
-    // Priority 2: If no stamp card logo/color, get from merchant
-    if (!customerCard.stamp_cards?.business_logo || !customerCard.stamp_cards?.business_color) {
-      try {
-        const { data: merchant } = await supabase
-          .from('merchants')
-          .select('business_name, business_logo, business_color')
-          .eq('id', customerCard.stamp_cards?.merchant_id)
-          .single();
-
-        if (merchant) {
-          if (!customerCard.stamp_cards?.business_logo && merchant.business_logo) {
-            businessLogo = merchant.business_logo;
-          }
-          if (!customerCard.stamp_cards?.business_color && merchant.business_color) {
-            businessColor = merchant.business_color;
-          }
-          businessName = merchant.business_name || customerCard.stamp_cards?.name?.split(' ')[0] || "Business";
-        }
-      } catch (merchantError) {
-        console.error("Error fetching merchant data:", merchantError);
-      }
-    }
+    const businessName = merchant?.business_name || customerCard.card.name.split(' ')[0] || "Business";
+    
+    // Priority: stamp card logo > merchant logo > fallback
+    const businessLogo = customerCard.card.business_logo || 
+                        merchant?.business_logo || 
+                        "🏪";
+    
+    // Priority: stamp card color > merchant color > fallback
+    const businessColor = customerCard.card.business_color || 
+                         merchant?.business_color || 
+                         "#3B82F6";
 
     // Transform data to match the StampCard interface
     return {
       id: customerCard.card_id,
-      businessId: customerCard.stamp_cards?.merchant_id || "",
+      businessId: customerCard.card.merchant_id,
       businessName,
       businessLogo,
-      totalStamps: customerCard.stamp_cards?.total_stamps || 10,
+      totalStamps: customerCard.card.total_stamps,
       currentStamps: customerCard.current_stamps,
-      reward: customerCard.stamp_cards?.reward || "Free Item",
+      reward: customerCard.card.reward,
       color: businessColor,
       createdAt: customerCard.created_at
     };
