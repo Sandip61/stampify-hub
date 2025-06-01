@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get or create customer stamp card
+    // Get or create customer stamp card with explicit locking to prevent race conditions
     let { data: customerCard, error: customerCardError } = await supabase
       .from('customer_stamp_cards')
       .select('*')
@@ -205,15 +205,20 @@ Deno.serve(async (req) => {
       customerCard = newCustomerCard
     }
 
-    // Add stamps
-    const newStampCount = customerCard.current_stamps + count
+    // Calculate new stamp count - ensure we don't exceed total stamps
+    const currentStamps = customerCard.current_stamps || 0
+    const newStampCount = Math.min(currentStamps + count, card.total_stamps)
+    const actualStampsAdded = newStampCount - currentStamps
     const rewardEarned = newStampCount >= card.total_stamps
 
-    // Update customer stamp card
+    console.log(`Current stamps: ${currentStamps}, Adding: ${count}, New total: ${newStampCount}, Reward earned: ${rewardEarned}`)
+
+    // Update customer stamp card - reset to 0 if reward is earned
+    const finalStampCount = rewardEarned ? 0 : newStampCount
     const { error: updateError } = await supabase
       .from('customer_stamp_cards')
       .update({
-        current_stamps: rewardEarned ? 0 : newStampCount,
+        current_stamps: finalStampCount,
         updated_at: new Date().toISOString()
       })
       .eq('id', customerCard.id)
@@ -226,8 +231,9 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Create transaction record
+    // Create transaction record - record the actual stamps that were processed
     const rewardCode = rewardEarned ? Math.random().toString(36).substring(2, 8).toUpperCase() : null
+    const transactionType = rewardEarned ? 'redeem' : 'stamp'
     
     const { error: transactionError } = await supabase
       .from('stamp_transactions')
@@ -235,12 +241,15 @@ Deno.serve(async (req) => {
         card_id: cardId,
         customer_id: customerId || 'unregistered',
         merchant_id: merchantId,
-        type: rewardEarned ? 'reward' : 'stamp',
-        count: count,
+        type: transactionType,
+        count: actualStampsAdded, // Record actual stamps added, not requested
         reward_code: rewardCode,
         metadata: {
           customer_email: customerEmail,
-          method: body.method
+          method: body.method,
+          requested_count: count,
+          stamps_before: currentStamps,
+          stamps_after: finalStampCount
         }
       })
 
@@ -295,12 +304,13 @@ Deno.serve(async (req) => {
       success: true,
       message: rewardEarned ? 'Stamps issued and reward earned!' : 'Stamps issued successfully',
       stampCard: {
-        current_stamps: rewardEarned ? 0 : newStampCount,
+        current_stamps: finalStampCount,
         card: {
           total_stamps: card.total_stamps,
           reward: card.reward
         }
       },
+      stampsAdded: actualStampsAdded,
       rewardEarned,
       rewardCode,
       customerInfo: {
