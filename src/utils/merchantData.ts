@@ -298,38 +298,3 @@ export const getMerchantAnalytics = async (): Promise<AnalyticsData> => {
     throw error;
   }
 };
-
-const getCurrentMerchant = async () => {
-  try {
-    console.log("Getting current merchant session...");
-    const { data: { session }, error } = await supabase.auth.getSession();
-    
-    if (error) {
-      console.error("Session error:", error);
-      throw error;
-    }
-    if (!session) {
-      console.log("No session found");
-      return null;
-    }
-    
-    console.log("Session found for user:", session.user.id);
-    
-    const { data, error: merchantError } = await supabase
-      .from('merchants')
-      .select('*')
-      .eq('id', session.user.id)
-      .single();
-      
-    if (merchantError) {
-      console.error("Merchant lookup error:", merchantError);
-      throw merchantError;
-    }
-    
-    console.log("Merchant found:", data);
-    return data;
-  } catch (error) {
-    console.error("Error getting current merchant:", error);
-    return null;
-  }
-};
