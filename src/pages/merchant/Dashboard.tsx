@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { 
@@ -52,10 +51,17 @@ const MerchantDashboard = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          throw new Error("No authenticated user");
+        }
+
         // Fetch actual stamp cards from Supabase
         const { data: cardsData, error: cardsError } = await supabase
           .from("stamp_cards")
           .select("*")
+          .eq("merchant_id", user.id)
           .order("created_at", { ascending: false });
         
         if (cardsError) {
@@ -68,26 +74,46 @@ const MerchantDashboard = () => {
           console.log("Stamp cards fetched:", cardsData);
         }
 
-        // Fetch all customer_stamp_cards (issued stamp cards)
-        const { data: customerStampCards, error: cscError } = await supabase
-          .from("customer_stamp_cards")
-          .select("*, card:stamp_cards(total_stamps)")
+        // Fetch merchant customers to get total customer count
+        const { data: merchantCustomersData, error: customersError } = await supabase
+          .from("merchant_customers")
+          .select("*")
+          .eq("merchant_id", user.id);
+
+        if (customersError) {
+          console.error("Error fetching merchant customers:", customersError);
+          throw customersError;
+        }
+
+        const totalCustomers = merchantCustomersData?.length ?? 0;
+
+        // Fetch all customer_stamp_cards for this merchant's cards
+        const cardIds = cardsData?.map(card => card.id) ?? [];
+        let customerStampCards: any[] = [];
         
-        if (cscError) {
-          console.error("Error fetching customer stamp cards:", cscError);
-          throw cscError;
+        if (cardIds.length > 0) {
+          const { data: cscData, error: cscError } = await supabase
+            .from("customer_stamp_cards")
+            .select("*, card:stamp_cards!inner(total_stamps, merchant_id)")
+            .in("card_id", cardIds);
+          
+          if (cscError) {
+            console.error("Error fetching customer stamp cards:", cscError);
+          } else {
+            customerStampCards = cscData ?? [];
+          }
         }
 
         // Calculate total issued
-        const totalIssued = customerStampCards?.length ?? 0;
+        const totalIssued = customerStampCards.length;
         
         // Number redeemed: where individual current_stamps >= corresponding card.total_stamps
         const numRedeemed =
-          customerStampCards?.filter((csc: any) =>
+          customerStampCards.filter((csc: any) =>
             csc.card &&
             typeof csc.card.total_stamps === "number" &&
             csc.current_stamps >= csc.card.total_stamps
-          ).length ?? 0;
+          ).length;
 
         // Calculate Redemption Rate
         const redemptionRate = totalIssued === 0 ? 0 : (numRedeemed / totalIssued) * 100;
@@ -96,7 +122,7 @@ const MerchantDashboard = () => {
         setAnalytics({
           totalStampCards: cardsData ? cardsData.length : 0,
           totalRedemptions: numRedeemed,
-          totalCustomers: 0, // Still need to fetch from a customers table for real value
+          totalCustomers: totalCustomers,
           activeCustomers: 0,
           redemptionRate: redemptionRate,
           retentionRate: 0,
