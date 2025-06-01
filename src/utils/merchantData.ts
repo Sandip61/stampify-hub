@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { handleSupabaseError, ErrorType } from "@/utils/errors";
@@ -120,32 +119,49 @@ export const getMerchantStampCards = async () => {
 
 export const createMerchantStampCard = async (cardData: Omit<MerchantStampCard, "id" | "createdAt" | "updatedAt" | "merchantId">) => {
   try {
+    console.log("Creating stamp card with data:", cardData);
+    
     const merchant = await getCurrentMerchant();
+    console.log("Current merchant:", merchant);
+    
     if (!merchant) {
+      console.error("No merchant session found");
       throw new Error("No merchant session found");
     }
 
+    const insertData = {
+      name: cardData.name,
+      description: cardData.description,
+      total_stamps: cardData.totalStamps,
+      reward: cardData.reward,
+      business_logo: cardData.logo,
+      business_color: cardData.color,
+      is_active: cardData.isActive,
+      expiry_days: cardData.expiryDays,
+      merchant_id: merchant.id
+    };
+    
+    console.log("Insert data prepared:", insertData);
+
     const { data, error } = await supabase
       .from("stamp_cards")
-      .insert({
-        name: cardData.name,
-        description: cardData.description,
-        total_stamps: cardData.totalStamps,
-        reward: cardData.reward,
-        business_logo: cardData.logo,
-        business_color: cardData.color,
-        is_active: cardData.isActive,
-        expiry_days: cardData.expiryDays,
-        merchant_id: merchant.id
-      })
+      .insert(insertData)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Database error details:", error);
+      console.error("Error code:", error.code);
+      console.error("Error message:", error.message);
+      console.error("Error details:", error.details);
+      console.error("Error hint:", error.hint);
+      throw error;
+    }
     
+    console.log("Stamp card created successfully:", data);
     return data;
   } catch (error) {
-    console.error("Error creating stamp card:", error);
+    console.error("Error in createMerchantStampCard:", error);
     throw error;
   }
 };
@@ -284,10 +300,19 @@ export const getMerchantAnalytics = async (): Promise<AnalyticsData> => {
 
 const getCurrentMerchant = async () => {
   try {
+    console.log("Getting current merchant session...");
     const { data: { session }, error } = await supabase.auth.getSession();
     
-    if (error) throw error;
-    if (!session) return null;
+    if (error) {
+      console.error("Session error:", error);
+      throw error;
+    }
+    if (!session) {
+      console.log("No session found");
+      return null;
+    }
+    
+    console.log("Session found for user:", session.user.id);
     
     const { data, error: merchantError } = await supabase
       .from('merchants')
@@ -295,7 +320,12 @@ const getCurrentMerchant = async () => {
       .eq('id', session.user.id)
       .single();
       
-    if (merchantError) throw merchantError;
+    if (merchantError) {
+      console.error("Merchant lookup error:", merchantError);
+      throw merchantError;
+    }
+    
+    console.log("Merchant found:", data);
     return data;
   } catch (error) {
     console.error("Error getting current merchant:", error);

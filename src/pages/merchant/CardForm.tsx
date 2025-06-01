@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -103,7 +102,20 @@ const MerchantCardForm = () => {
     setIsSubmitting(true);
     
     try {
+      console.log("Starting form submission...");
+      console.log("Form data:", {
+        name,
+        description,
+        totalStamps,
+        reward,
+        color,
+        logo,
+        isActive,
+        expiryDays
+      });
+
       if (isEditMode && id) {
+        console.log("Updating existing card:", id);
         await updateMerchantStampCard(id, {
           name,
           description,
@@ -117,7 +129,8 @@ const MerchantCardForm = () => {
         
         toast.success("Stamp card updated successfully");
       } else {
-        await createMerchantStampCard({
+        console.log("Creating new card...");
+        const result = await createMerchantStampCard({
           name,
           description,
           totalStamps,
@@ -128,12 +141,33 @@ const MerchantCardForm = () => {
           expiryDays
         });
         
+        console.log("Card creation result:", result);
         toast.success("Stamp card created successfully");
       }
       
       navigate("/merchant/cards");
     } catch (error) {
-      handleError(error, ErrorType.DATABASE_ERROR, "Failed to save stamp card");
+      console.error("Form submission error:", error);
+      
+      // Provide more specific error messaging
+      let errorMessage = "Failed to save stamp card";
+      if (error instanceof Error) {
+        console.error("Error details:", error.message);
+        
+        // Check for specific database constraint errors
+        if (error.message.includes('duplicate key') || error.message.includes('unique')) {
+          errorMessage = "A stamp card with this name already exists";
+        } else if (error.message.includes('foreign key') || error.message.includes('merchant_id')) {
+          errorMessage = "Invalid merchant session. Please log in again.";
+        } else if (error.message.includes('not null') || error.message.includes('required')) {
+          errorMessage = "Please fill in all required fields";
+        } else if (error.message.includes('check constraint')) {
+          errorMessage = "Invalid data provided. Please check your inputs.";
+        }
+      }
+      
+      toast.error(errorMessage);
+      handleError(error, ErrorType.DATABASE_ERROR, errorMessage);
     } finally {
       setIsSubmitting(false);
     }
