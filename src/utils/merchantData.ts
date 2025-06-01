@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { handleSupabaseError, ErrorType } from "@/utils/errors";
+import { getCurrentMerchant } from "@/utils/merchantAuth";
 
 export interface MerchantStampCard {
   id: string;
@@ -126,7 +127,7 @@ export const createMerchantStampCard = async (cardData: Omit<MerchantStampCard, 
     
     if (!merchant) {
       console.error("No merchant session found");
-      throw new Error("No merchant session found");
+      throw new Error("No merchant session found. Please log in again.");
     }
 
     const insertData = {
