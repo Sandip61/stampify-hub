@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { CheckCircle } from 'lucide-react';
 import { getCurrentUser } from '@/utils/auth';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useRole } from '@/contexts/RoleContext';
 
 interface QRScannerProps {
   onScanComplete?: () => void;
@@ -20,6 +21,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
   const lastScannedCodeRef = useRef<string | null>(null);
   const lastScanTimeRef = useRef<number | null>(null);
   const isMobile = useIsMobile();
+  const { activeRole } = useRole();
   
   const onScanSuccess = async (decodedText: string) => {
     if (!mountedRef.current || scanResult || processing || scanCooldown) return;
@@ -73,7 +75,8 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         decodedText, 
         user.id, 
         user.email, 
-        1
+        1,
+        activeRole // Pass the active role from context
       );
       
       if (result.rewardEarned) {

@@ -1,5 +1,5 @@
 
-import { merchantSupabase } from "@/integrations/supabase/client";
+import { merchantSupabase, customerSupabase, UserRole } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
   AppError, 
@@ -17,12 +17,32 @@ import {
 } from "@/utils/offlineStorage";
 
 /**
+ * Helper function to detect user role from active sessions
+ */
+async function detectUserRoleFromSession(): Promise<UserRole> {
+  const [customerSession, merchantSession] = await Promise.all([
+    customerSupabase.auth.getSession(),
+    merchantSupabase.auth.getSession(),
+  ]);
+
+  if (merchantSession.data.session) return UserRole.MERCHANT;
+  if (customerSession.data.session) return UserRole.CUSTOMER;
+
+  throw new AppError(ErrorType.AUTH_TOKEN_EXPIRED, "No active session found for either role");
+}
+
+/**
  * Issue stamps to a customer
  */
 export const issueStampsToCustomer = async (
-  options: StampIssuingOptions
+  options: StampIssuingOptions,
+  roleFromCaller?: UserRole
 ): Promise<StampResponse> => {
   try {
+    // Determine role - prefer explicit role, fallback to session detection
+    const role = roleFromCaller ?? (await detectUserRoleFromSession());
+    const supabaseClient = role === UserRole.MERCHANT ? merchantSupabase : customerSupabase;
+
     // Check if online
     if (!isOnline()) {
       // Store the operation for later syncing
@@ -66,18 +86,19 @@ export const issueStampsToCustomer = async (
 
     console.log("Calling issue-stamp function with:", options);
 
-    // Get the merchant session to access the token
-    const { data: sessionData } = await merchantSupabase.auth.getSession();
+    // Get the session token from the appropriate client
+    const { data: sessionData } = await supabaseClient.auth.getSession();
     const accessToken = sessionData.session?.access_token;
 
     if (!accessToken) {
       throw new AppError(
         ErrorType.AUTH_TOKEN_EXPIRED,
-        "Merchant session not found. Please login again."
+        `No active ${role} session found. Please login again.`
       );
     }
 
-    // Online mode - proceed with direct Edge Function call using merchant authentication
+    // Online mode - proceed with direct Edge Function call using role-based authentication
+    // TODO: Replace with `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/issue-stamp` before production
     const response = await fetch('https://ctutwgntxhpuxtfkkdiy.functions.supabase.co/issue-stamp', {
       method: 'POST',
       headers: {
@@ -290,7 +311,8 @@ export const processScannedQRCode = async (
   qrCode: string,
   customerId?: string,
   customerEmail?: string,
-  count: number = 1
+  count: number = 1,
+  roleFromCaller?: UserRole
 ): Promise<StampResponse> => {
   try {
     if (!qrCode) {
@@ -306,6 +328,9 @@ export const processScannedQRCode = async (
         "Customer ID or email is required"
       );
     }
+    
+    // Determine role - prefer explicit role, fallback to session detection
+    const role = roleFromCaller ?? (await detectUserRoleFromSession());
     
     // Try to parse the QR code to add a timestamp if it doesn't have one
     try {
@@ -324,13 +349,14 @@ export const processScannedQRCode = async (
       );
     }
     
+    // Pass the role down to issueStampsToCustomer
     return await issueStampsToCustomer({
       qrCode,
       customerId,
       customerEmail,
       count,
       method: "qr"
-    });
+    }, role);
   } catch (error) {
     throw handleError(error, ErrorType.QR_CODE_INVALID, "Failed to process QR code");
   }

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, CheckCircle } from 'lucide-react';
@@ -7,12 +6,14 @@ import { toast } from 'sonner';
 import { Html5Qrcode } from 'html5-qrcode';
 import { processScannedQRCode } from '@/utils/stamps';
 import { getCurrentUser } from '@/utils/auth';
+import { useRole } from '@/contexts/RoleContext';
 import QRScanner from '@/components/QRScanner';
 
 const ScanQR = () => {
   const navigate = useNavigate();
   const [scanComplete, setScanComplete] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { activeRole } = useRole();
 
   const handleScanComplete = useCallback(() => {
     console.log("Scan complete callback triggered");
@@ -50,7 +51,13 @@ const ScanQR = () => {
         const qrCodeSuccessCallback = async (decodedText: string) => {
           try {
             console.log("Processing QR code from file:", decodedText);
-            const result = await processScannedQRCode(decodedText, user.id);
+            const result = await processScannedQRCode(
+              decodedText, 
+              user.id, 
+              user.email, 
+              1,
+              activeRole // Pass the active role from context
+            );
             
             if (result.rewardEarned) {
               toast.success(`Congratulations! You've earned a reward: ${result.stampCard.card.reward}`);

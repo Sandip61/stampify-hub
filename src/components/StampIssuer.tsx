@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { issueStampsToCustomer } from "@/utils/stamps/operations";
@@ -8,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useConnectivity } from "@/hooks/useConnectivity";
+import { useRole } from "@/contexts/RoleContext";
 import { AppError, ErrorType } from "@/utils/errors";
 
 interface StampIssuerProps {
@@ -21,6 +21,7 @@ const StampIssuer: React.FC<StampIssuerProps> = ({ cardId }) => {
   const [lastResult, setLastResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const { isOnline } = useConnectivity();
+  const { activeRole } = useRole();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +47,7 @@ const StampIssuer: React.FC<StampIssuerProps> = ({ cardId }) => {
         customerEmail: email,
         count: stampCount,
         method: "direct"
-      });
+      }, activeRole); // Pass the active role from context
       
       console.log("Stamp issue result:", result);
       setLastResult(result);
