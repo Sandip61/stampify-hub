@@ -8,7 +8,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useRole } from '@/contexts/RoleContext';
 
 interface QRScannerProps {
-  onScanComplete?: () => void;
+  onScanComplete?: (rewardInfo?: { code: string, reward: string }) => void;
 }
 
 const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
@@ -79,13 +79,19 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanComplete }) => {
         activeRole // Pass the active role from context
       );
       
-      if (result.rewardEarned) {
-        toast.success(`Congratulations! You've earned a reward: ${result.stampCard.card.reward}`);
-      } else {
+      if (result.rewardEarned && result.rewardCode && result.stampCard && result.stampCard.card) {
+        toast.success(`Congratulations! You've earned a reward: ${result.stampCard.card.reward}\nCode: ${result.rewardCode}`);
+        onScanComplete?.({
+          code: result.rewardCode,
+          reward: result.stampCard.card.reward
+        });
+      } else if (result.stampCard && result.stampCard.current_stamps) {
         toast.success(`Added stamps! Total: ${result.stampCard.current_stamps}/${result.stampCard.card.total_stamps}`);
+        onScanComplete?.();
+      } else {
+        toast.success("QR Code scanned successfully!");
+        onScanComplete?.();
       }
-
-      onScanComplete?.();
 
       setTimeout(() => {
         setScanCooldown(false);

@@ -8,19 +8,28 @@ import { processScannedQRCode } from '@/utils/stamps';
 import { getCurrentUser } from '@/utils/auth';
 import { useRole } from '@/contexts/RoleContext';
 import QRScanner from '@/components/QRScanner';
+import RewardCodeModal from "@/components/RewardCodeModal";
 
 const ScanQR = () => {
   const navigate = useNavigate();
   const [scanComplete, setScanComplete] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { activeRole } = useRole();
+  const [rewardModalOpen, setRewardModalOpen] = useState(false);
+  const [rewardData, setRewardData] = useState<{ code: string; reward: string } | null>(null);
 
-  const handleScanComplete = useCallback(() => {
-    console.log("Scan complete callback triggered");
+  const handleScanComplete = useCallback((rewardInfo?: { code: string, reward: string }) => {
+    console.log("Scan complete callback triggered", rewardInfo);
     setScanComplete(true);
+    if (rewardInfo) {
+      setRewardData(rewardInfo);
+      setRewardModalOpen(true);
+    }
     setTimeout(() => {
-      navigate('/');
-    }, 2000);
+      if (!rewardInfo) {
+        navigate('/');
+      }
+    }, rewardInfo ? 2000 : 2000); // For reward, user must close modal manually; for regular, auto-redirect as before.
   }, [navigate]);
 
   const handleBack = () => {
@@ -56,16 +65,22 @@ const ScanQR = () => {
               user.id, 
               user.email, 
               1,
-              activeRole // Pass the active role from context
+              activeRole
             );
-            
-            if (result.rewardEarned) {
-              toast.success(`Congratulations! You've earned a reward: ${result.stampCard.card.reward}`);
-            } else {
+            // Show reward code in toast/modal
+            if (result.rewardEarned && result.rewardCode && result.stampCard && result.stampCard.card) {
+              toast.success(`Congratulations! You've earned a reward: ${result.stampCard.card.reward}\nCode: ${result.rewardCode}`);
+              handleScanComplete({
+                code: result.rewardCode,
+                reward: result.stampCard.card.reward
+              });
+            } else if (result.stampCard && result.stampCard.current_stamps) {
               toast.success(`Added ${result.stampCard.current_stamps} stamps!`);
+              handleScanComplete();
+            } else {
+              toast.success("Stamp collected!");
+              handleScanComplete();
             }
-            
-            handleScanComplete();
           } catch (error) {
             console.error("Error processing QR code from file:", error);
             toast.error(error instanceof Error ? error.message : "Failed to process QR code");
@@ -118,12 +133,21 @@ const ScanQR = () => {
         </div>
       ) : (
         <div className="fixed inset-0 flex items-center justify-center bg-black">
-          <div className="bg-green-50 p-10 flex flex-col items-center justify-center text-center rounded-lg m-4">
+          <div className="bg-green-50 p-10 flex flex-col items-center justify-center text-center rounded-lg m-4 animate-enter">
             <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
               <CheckCircle className="h-10 w-10 text-green-600" />
             </div>
             <h3 className="text-xl font-semibold text-green-800 mb-2">Success!</h3>
-            <p className="text-green-600">Your stamps have been collected</p>
+            <p className="text-green-600 mb-2">Your stamps have been collected</p>
+            {rewardData && (
+              <div>
+                <div className="mt-2 mb-1 text-sm text-green-800 font-bold">Reward Earned!</div>
+                <div className="bg-white rounded-lg px-4 py-2 font-mono tracking-wider text-lg border-2 border-green-400 shadow">
+                  <span>{rewardData.code}</span>
+                </div>
+                <div className="text-xs text-green-700 mt-2">{rewardData.reward}</div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -151,6 +175,17 @@ const ScanQR = () => {
           className="hidden"
         />
       </div>
+
+      <RewardCodeModal
+        isOpen={rewardModalOpen}
+        rewardCode={rewardData?.code ?? ""}
+        rewardDescription={rewardData?.reward ?? ""}
+        onClose={() => {
+          setRewardModalOpen(false);
+          setRewardData(null);
+          navigate('/');
+        }}
+      />
     </div>
   );
 };

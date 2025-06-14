@@ -1,15 +1,16 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, User } from "@/utils/auth";
 import { getUserTransactions, Transaction } from "@/utils/data";
 import { Stamp, Gift, Clock, Calendar } from "lucide-react";
+import { Copy, Check } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const History = () => {
   const [user, setUser] = useState<User | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -99,7 +100,7 @@ const History = () => {
                     <div className="bg-card rounded-xl border overflow-hidden">
                       <div className="divide-y">
                         {group.transactions.map(transaction => (
-                          <div key={transaction.id} className="p-4 flex items-center">
+                          <div key={transaction.id} className="p-4 flex items-center space-x-4">
                             <div className={`rounded-full p-2 mr-3 ${
                               transaction.type === 'stamp' 
                                 ? 'bg-blue-500/10 text-blue-500' 
@@ -120,6 +121,24 @@ const History = () => {
                                   ? `Added ${transaction.count || 1} stamp${(transaction.count || 1) > 1 ? 's' : ''}` 
                                   : `Redeemed reward${transaction.rewardCode ? ` (${transaction.rewardCode})` : ''}`}
                               </p>
+                              {/* Show reward code if present */}
+                              {transaction.type === 'reward' && transaction.rewardCode && (
+                                <div className="mt-1 flex items-center gap-2">
+                                  <span className="font-mono bg-green-100 text-green-800 px-2 py-1 rounded text-xs tracking-widest border border-green-200 select-all">{transaction.rewardCode}</span>
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(transaction.rewardCode as string);
+                                      setCopiedCode(transaction.id);
+                                      setTimeout(() => setCopiedCode(null), 1500);
+                                    }}
+                                    className="ml-2 px-2 py-1 bg-green-200 rounded hover:bg-green-300 flex items-center text-green-900 text-xs transition-all"
+                                    aria-label="Copy code"
+                                  >
+                                    {copiedCode === transaction.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                    {copiedCode === transaction.id ? "Copied" : "Copy"}
+                                  </button>
+                                </div>
+                              )}
                             </div>
                             <div className="text-xs text-muted-foreground">
                               {new Date(transaction.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
