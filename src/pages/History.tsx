@@ -119,15 +119,15 @@ const History = () => {
                               <p className="text-xs text-muted-foreground">
                                 {transaction.type === 'stamp' 
                                   ? `Added ${transaction.count || 1} stamp${(transaction.count || 1) > 1 ? 's' : ''}` 
-                                  : `Redeemed reward${transaction.reward_code ? ` (${transaction.reward_code})` : ''}`}
+                                  : `Redeemed reward${transaction.rewardCode ? ` (${transaction.rewardCode})` : ''}`}
                               </p>
                               {/* Show reward code if present */}
-                              {transaction.type === 'redeem' && transaction.reward_code && (
+                              {transaction.type === 'redeem' && transaction.rewardCode && (
                                 <div className="mt-1 flex items-center gap-2">
-                                  <span className="font-mono bg-green-100 text-green-800 px-2 py-1 rounded text-xs tracking-widest border border-green-200 select-all">{transaction.reward_code}</span>
+                                  <span className="font-mono bg-green-100 text-green-800 px-2 py-1 rounded text-xs tracking-widest border border-green-200 select-all">{transaction.rewardCode}</span>
                                   <button
                                     onClick={() => {
-                                      navigator.clipboard.writeText(transaction.reward_code as string);
+                                      navigator.clipboard.writeText(transaction.rewardCode as string);
                                       setCopiedCode(transaction.id);
                                       setTimeout(() => setCopiedCode(null), 1500);
                                     }}
