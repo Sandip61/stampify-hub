@@ -310,42 +310,75 @@ const MerchantAnalytics = () => {
         </div>
       </div>
 
-      {/* Recent Activity Chart */}
-      <div className="bg-card border rounded-xl p-5">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="font-semibold">Recent Activity (Last 30 days)</h3>
+      {/* Recent Activity Chart with Grid Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2 bg-card border rounded-xl p-5">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-semibold">Recent Activity (Last 30 days)</h3>
+          </div>
+          
+          {activityData.length > 0 ? (
+            <div className="h-64">
+              <ChartContainer
+                config={{
+                  stamps: {
+                    label: "Stamps",
+                    color: "#3B82F6",
+                  },
+                  redemptions: {
+                    label: "Redemptions",
+                    color: "#10B981",
+                  },
+                }}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={activityData}>
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="stamps" fill="#3B82F6" />
+                    <Bar dataKey="redemptions" fill="#10B981" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
+          ) : (
+            <div className="h-64 flex items-center justify-center">
+              <p className="text-muted-foreground">No activity data available yet.</p>
+            </div>
+          )}
         </div>
-        
-        {activityData.length > 0 ? (
-          <div className="h-64">
-            <ChartContainer
-              config={{
-                stamps: {
-                  label: "Stamps",
-                  color: "#3B82F6",
-                },
-                redemptions: {
-                  label: "Redemptions",
-                  color: "#10B981",
-                },
-              }}
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={activityData}>
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="stamps" fill="#3B82F6" />
-                  <Bar dataKey="redemptions" fill="#10B981" />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+
+        {/* Quick Stats Sidebar */}
+        <div className="space-y-4">
+          <div className="bg-card border rounded-xl p-4">
+            <div className="flex items-center text-blue-600 mb-2">
+              <CreditCard className="h-4 w-4 mr-2" />
+              <h4 className="font-medium text-sm">Total Cards</h4>
+            </div>
+            <p className="text-2xl font-bold">
+              {cardPerformanceData.reduce((sum, card) => sum + card.totalIssued, 0)}
+            </p>
           </div>
-        ) : (
-          <div className="h-64 flex items-center justify-center">
-            <p className="text-muted-foreground">No activity data available yet.</p>
+
+          <div className="bg-card border rounded-xl p-4">
+            <div className="flex items-center text-green-600 mb-2">
+              <Award className="h-4 w-4 mr-2" />
+              <h4 className="font-medium text-sm">Total Redeemed</h4>
+            </div>
+            <p className="text-2xl font-bold">
+              {cardPerformanceData.reduce((sum, card) => sum + card.totalRedeemed, 0)}
+            </p>
           </div>
-        )}
+
+          <div className="bg-card border rounded-xl p-4">
+            <div className="flex items-center text-purple-600 mb-2">
+              <Users className="h-4 w-4 mr-2" />
+              <h4 className="font-medium text-sm">Active Cards</h4>
+            </div>
+            <p className="text-2xl font-bold">{stampCards.length}</p>
+          </div>
+        </div>
       </div>
 
       {/* Card Performance Analysis */}
