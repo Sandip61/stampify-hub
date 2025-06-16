@@ -320,7 +320,7 @@ const MerchantAnalytics = () => {
         </div>
         
         {activityData.length > 0 ? (
-          <div className="h-12">
+          <div className="h-48">
             <ChartContainer
               config={{
                 stamps: {
@@ -345,7 +345,7 @@ const MerchantAnalytics = () => {
             </ChartContainer>
           </div>
         ) : (
-          <div className="h-12 flex items-center justify-center">
+          <div className="h-48 flex items-center justify-center">
             <p className="text-muted-foreground text-sm">No activity data available yet</p>
           </div>
         )}
