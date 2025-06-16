@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { 
   Calendar,
@@ -98,14 +97,13 @@ const MerchantAnalytics = () => {
         }
       });
 
-      // Convert to array and get last 7 days
+      // Convert to array and show all 30 days of data
       return Object.entries(dailyData)
         .map(([date, data]) => ({
           date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           stamps: data.stamps,
           redemptions: data.redemptions
-        }))
-        .slice(-7);
+        }));
     } catch (error) {
       console.error("Error in fetchActivityData:", error);
       return [];
@@ -312,15 +310,14 @@ const MerchantAnalytics = () => {
         </div>
       </div>
 
-      {/* Activity Over Time Chart */}
+      {/* Recent Activity Chart */}
       <div className="bg-card border rounded-xl p-5">
-        <div className="flex items-center mb-6">
-          <Calendar className="mr-2 h-5 w-5 text-muted-foreground" />
-          <h3 className="font-semibold">Activity Over Time (Last 7 days)</h3>
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="font-semibold">Recent Activity (Last 30 days)</h3>
         </div>
         
         {activityData.length > 0 ? (
-          <div className="h-48">
+          <div className="h-64">
             <ChartContainer
               config={{
                 stamps: {
@@ -334,10 +331,7 @@ const MerchantAnalytics = () => {
               }}
             >
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart 
-                  data={activityData}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
+                <BarChart data={activityData}>
                   <XAxis dataKey="date" />
                   <YAxis />
                   <ChartTooltip content={<ChartTooltipContent />} />
@@ -348,8 +342,8 @@ const MerchantAnalytics = () => {
             </ChartContainer>
           </div>
         ) : (
-          <div className="h-48 flex items-center justify-center">
-            <p className="text-muted-foreground text-sm">No activity data available yet</p>
+          <div className="h-64 flex items-center justify-center">
+            <p className="text-muted-foreground">No activity data available yet.</p>
           </div>
         )}
       </div>
