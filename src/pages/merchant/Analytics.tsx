@@ -41,7 +41,29 @@ const MerchantAnalytics = () => {
   const [stampCards, setStampCards] = useState<StampCard[]>([]);
   const [activityData, setActivityData] = useState<ActivityDataPoint[]>([]);
   const [cardPerformanceData, setCardPerformanceData] = useState<CardPerformanceData[]>([]);
+  const [uniqueCustomersCount, setUniqueCustomersCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchUniqueCustomersCount = async (merchantId: string) => {
+    try {
+      const { data, error } = await merchantSupabase
+        .from('customer_stamp_cards')
+        .select('customer_id')
+        .in('card_id', stampCards.map(card => card.id));
+
+      if (error) {
+        console.error("Error fetching unique customers:", error);
+        return 0;
+      }
+
+      // Get actual unique customers
+      const uniqueCustomers = new Set(data?.map(item => item.customer_id) || []).size;
+      return uniqueCustomers;
+    } catch (error) {
+      console.error("Error in fetchUniqueCustomersCount:", error);
+      return 0;
+    }
+  };
 
   const fetchActivityData = async (merchantId: string) => {
     try {
@@ -198,6 +220,10 @@ const MerchantAnalytics = () => {
         if (cardsData) {
           setStampCards(cardsData);
           console.log("Analytics - Stamp cards fetched:", cardsData.length);
+          
+          // Fetch unique customers count after cards are loaded
+          const uniqueCount = await fetchUniqueCustomersCount(user.id);
+          setUniqueCustomersCount(uniqueCount);
         }
 
         // Fetch activity data and card performance in parallel
@@ -220,6 +246,21 @@ const MerchantAnalytics = () => {
 
     loadData();
   }, []);
+
+  // Update unique customers count when cards change
+  useEffect(() => {
+    const updateUniqueCustomers = async () => {
+      if (stampCards.length > 0) {
+        const { data: { user }, error: authError } = await merchantSupabase.auth.getUser();
+        if (!authError && user) {
+          const uniqueCount = await fetchUniqueCustomersCount(user.id);
+          setUniqueCustomersCount(uniqueCount);
+        }
+      }
+    };
+
+    updateUniqueCustomers();
+  }, [stampCards]);
 
   const getPerformanceColor = (level: 'high' | 'medium' | 'low') => {
     switch (level) {
@@ -259,7 +300,7 @@ const MerchantAnalytics = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -279,7 +320,7 @@ const MerchantAnalytics = () => {
         </div>
         
         {activityData.length > 0 ? (
-          <div className="h-64">
+          <div className="h-48">
             <ChartContainer
               config={{
                 stamps: {
@@ -293,7 +334,7 @@ const MerchantAnalytics = () => {
               }}
             >
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={activityData}>
+                <BarChart data={activityData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                   <XAxis dataKey="date" />
                   <YAxis />
                   <ChartTooltip content={<ChartTooltipContent />} />
@@ -304,7 +345,7 @@ const MerchantAnalytics = () => {
             </ChartContainer>
           </div>
         ) : (
-          <div className="h-64 flex items-center justify-center">
+          <div className="h-48 flex items-center justify-center">
             <p className="text-muted-foreground">No activity data available yet</p>
           </div>
         )}
@@ -321,44 +362,42 @@ const MerchantAnalytics = () => {
           <div className="space-y-4">
             {cardPerformanceData.map((card, index) => (
               <div key={card.cardId} className="p-4 border rounded-lg">
-                <div className="flex justify-between items-start mb-3">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 gap-3">
                   <div className="flex items-center">
-                    <div className="flex items-center mr-3">
-                      <span className="text-sm font-medium text-muted-foreground mr-2">#{index + 1}</span>
-                      <div 
-                        className="w-8 h-8 flex items-center justify-center rounded-full mr-3 text-white text-sm"
-                        style={{ backgroundColor: card.cardColor }}
-                      >
-                        {card.cardLogo}
-                      </div>
-                      <h4 className="font-medium">{card.cardName}</h4>
+                    <span className="text-sm font-medium text-muted-foreground mr-2">#{index + 1}</span>
+                    <div 
+                      className="w-8 h-8 flex items-center justify-center rounded-full mr-3 text-white text-sm flex-shrink-0"
+                      style={{ backgroundColor: card.cardColor }}
+                    >
+                      {card.cardLogo}
                     </div>
+                    <h4 className="font-medium truncate">{card.cardName}</h4>
                   </div>
-                  <div className={`flex items-center px-2 py-1 rounded-full text-xs font-medium ${getPerformanceColor(card.performanceLevel)}`}>
+                  <div className={`flex items-center px-2 py-1 rounded-full text-xs font-medium ${getPerformanceColor(card.performanceLevel)} self-start`}>
                     {getPerformanceIcon(card.performanceLevel)}
                     <span className="ml-1 capitalize">{card.performanceLevel}</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-3">
                   <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Redemption Rate</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Redemption Rate</p>
                     <p className="text-lg font-bold text-primary">{card.redemptionRate.toFixed(1)}%</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Cards Issued</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Cards Issued</p>
                     <p className="text-lg font-bold">{card.totalIssued}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Redeemed</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Redeemed</p>
                     <p className="text-lg font-bold text-green-600">{card.totalRedeemed}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Unique Customers</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Unique Customers</p>
                     <p className="text-lg font-bold text-blue-600">{card.uniqueCustomers}</p>
                   </div>
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Stamps Earned</p>
+                  <div className="text-center col-span-2 sm:col-span-1">
+                    <p className="text-xs sm:text-sm text-muted-foreground">Stamps Earned</p>
                     <p className="text-lg font-bold text-purple-600">{card.totalStampsEarned}</p>
                   </div>
                 </div>
@@ -388,13 +427,11 @@ const MerchantAnalytics = () => {
         </div>
         
         {cardPerformanceData.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Total Unique Customers</p>
               <p className="text-2xl font-bold text-primary">
-                {new Set(cardPerformanceData.flatMap(card => 
-                  Array(card.uniqueCustomers).fill(0).map((_, i) => `${card.cardId}-${i}`)
-                )).size}
+                {uniqueCustomersCount}
               </p>
             </div>
             <div className="text-center">
@@ -406,7 +443,7 @@ const MerchantAnalytics = () => {
                 {cardPerformanceData[0]?.redemptionRate.toFixed(1)}% redemption rate
               </p>
             </div>
-            <div className="text-center">
+            <div className="text-center col-span-1 sm:col-span-2 lg:col-span-1">
               <p className="text-sm text-muted-foreground">Total Cards in Market</p>
               <p className="text-2xl font-bold text-blue-600">
                 {cardPerformanceData.reduce((sum, card) => sum + card.totalIssued, 0)}
