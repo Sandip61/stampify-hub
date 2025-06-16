@@ -333,15 +333,18 @@ const MerchantAnalytics = () => {
                 },
               }}
             >
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={activityData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="stamps" fill="#3B82F6" />
-                  <Bar dataKey="redemptions" fill="#10B981" />
-                </BarChart>
-              </ResponsiveContainer>
+              <BarChart 
+                data={activityData} 
+                width={800} 
+                height={180}
+                margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
+              >
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="stamps" fill="#3B82F6" />
+                <Bar dataKey="redemptions" fill="#10B981" />
+              </BarChart>
             </ChartContainer>
           </div>
         ) : (
