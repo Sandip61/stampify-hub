@@ -320,7 +320,7 @@ const MerchantAnalytics = () => {
         </div>
         
         {activityData.length > 0 ? (
-          <div className="h-48">
+          <div className="h-12">
             <ChartContainer
               config={{
                 stamps: {
@@ -334,9 +334,9 @@ const MerchantAnalytics = () => {
               }}
             >
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={activityData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <XAxis dataKey="date" />
-                  <YAxis />
+                <BarChart data={activityData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="stamps" fill="#3B82F6" />
                   <Bar dataKey="redemptions" fill="#10B981" />
@@ -345,8 +345,8 @@ const MerchantAnalytics = () => {
             </ChartContainer>
           </div>
         ) : (
-          <div className="h-48 flex items-center justify-center">
-            <p className="text-muted-foreground">No activity data available yet</p>
+          <div className="h-12 flex items-center justify-center">
+            <p className="text-muted-foreground text-sm">No activity data available yet</p>
           </div>
         )}
       </div>
