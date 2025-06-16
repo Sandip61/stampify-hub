@@ -65,6 +65,7 @@ const MerchantDashboard = () => {
   const [merchantName, setMerchantName] = useState<string>("");
   const [merchantLogo, setMerchantLogo] = useState<string>("🏪");
   const [merchantColor, setMerchantColor] = useState<string>("#3B82F6");
+  const [bestPerformingCard, setBestPerformingCard] = useState<{name: string, rate: number} | null>(null);
 
   const fetchRecentTransactions = async (merchantId: string) => {
     try {
@@ -217,6 +218,47 @@ const MerchantDashboard = () => {
     }
   };
 
+  const fetchBestPerformingCard = async (merchantId: string, stampCards: StampCard[]) => {
+    try {
+      let bestCard = { name: 'No cards yet', rate: 0 };
+      
+      for (const card of stampCards) {
+        // Get total issued for this card
+        const { data: issuedCards, error: issuedError } = await merchantSupabase
+          .from('customer_stamp_cards')
+          .select('id')
+          .eq('card_id', card.id);
+
+        if (issuedError) continue;
+
+        const totalIssued = issuedCards?.length || 0;
+        if (totalIssued === 0) continue;
+
+        // Get total redemptions for this card
+        const { data: redemptions, error: redemptionsError } = await merchantSupabase
+          .from('stamp_transactions')
+          .select('id')
+          .eq('merchant_id', merchantId)
+          .eq('card_id', card.id)
+          .eq('type', 'redeem');
+
+        if (redemptionsError) continue;
+
+        const totalRedeemed = redemptions?.length || 0;
+        const redemptionRate = (totalRedeemed / totalIssued) * 100;
+
+        if (redemptionRate > bestCard.rate) {
+          bestCard = { name: card.name, rate: redemptionRate };
+        }
+      }
+
+      return bestCard;
+    } catch (error) {
+      console.error("Error fetching best performing card:", error);
+      return { name: 'Error loading', rate: 0 };
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -287,6 +329,10 @@ const MerchantDashboard = () => {
         if (cardsData.data) {
           setStampCards(cardsData.data);
           console.log("Stamp cards fetched:", cardsData.data);
+
+          // Fetch best performing card
+          const bestCard = await fetchBestPerformingCard(user.id, cardsData.data);
+          setBestPerformingCard(bestCard);
         }
 
         if (merchantCustomersData.error) {
@@ -469,8 +515,13 @@ const MerchantDashboard = () => {
         <div className="bg-card border rounded-xl p-4">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-muted-foreground">Redemption Rate</p>
-              <h3 className="text-2xl font-bold mt-1">{analytics.redemptionRate.toFixed(1)}%</h3>
+              <p className="text-sm text-muted-foreground">Best Performing Card</p>
+              <h3 className="text-lg font-bold mt-1">{bestPerformingCard?.name || 'Loading...'}</h3>
+              <div className="flex items-center mt-1">
+                <span className="text-xs text-green-600 font-medium">
+                  {bestPerformingCard?.rate.toFixed(1)}% redemption rate
+                </span>
+              </div>
             </div>
             <div className="rounded-full p-2 bg-purple-500/10 text-purple-500">
               <BarChart3 className="h-5 w-5" />
