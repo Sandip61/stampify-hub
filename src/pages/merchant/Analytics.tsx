@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { 
   BarChart3, 
@@ -8,7 +9,7 @@ import {
   ArrowLeft
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { merchantSupabase } from "@/integrations/supabase/client";
 import { StampCard } from "@/types/StampCard";
 
 // Analytics data interface
@@ -32,6 +33,101 @@ interface AnalyticsData {
   }>;
 }
 
+// Reuse helper functions from Dashboard
+const fetchRecentTransactions = async (merchantId: string) => {
+  try {
+    const { data: transactionData, error: transactionError } = await merchantSupabase
+      .from('stamp_transactions')
+      .select(`
+        *,
+        stamp_cards!inner(name)
+      `)
+      .eq('merchant_id', merchantId)
+      .order('timestamp', { ascending: false });
+
+    if (transactionError) {
+      console.error("Error fetching transactions for analytics:", transactionError);
+      return [];
+    }
+
+    return transactionData || [];
+  } catch (error) {
+    console.error("Error in fetchRecentTransactions for analytics:", error);
+    return [];
+  }
+};
+
+const fetchActivityData = async (merchantId: string) => {
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const { data, error } = await merchantSupabase
+      .from('stamp_transactions')
+      .select('timestamp, type, count')
+      .eq('merchant_id', merchantId)
+      .gte('timestamp', thirtyDaysAgo.toISOString())
+      .order('timestamp', { ascending: true });
+
+    if (error) {
+      console.error("Error fetching activity data for analytics:", error);
+      return [];
+    }
+
+    // Group by date and aggregate
+    const dailyData: { [key: string]: { stamps: number; redemptions: number } } = {};
+    
+    data?.forEach(transaction => {
+      const date = new Date(transaction.timestamp).toISOString().split('T')[0];
+      if (!dailyData[date]) {
+        dailyData[date] = { stamps: 0, redemptions: 0 };
+      }
+      
+      if (transaction.type === 'stamp') {
+        dailyData[date].stamps += transaction.count || 1;
+      } else if (transaction.type === 'redeem') {
+        dailyData[date].redemptions += 1;
+      }
+    });
+
+    // Convert to array and get last 7 days for Analytics
+    return Object.entries(dailyData)
+      .map(([date, data]) => ({
+        date,
+        stamps: data.stamps,
+        redemptions: data.redemptions
+      }))
+      .slice(-7);
+  } catch (error) {
+    console.error("Error in fetchActivityData for analytics:", error);
+    return [];
+  }
+};
+
+const fetchActiveCustomers = async (merchantId: string) => {
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const { data, error } = await merchantSupabase
+      .from('stamp_transactions')
+      .select('customer_id')
+      .eq('merchant_id', merchantId)
+      .gte('timestamp', thirtyDaysAgo.toISOString());
+
+    if (error) {
+      console.error("Error fetching active customers for analytics:", error);
+      return 0;
+    }
+
+    const uniqueCustomers = new Set(data?.map(t => t.customer_id) || []);
+    return uniqueCustomers.size;
+  } catch (error) {
+    console.error("Error in fetchActiveCustomers for analytics:", error);
+    return 0;
+  }
+};
+
 const MerchantAnalytics = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
@@ -44,68 +140,84 @@ const MerchantAnalytics = () => {
       setError(null);
 
       try {
-        // Fetch merchant user ID
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (userError || !user) throw new Error("Not authenticated");
+        console.log("Starting analytics data load...");
 
-        // Fetch stamp cards for this merchant
-        const { data: cardsData, error: cardsError } = await supabase
-          .from("stamp_cards")
-          .select("*")
-          .eq("merchant_id", user.id)
-          .order("created_at", { ascending: false });
+        // Get current merchant user using merchantSupabase (same as Dashboard)
+        const { data: { user }, error: authError } = await merchantSupabase.auth.getUser();
+        if (authError || !user) {
+          console.error("Auth error in analytics:", authError);
+          throw new Error("Not authenticated");
+        }
 
-        if (cardsError) throw cardsError;
-        setStampCards(cardsData || []);
+        console.log("Analytics - Merchant user ID:", user.id);
 
-        // Fetch transactions for this merchant
-        const { data: transactionData, error: txError } = await supabase
-          .from("stamp_transactions")
-          .select("*")
-          .eq("merchant_id", user.id);
+        // Fetch all data in parallel (same pattern as Dashboard)
+        const [
+          cardsData,
+          merchantCustomersData,
+          allTransactionsData,
+          activityChartData,
+          activeCustomersCount
+        ] = await Promise.all([
+          // Fetch stamp cards
+          merchantSupabase
+            .from("stamp_cards")
+            .select("*")
+            .eq("merchant_id", user.id)
+            .order("created_at", { ascending: false }),
+          
+          // Fetch merchant customers
+          merchantSupabase
+            .from("merchant_customers")
+            .select("*")
+            .eq("merchant_id", user.id),
+          
+          // Fetch all transactions (not just recent)
+          fetchRecentTransactions(user.id),
+          
+          // Fetch activity data
+          fetchActivityData(user.id),
+          
+          // Fetch active customers count
+          fetchActiveCustomers(user.id)
+        ]);
 
-        if (txError) throw txError;
+        if (cardsData.error) {
+          console.error("Error fetching stamp cards in analytics:", cardsData.error);
+          throw cardsData.error;
+        }
+        
+        if (cardsData.data) {
+          setStampCards(cardsData.data);
+          console.log("Analytics - Stamp cards fetched:", cardsData.data.length);
+        }
 
-        // Fetch all merchant customers
-        const { data: merchantCustomers, error: custError } = await supabase
-          .from("merchant_customers")
-          .select("*")
-          .eq("merchant_id", user.id);
+        if (merchantCustomersData.error) {
+          console.error("Error fetching merchant customers in analytics:", merchantCustomersData.error);
+          throw merchantCustomersData.error;
+        }
 
-        if (custError) throw custError;
+        const totalCustomers = merchantCustomersData.data?.length ?? 0;
+        console.log("Analytics - Total customers found:", totalCustomers);
 
-        // Fetch all customer_stamp_cards for this merchant's cards
-        const cardIds = cardsData?.map(card => card.id) ?? [];
+        // Fetch all customer_stamp_cards for this merchant's cards (same as Dashboard)
+        const cardIds = cardsData.data?.map(card => card.id) ?? [];
         let customerStampCards: any[] = [];
+        
         if (cardIds.length > 0) {
-          const { data: cscData, error: cscError } = await supabase
+          const { data: cscData, error: cscError } = await merchantSupabase
             .from("customer_stamp_cards")
             .select("*, card:stamp_cards!inner(total_stamps, merchant_id)")
             .in("card_id", cardIds);
-
-          if (cscError) throw cscError;
-          customerStampCards = cscData ?? [];
+          
+          if (cscError) {
+            console.error("Error fetching customer stamp cards in analytics:", cscError);
+          } else {
+            customerStampCards = cscData ?? [];
+          }
         }
 
-        // --- Calculate analytics metrics ---
-
-        // Total stamp cards
-        const totalStampCards = cardsData ? cardsData.length : 0;
-
-        // Total redemptions: number of transactions with type === "redeem"
-        const totalRedemptions = transactionData ? transactionData.filter(tx => tx.type === "redeem").length : 0;
-
-        // Total customers = total merchantCustomers
-        const totalCustomers = merchantCustomers ? merchantCustomers.length : 0;
-
-        // Active customers: unique customer_id in transactions from last 30 days
-        const date30d = new Date();
-        date30d.setDate(date30d.getDate() - 30);
-        const recentTxs = transactionData?.filter(tx => new Date(tx.timestamp) >= date30d) ?? [];
-        const activeCustomerIds = [...new Set(recentTxs.map(tx => tx.customer_id))];
-        const activeCustomers = activeCustomerIds.length;
-
-        // Redemption Rate: fraction of customerStampCards completed
+        // Calculate redemption metrics (same logic as Dashboard)
         const totalIssued = customerStampCards.length;
         const numRedeemed = customerStampCards.filter((csc: any) =>
           csc.card &&
@@ -114,45 +226,19 @@ const MerchantAnalytics = () => {
         ).length;
         const redemptionRate = totalIssued === 0 ? 0 : (numRedeemed / totalIssued) * 100;
 
-        // Retention rate: not implemented, keep as 0 (to compliment Dashboard)
-        const retentionRate = 0;
-
-        // Activity by Day (last 7 days)
-        const dailyData: { [key: string]: { stamps: number; redemptions: number } } = {};
-        const daysBack = 7;
-        const today = new Date();
-        for (let i = daysBack - 1; i >= 0; i--) {
-          const d = new Date(today);
-          d.setDate(today.getDate() - i);
-          const key = d.toISOString().split("T")[0];
-          dailyData[key] = { stamps: 0, redemptions: 0 };
-        }
-        transactionData?.forEach(tx => {
-          const key = tx.timestamp.split("T")[0];
-          if (dailyData[key]) {
-            if (tx.type === "stamp") dailyData[key].stamps += tx.count || 1;
-            if (tx.type === "redeem") dailyData[key].redemptions += 1;
-          }
-        });
-        const transactionsByDay = Object.entries(dailyData).map(([date, data]) => ({
-          date,
-          stamps: data.stamps,
-          redemptions: data.redemptions
-        }));
-
-        // Transactions by Card
+        // Calculate transactions by card
         const txByCard: { [id: string]: { cardName: string; stamps: number; redemptions: number } } = {};
-        cardsData?.forEach(card => {
+        cardsData.data?.forEach(card => {
           txByCard[card.id] = {
             cardName: card.name,
             stamps: 0,
             redemptions: 0
           };
         });
-        transactionData?.forEach(tx => {
+        allTransactionsData?.forEach(tx => {
           if (tx.card_id && txByCard[tx.card_id]) {
-            if (tx.type === "stamp") txByCard[tx.card_id].stamps += tx.count || 1;
-            if (tx.type === "redeem") txByCard[tx.card_id].redemptions += 1;
+            if (tx.type === 'stamp') txByCard[tx.card_id].stamps += tx.count || 1;
+            if (tx.type === 'redeem') txByCard[tx.card_id].redemptions += 1;
           }
         });
         const transactionsByCard = Object.entries(txByCard).map(([cardId, stats]) => ({
@@ -163,18 +249,21 @@ const MerchantAnalytics = () => {
         }));
 
         setAnalytics({
-          totalStampCards,
-          totalRedemptions,
-          activeCustomers,
-          totalCustomers,
-          redemptionRate,
-          retentionRate,
-          transactionsByDay,
+          totalStampCards: cardsData.data ? cardsData.data.length : 0,
+          totalRedemptions: numRedeemed,
+          activeCustomers: activeCustomersCount,
+          totalCustomers: totalCustomers,
+          redemptionRate: redemptionRate,
+          retentionRate: 0, // Keep as 0 to match Dashboard
+          transactionsByDay: activityChartData,
           transactionsByCard
         });
+
+        console.log("Analytics data loaded successfully");
         setIsLoading(false);
       } catch (err: any) {
-        setError("Could not load analytics.");
+        console.error("Error loading analytics data:", err);
+        setError(`Could not load analytics: ${err.message || 'Unknown error'}`);
         setIsLoading(false);
       }
     };
@@ -349,7 +438,6 @@ const MerchantAnalytics = () => {
         )}
       </div>
 
-      {/* Customer engagement */}
       <div className="bg-card border rounded-xl p-5">
         <div className="flex items-center mb-6">
           <Users className="mr-2 h-5 w-5 text-muted-foreground" />
