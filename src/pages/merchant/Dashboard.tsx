@@ -181,7 +181,8 @@ const MerchantDashboard = () => {
         .from('stamp_transactions')
         .select('customer_id')
         .eq('merchant_id', merchantId)
-        .gte('timestamp', thirtyDaysAgo.toISOString());
+        .gte('timestamp', thirtyDaysAgo.toISOString())
+        .neq('customer_id', merchantId); // Exclude system transactions where customer_id = merchant_id
 
       if (error) {
         console.error("Error fetching active customers:", error);
@@ -192,6 +193,26 @@ const MerchantDashboard = () => {
       return uniqueCustomers.size;
     } catch (error) {
       console.error("Error in fetchActiveCustomers:", error);
+      return 0;
+    }
+  };
+
+  const fetchTotalRedemptions = async (merchantId: string) => {
+    try {
+      const { data, error } = await merchantSupabase
+        .from('stamp_transactions')
+        .select('id')
+        .eq('merchant_id', merchantId)
+        .eq('type', 'redeem');
+
+      if (error) {
+        console.error("Error fetching total redemptions:", error);
+        return 0;
+      }
+
+      return data?.length || 0;
+    } catch (error) {
+      console.error("Error in fetchTotalRedemptions:", error);
       return 0;
     }
   };
@@ -229,7 +250,8 @@ const MerchantDashboard = () => {
           merchantCustomersData,
           recentTransactionsData,
           activityChartData,
-          activeCustomersCount
+          activeCustomersCount,
+          totalRedemptions
         ] = await Promise.all([
           // Fetch stamp cards
           merchantSupabase
@@ -251,7 +273,10 @@ const MerchantDashboard = () => {
           fetchActivityData(user.id),
           
           // Fetch active customers count
-          fetchActiveCustomers(user.id)
+          fetchActiveCustomers(user.id),
+
+          // Fetch total redemptions count
+          fetchTotalRedemptions(user.id)
         ]);
 
         if (cardsData.error) {
@@ -294,24 +319,24 @@ const MerchantDashboard = () => {
           }
         }
 
-        // Calculate total issued
+        // Calculate total issued for redemption rate calculation
         const totalIssued = customerStampCards.length;
         
-        // Number redeemed: where individual current_stamps >= corresponding card.total_stamps
-        const numRedeemed =
-          customerStampCards.filter((csc: any) =>
-            csc.card &&
-            typeof csc.card.total_stamps === "number" &&
-            csc.current_stamps >= csc.card.total_stamps
-          ).length;
+        // Calculate Redemption Rate based on actual redemptions vs total issued cards
+        const redemptionRate = totalIssued === 0 ? 0 : (totalRedemptions / totalIssued) * 100;
 
-        // Calculate Redemption Rate
-        const redemptionRate = totalIssued === 0 ? 0 : (numRedeemed / totalIssued) * 100;
+        console.log("Analytics calculation:", {
+          totalRedemptions,
+          totalIssued,
+          redemptionRate,
+          activeCustomersCount,
+          totalCustomers
+        });
 
         // Update analytics
         setAnalytics({
           totalStampCards: cardsData.data ? cardsData.data.length : 0,
-          totalRedemptions: numRedeemed,
+          totalRedemptions: totalRedemptions, // Use actual redemption transactions count
           totalCustomers: totalCustomers,
           activeCustomers: activeCustomersCount,
           redemptionRate: redemptionRate,
