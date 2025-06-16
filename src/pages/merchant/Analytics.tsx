@@ -335,8 +335,8 @@ const MerchantAnalytics = () => {
             >
               <BarChart 
                 data={activityData} 
-                width={800} 
-                height={180}
+                width={100} 
+                height={50}
                 margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
               >
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} />
