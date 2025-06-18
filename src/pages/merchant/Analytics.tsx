@@ -319,7 +319,7 @@ const MerchantAnalytics = () => {
           </div>
           
           {activityData.length > 0 ? (
-            <div className="h-64 w-full overflow-hidden">
+            <div className="h-64 w-full min-w-0">
               <ChartContainer
                 config={{
                   stamps: {
@@ -332,26 +332,26 @@ const MerchantAnalytics = () => {
                   },
                 }}
               >
-                <BarChart 
-                  width={600}
-                  height={256}
-                  data={activityData}
-                  margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
-                >
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fontSize: 11 }}
-                    interval="preserveStartEnd"
-                    height={30}
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 11 }}
-                    width={35}
-                  />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="stamps" fill="#3B82F6" />
-                  <Bar dataKey="redemptions" fill="#10B981" />
-                </BarChart>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart 
+                    data={activityData}
+                    margin={{ top: 10, right: 10, left: 10, bottom: 25 }}
+                  >
+                    <XAxis 
+                      dataKey="date" 
+                      tick={{ fontSize: 10 }}
+                      interval="preserveStartEnd"
+                      height={40}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 10 }}
+                      width={30}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="stamps" fill="#3B82F6" />
+                    <Bar dataKey="redemptions" fill="#10B981" />
+                  </BarChart>
+                </ResponsiveContainer>
               </ChartContainer>
             </div>
           ) : (
