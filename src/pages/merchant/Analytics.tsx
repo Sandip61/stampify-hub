@@ -319,7 +319,7 @@ const MerchantAnalytics = () => {
           </div>
           
           {activityData.length > 0 ? (
-            <div className="h-64 w-full min-w-0">
+            <div className="h-72 w-full min-w-0">
               <ChartContainer
                 config={{
                   stamps: {
@@ -335,13 +335,13 @@ const MerchantAnalytics = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart 
                     data={activityData}
-                    margin={{ top: 10, right: 10, left: 10, bottom: 25 }}
+                    margin={{ top: 10, right: 10, left: 10, bottom: 50 }}
                   >
                     <XAxis 
                       dataKey="date" 
                       tick={{ fontSize: 10 }}
                       interval="preserveStartEnd"
-                      height={40}
+                      height={50}
                     />
                     <YAxis 
                       tick={{ fontSize: 10 }}
