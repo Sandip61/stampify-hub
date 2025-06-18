@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { 
   Calendar,
@@ -318,7 +319,7 @@ const MerchantAnalytics = () => {
           </div>
           
           {activityData.length > 0 ? (
-            <div className="h-64">
+            <div className="h-64 w-full">
               <ChartContainer
                 config={{
                   stamps: {
@@ -332,9 +333,19 @@ const MerchantAnalytics = () => {
                 }}
               >
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={activityData}>
-                    <XAxis dataKey="date" />
-                    <YAxis />
+                  <BarChart 
+                    data={activityData}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <XAxis 
+                      dataKey="date" 
+                      tick={{ fontSize: 12 }}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12 }}
+                      width={40}
+                    />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Bar dataKey="stamps" fill="#3B82F6" />
                     <Bar dataKey="redemptions" fill="#10B981" />
