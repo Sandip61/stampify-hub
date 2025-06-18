@@ -313,13 +313,13 @@ const MerchantAnalytics = () => {
 
       {/* Recent Activity Chart with Grid Layout */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 bg-card border rounded-xl p-5">
+        <div className="md:col-span-2 bg-card border rounded-xl p-5 overflow-hidden">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-semibold">Recent Activity (Last 30 days)</h3>
           </div>
           
           {activityData.length > 0 ? (
-            <div className="h-64 w-full">
+            <div className="h-64 w-full overflow-hidden">
               <ChartContainer
                 config={{
                   stamps: {
@@ -332,25 +332,26 @@ const MerchantAnalytics = () => {
                   },
                 }}
               >
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart 
-                    data={activityData}
-                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <XAxis 
-                      dataKey="date" 
-                      tick={{ fontSize: 12 }}
-                      interval="preserveStartEnd"
-                    />
-                    <YAxis 
-                      tick={{ fontSize: 12 }}
-                      width={40}
-                    />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="stamps" fill="#3B82F6" />
-                    <Bar dataKey="redemptions" fill="#10B981" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <BarChart 
+                  width={600}
+                  height={256}
+                  data={activityData}
+                  margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
+                >
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fontSize: 11 }}
+                    interval="preserveStartEnd"
+                    height={30}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 11 }}
+                    width={35}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="stamps" fill="#3B82F6" />
+                  <Bar dataKey="redemptions" fill="#10B981" />
+                </BarChart>
               </ChartContainer>
             </div>
           ) : (
