@@ -91,7 +91,7 @@ export const fetchUserStampCards = async (userId: string): Promise<StampCard[]> 
       return {
         id: item.card_id,
         businessId: item.card_details?.merchant_id || "",
-        businessName: item.card_details?.name?.split(' ')[0] || "Business",
+        businessName: item.card_details?.name || merchant?.business_name || "Business",
         businessLogo,
         totalStamps: item.card_details?.total_stamps || 10,
         currentStamps: item.current_stamps,
@@ -148,8 +148,9 @@ export const fetchStampCard = async (userId: string, cardId: string): Promise<St
       .eq('id', customerCard.card_details?.merchant_id)
       .single();
 
-    const businessName = merchant?.business_name || 
-                        customerCard.card_details?.name?.split(' ')[0] || "Business";
+    const businessName = customerCard.card_details?.name || 
+                        merchant?.business_name || 
+                        "Business";
     
     // Priority: stamp card logo > merchant logo > fallback
     const businessLogo = customerCard.card_details?.business_logo || 
