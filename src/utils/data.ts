@@ -36,8 +36,8 @@ export interface Transaction {
   businessName: string;
   count?: number;
   rewardCode?: string;
-  userId?: string;
-  cardId?: string;
+  customer_id?: string;
+  card_id?: string;
 }
 
 // Local storage keys (kept for backward compatibility)
@@ -330,8 +330,8 @@ export const addStamp = async (cardId: string, count: number = 1): Promise<Stamp
         const userTransactions = allTransactions[user.id] || [];
         userTransactions.push({
           id: `tr-${Date.now()}`,
-          userId: user.id,
-          cardId: updatedCard.id,
+          customer_id: user.id,
+          card_id: updatedCard.id,
           businessName: updatedCard.businessName,
           type: "stamp",
           count,
@@ -371,7 +371,8 @@ export const redeemReward = async (cardId: string): Promise<{ card: StampCard, c
         // Convert transaction to expected format
         const transactionData: Transaction = {
           id: result.transaction.id,
-          cardId: result.transaction.card_id,
+          card_id: result.transaction.card_id,
+          customer_id: result.transaction.customer_id,
           businessName: result.card.businessName,
           type: "redeem",
           timestamp: result.transaction.timestamp,
@@ -428,8 +429,8 @@ export const redeemReward = async (cardId: string): Promise<{ card: StampCard, c
         const userTransactions = allTransactions[user.id] || [];
         const transaction: Transaction = {
           id: `tr-${Date.now()}`,
-          userId: user.id,
-          cardId: updatedCard.id,
+          customer_id: user.id,
+          card_id: updatedCard.id,
           businessName: updatedCard.businessName,
           type: "redeem",
           timestamp: new Date().toISOString(),
