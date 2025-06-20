@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { RefreshCw, AlertCircle, Trash2, Eye } from "lucide-react";
 import { fetchActiveQRCodes, deleteQRCode, QRCode } from "@/utils/stamps";
@@ -31,7 +30,7 @@ const ActiveQRCodes = ({ cardId, shouldRefresh, onRefreshComplete }: ActiveQRCod
     try {
       const card = await getMerchantStampCard(cardId);
       if (card) {
-        setBusinessName(card.businessName || "Business");
+        setBusinessName(card.name || "Business");
         setCardName(card.name || "Loyalty Card");
       }
     } catch (error) {
