@@ -78,7 +78,7 @@ const MerchantDashboard = () => {
         `)
         .eq('merchant_id', merchantId)
         .order('timestamp', { ascending: false })
-        .limit(10);
+        .limit(5);
 
       if (transactionError) {
         console.error("Error fetching transactions:", transactionError);
