@@ -109,7 +109,7 @@ serve(async (req) => {
       )
     }
 
-    // Find the transaction with this reward code
+    // Find the original transaction with this reward code (could be stamp type with reward_code)
     const { data: transaction, error: transactionError } = await supabase
       .from('stamp_transactions')
       .select(`
@@ -122,10 +122,12 @@ serve(async (req) => {
         timestamp
       `)
       .eq('reward_code', rewardCode)
-      .eq('type', 'stamp')
+      .neq('type', 'redeem') // Exclude already redeemed transactions
       .maybeSingle()
 
     if (transactionError || !transaction) {
+      console.log('Transaction lookup error:', transactionError)
+      console.log('No transaction found for reward code:', rewardCode)
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -194,19 +196,6 @@ serve(async (req) => {
       )
     }
 
-    // Get customer information
-    const { data: customerCard, error: customerError } = await supabase
-      .from('customer_stamp_cards')
-      .select('*')
-      .eq('card_id', transaction.card_id)
-      .eq('customer_id', transaction.customer_id)
-      .maybeSingle()
-
-    if (customerError) {
-      console.error('Error fetching customer stamp card:', customerError)
-      // Not critical, continue
-    }
-
     // Create a redeem transaction
     const { data: redeemTransaction, error: redeemError } = await supabase
       .from('stamp_transactions')
@@ -235,18 +224,8 @@ serve(async (req) => {
       )
     }
 
-    // Reset the customer's stamp count
-    if (customerCard) {
-      const { error: resetError } = await supabase
-        .from('customer_stamp_cards')
-        .update({ current_stamps: 0 })
-        .eq('id', customerCard.id)
-
-      if (resetError) {
-        console.error('Error resetting customer stamps:', resetError)
-        // Not critical, continue
-      }
-    }
+    console.log('Redemption successful for code:', rewardCode)
+    console.log('Redeem transaction created:', redeemTransaction)
 
     return new Response(
       JSON.stringify({ 
