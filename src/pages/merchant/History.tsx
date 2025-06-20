@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { merchantSupabase } from "@/integrations/supabase/client";
 import { Clock } from "lucide-react";
@@ -69,11 +68,12 @@ const MerchantHistory = () => {
             profileMap.set(profile.id, profile);
           });
 
-          // Combine transaction data with profile data
-          const formattedTransactions = transactionData.map(transaction => {
+          // Combine transaction data with profile data and ensure proper typing
+          const formattedTransactions: TransactionHistory[] = transactionData.map(transaction => {
             const profile = profileMap.get(transaction.customer_id);
             return {
               ...transaction,
+              type: transaction.type as TransactionHistory['type'], // Type assertion for proper typing
               card_name: transaction.stamp_cards?.name,
               customerEmail: profile?.email,
               customerName: profile?.name

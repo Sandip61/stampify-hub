@@ -69,60 +69,61 @@ const MerchantDashboard = () => {
 
   const fetchRecentTransactions = async (merchantId: string) => {
     try {
-      // First get transactions with stamp card names
+      // First get transactions with stamp card names, filtered by merchant_id
       const { data: transactionData, error: transactionError } = await merchantSupabase
         .from('stamp_transactions')
         .select(`
           *,
           stamp_cards!inner(name)
         `)
-        .eq('merchant_id', merchantId)
+        .eq('merchant_id', user.id)
         .order('timestamp', { ascending: false })
-        .limit(5);
+        .limit(10);
 
       if (transactionError) {
-        console.error("Error fetching recent transactions:", transactionError);
-        return [];
+        console.error("Error fetching transactions:", transactionError);
+        throw transactionError;
       }
 
-      if (!transactionData || transactionData.length === 0) {
-        return [];
+      if (transactionData && transactionData.length > 0) {
+        // Get unique customer IDs from transactions
+        const customerIds = [...new Set(transactionData.map(t => t.customer_id))];
+        
+        // Fetch customer profiles separately
+        const { data: profileData, error: profileError } = await merchantSupabase
+          .from('profiles')
+          .select('id, email, name')
+          .in('id', customerIds);
+
+        if (profileError) {
+          console.error("Error fetching profiles:", profileError);
+        }
+
+        // Create a map of customer ID to profile data
+        const profileMap = new Map();
+        profileData?.forEach(profile => {
+          profileMap.set(profile.id, profile);
+        });
+
+        // Combine transaction data with profile data and ensure proper typing
+        const formattedTransactions: TransactionHistory[] = transactionData.map(transaction => {
+          const profile = profileMap.get(transaction.customer_id);
+          return {
+            ...transaction,
+            type: transaction.type as TransactionHistory['type'], // Type assertion for proper typing
+            card_name: transaction.stamp_cards?.name,
+            customerEmail: profile?.email,
+            customerName: profile?.name
+          };
+        });
+        
+        setRecentTransactions(formattedTransactions);
+      } else {
+        setRecentTransactions([]);
       }
-
-      // Get unique customer IDs from transactions
-      const customerIds = [...new Set(transactionData.map(t => t.customer_id))];
-      
-      // Fetch customer profiles separately
-      const { data: profileData, error: profileError } = await merchantSupabase
-        .from('profiles')
-        .select('id, email, name')
-        .in('id', customerIds);
-
-      if (profileError) {
-        console.error("Error fetching profiles:", profileError);
-      }
-
-      // Create a map of customer ID to profile data
-      const profileMap = new Map();
-      profileData?.forEach(profile => {
-        profileMap.set(profile.id, profile);
-      });
-
-      // Combine transaction data with profile data
-      const formattedTransactions = transactionData.map(transaction => {
-        const profile = profileMap.get(transaction.customer_id);
-        return {
-          ...transaction,
-          card_name: transaction.stamp_cards?.name,
-          customerEmail: profile?.email,
-          customerName: profile?.name
-        };
-      });
-      
-      return formattedTransactions;
     } catch (error) {
       console.error("Error in fetchRecentTransactions:", error);
-      return [];
+      setRecentTransactions([]);
     }
   };
 

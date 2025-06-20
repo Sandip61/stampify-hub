@@ -209,7 +209,7 @@ export const redeemStampReward = async (rewardCode: string): Promise<RedeemRespo
         },
         transaction: {
           id: operationId,
-          type: "redemption",
+          type: "redeem",
           card_id: "offline-placeholder",
           customer_id: "offline-placeholder",
           merchant_id: "offline-placeholder",
@@ -285,7 +285,7 @@ export const redeemStampReward = async (rewardCode: string): Promise<RedeemRespo
           },
           transaction: {
             id: operationId,
-            type: "redemption",
+            type: "redeem",
             card_id: "offline-placeholder",
             customer_id: "offline-placeholder",
             merchant_id: "offline-placeholder",

@@ -31,12 +31,10 @@ export interface Business {
 
 export interface Transaction {
   id: string;
-  userId?: string;
-  cardId: string;
-  businessName: string;
-  type: "stamp" | "redeem";
-  count?: number;
+  type: 'stamp' | 'reward' | 'redeem';
   timestamp: string;
+  businessName: string;
+  count?: number;
   rewardCode?: string;
 }
 
