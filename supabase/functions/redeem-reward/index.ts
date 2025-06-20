@@ -87,6 +87,8 @@ serve(async (req) => {
       )
     }
 
+    console.log('Looking for reward code:', rewardCode)
+
     // Check if this code has already been redeemed
     const { data: existingRedemption, error: existingError } = await supabase
       .from('stamp_transactions')
@@ -94,6 +96,10 @@ serve(async (req) => {
       .eq('reward_code', rewardCode)
       .eq('type', 'redeem')
       .maybeSingle()
+
+    if (existingError) {
+      console.log('Error checking existing redemption:', existingError)
+    }
 
     if (existingRedemption) {
       return new Response(
@@ -109,7 +115,7 @@ serve(async (req) => {
       )
     }
 
-    // Find the original transaction with this reward code (could be stamp type with reward_code)
+    // Find the original reward transaction with this reward code
     const { data: transaction, error: transactionError } = await supabase
       .from('stamp_transactions')
       .select(`
@@ -122,12 +128,25 @@ serve(async (req) => {
         timestamp
       `)
       .eq('reward_code', rewardCode)
-      .neq('type', 'redeem') // Exclude already redeemed transactions
+      .eq('type', 'reward') // Look specifically for reward transactions
       .maybeSingle()
+
+    console.log('Transaction lookup result:', { transaction, error: transactionError })
 
     if (transactionError || !transaction) {
       console.log('Transaction lookup error:', transactionError)
-      console.log('No transaction found for reward code:', rewardCode)
+      console.log('No reward transaction found for code:', rewardCode)
+      
+      // Let's also check if there are any transactions with this reward code at all
+      const { data: anyTransaction, error: anyError } = await supabase
+        .from('stamp_transactions')
+        .select('*')
+        .eq('reward_code', rewardCode)
+        .limit(5)
+      
+      console.log('Any transactions with this reward code:', anyTransaction)
+      console.log('Any transaction lookup error:', anyError)
+      
       return new Response(
         JSON.stringify({ 
           success: false, 
