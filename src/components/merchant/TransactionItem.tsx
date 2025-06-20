@@ -1,11 +1,13 @@
 
-import { Clock, Stamp, Gift, PlusCircle, Edit, Archive } from "lucide-react";
+import { Clock, Stamp, Gift, PlusCircle, Edit, Archive, Trophy } from "lucide-react";
 import { TransactionHistory } from "@/pages/merchant/History";
 
 export const getTransactionTypeDetails = (type: string) => {
   switch (type) {
     case 'stamp':
       return { icon: <Stamp className="h-4 w-4" />, color: 'bg-blue-500/10 text-blue-500' };
+    case 'reward':
+      return { icon: <Trophy className="h-4 w-4" />, color: 'bg-orange-500/10 text-orange-500' };
     case 'redeem':
       return { icon: <Gift className="h-4 w-4" />, color: 'bg-green-500/10 text-green-500' };
     case 'card_created':
@@ -33,8 +35,10 @@ export const getTransactionDescription = (transaction: TransactionHistory) => {
   switch (transaction.type) {
     case 'stamp':
       return `Added ${transaction.count || 1} stamp${(transaction.count || 1) > 1 ? 's' : ''} for ${getCustomerDisplay()}`;
+    case 'reward':
+      return `Reward earned by ${getCustomerDisplay()}${transaction.reward_code ? ` (Code: ${transaction.reward_code})` : ''}`;
     case 'redeem':
-      return `Reward redeemed by ${getCustomerDisplay()}`;
+      return `Reward redeemed by ${getCustomerDisplay()}${transaction.reward_code ? ` (Code: ${transaction.reward_code})` : ''}`;
     case 'card_created':
       return 'New Stamp Card Created';
     case 'card_updated':

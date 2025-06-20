@@ -6,7 +6,7 @@ import { TransactionGroup } from "@/components/merchant/TransactionGroup";
 
 export interface TransactionHistory {
   id: string;
-  type: string;
+  type: 'stamp' | 'reward' | 'redeem' | 'card_created' | 'card_updated' | 'card_deactivated';
   timestamp: string;
   card_id: string;
   customer_id: string;

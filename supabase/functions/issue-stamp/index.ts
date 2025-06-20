@@ -248,7 +248,12 @@ Deno.serve(async (req) => {
     const actualStampsAdded = newStampCount - currentStamps
     const rewardEarned = newStampCount >= card.total_stamps
 
-    console.log(`Current stamps: ${currentStamps}, Adding: ${count}, New total: ${newStampCount}, Reward earned: ${rewardEarned}`)
+    console.log(`=== STAMP CALCULATION ===`)
+    console.log(`Current stamps: ${currentStamps}`)
+    console.log(`Adding: ${count}`)
+    console.log(`New total: ${newStampCount}`)
+    console.log(`Actual stamps added: ${actualStampsAdded}`)
+    console.log(`Reward earned: ${rewardEarned}`)
 
     // Update customer stamp card - reset to 0 if reward is earned
     const finalStampCount = rewardEarned ? 0 : newStampCount
@@ -268,30 +273,62 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Create transaction record - record the actual stamps that were processed
-    const rewardCode = rewardEarned ? Math.random().toString(36).substring(2, 8).toUpperCase() : null
-    const transactionType = rewardEarned ? 'redeem' : 'stamp'
-    
-    const { error: transactionError } = await supabase
-      .from('stamp_transactions')
-      .insert({
-        card_id: cardId,
-        customer_id: customerId || 'unregistered',
-        merchant_id: merchantId,
-        type: transactionType,
-        count: actualStampsAdded, // Record actual stamps added, not requested
-        reward_code: rewardCode,
-        metadata: {
-          customer_email: customerEmail,
-          method: body.method,
-          requested_count: count,
-          stamps_before: currentStamps,
-          stamps_after: finalStampCount
-        }
-      })
+    // First create stamp transaction for the stamps added
+    if (actualStampsAdded > 0) {
+      console.log(`=== CREATING STAMP TRANSACTION ===`)
+      const { error: stampTransactionError } = await supabase
+        .from('stamp_transactions')
+        .insert({
+          card_id: cardId,
+          customer_id: customerId || 'unregistered',
+          merchant_id: merchantId,
+          type: 'stamp',
+          count: actualStampsAdded,
+          metadata: {
+            customer_email: customerEmail,
+            method: body.method,
+            requested_count: count,
+            stamps_before: currentStamps,
+            stamps_after: rewardEarned ? card.total_stamps : newStampCount
+          }
+        })
 
-    if (transactionError) {
-      console.error('Transaction error:', transactionError)
+      if (stampTransactionError) {
+        console.error('Stamp transaction error:', stampTransactionError)
+      } else {
+        console.log(`Created stamp transaction for ${actualStampsAdded} stamps`)
+      }
+    }
+
+    // If reward is earned, create a separate reward transaction
+    let rewardCode = null
+    if (rewardEarned) {
+      rewardCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+      
+      console.log(`=== CREATING REWARD TRANSACTION ===`)
+      console.log(`Reward code: ${rewardCode}`)
+      
+      const { error: rewardTransactionError } = await supabase
+        .from('stamp_transactions')
+        .insert({
+          card_id: cardId,
+          customer_id: customerId || 'unregistered',
+          merchant_id: merchantId,
+          type: 'reward', // FIXED: Changed from 'redeem' to 'reward'
+          reward_code: rewardCode,
+          metadata: {
+            customer_email: customerEmail,
+            method: body.method,
+            stamps_completed: card.total_stamps,
+            reward_description: card.reward
+          }
+        })
+
+      if (rewardTransactionError) {
+        console.error('Reward transaction error:', rewardTransactionError)
+      } else {
+        console.log(`Created reward transaction with code: ${rewardCode}`)
+      }
     }
 
     // Create/update merchant customer record
@@ -356,7 +393,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log('Success response:', response)
+    console.log('=== SUCCESS RESPONSE ===')
+    console.log('Response:', response)
     return new Response(
       JSON.stringify(response),
       { status: 200, headers: corsHeaders }

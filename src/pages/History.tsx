@@ -1,8 +1,9 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, User } from "@/utils/auth";
 import { getUserTransactions, Transaction } from "@/utils/data";
-import { Stamp, Gift, Clock, Calendar } from "lucide-react";
+import { Stamp, Gift, Clock, Calendar, Trophy } from "lucide-react";
 import { Copy, Check } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -60,6 +61,45 @@ const History = () => {
     ([date, transactions]) => ({ date, transactions })
   );
 
+  const getTransactionIcon = (type: string) => {
+    switch (type) {
+      case 'stamp':
+        return <Stamp className="h-4 w-4" />;
+      case 'reward':
+        return <Trophy className="h-4 w-4" />;
+      case 'redeem':
+        return <Gift className="h-4 w-4" />;
+      default:
+        return <Clock className="h-4 w-4" />;
+    }
+  };
+
+  const getTransactionColor = (type: string) => {
+    switch (type) {
+      case 'stamp':
+        return 'bg-blue-500/10 text-blue-500';
+      case 'reward':
+        return 'bg-orange-500/10 text-orange-500';
+      case 'redeem':
+        return 'bg-green-500/10 text-green-500';
+      default:
+        return 'bg-gray-500/10 text-gray-500';
+    }
+  };
+
+  const getTransactionDescription = (transaction: Transaction) => {
+    switch (transaction.type) {
+      case 'stamp':
+        return `Added ${transaction.count || 1} stamp${(transaction.count || 1) > 1 ? 's' : ''}`;
+      case 'reward':
+        return `Reward earned${transaction.rewardCode ? ` (${transaction.rewardCode})` : ''}`;
+      case 'redeem':
+        return `Reward redeemed${transaction.rewardCode ? ` (${transaction.rewardCode})` : ''}`;
+      default:
+        return 'Activity';
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center">
@@ -101,37 +141,37 @@ const History = () => {
                       <div className="divide-y">
                         {group.transactions.map(transaction => (
                           <div key={transaction.id} className="p-4 flex items-center space-x-4">
-                            <div className={`rounded-full p-2 mr-3 ${
-                              transaction.type === 'stamp' 
-                                ? 'bg-blue-500/10 text-blue-500' 
-                                : 'bg-green-500/10 text-green-500'
-                            }`}>
-                              {transaction.type === 'stamp' ? (
-                                <Stamp className="h-4 w-4" />
-                              ) : (
-                                <Gift className="h-4 w-4" />
-                              )}
+                            <div className={`rounded-full p-2 mr-3 ${getTransactionColor(transaction.type)}`}>
+                              {getTransactionIcon(transaction.type)}
                             </div>
                             <div className="flex-1">
                               <p className="text-sm font-medium">
                                 {transaction.businessName}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {transaction.type === 'stamp' 
-                                  ? `Added ${transaction.count || 1} stamp${(transaction.count || 1) > 1 ? 's' : ''}` 
-                                  : `Redeemed reward${transaction.rewardCode ? ` (${transaction.rewardCode})` : ''}`}
+                                {getTransactionDescription(transaction)}
                               </p>
-                              {/* Show reward code if present */}
-                              {transaction.type === 'redeem' && transaction.rewardCode && (
+                              {/* Show reward code for both reward and redeem types */}
+                              {(transaction.type === 'reward' || transaction.type === 'redeem') && transaction.rewardCode && (
                                 <div className="mt-1 flex items-center gap-2">
-                                  <span className="font-mono bg-green-100 text-green-800 px-2 py-1 rounded text-xs tracking-widest border border-green-200 select-all">{transaction.rewardCode}</span>
+                                  <span className={`font-mono px-2 py-1 rounded text-xs tracking-widest border select-all ${
+                                    transaction.type === 'reward' 
+                                      ? 'bg-orange-100 text-orange-800 border-orange-200' 
+                                      : 'bg-green-100 text-green-800 border-green-200'
+                                  }`}>
+                                    {transaction.rewardCode}
+                                  </span>
                                   <button
                                     onClick={() => {
                                       navigator.clipboard.writeText(transaction.rewardCode as string);
                                       setCopiedCode(transaction.id);
                                       setTimeout(() => setCopiedCode(null), 1500);
                                     }}
-                                    className="ml-2 px-2 py-1 bg-green-200 rounded hover:bg-green-300 flex items-center text-green-900 text-xs transition-all"
+                                    className={`ml-2 px-2 py-1 rounded hover:opacity-80 flex items-center text-xs transition-all ${
+                                      transaction.type === 'reward'
+                                        ? 'bg-orange-200 text-orange-900 hover:bg-orange-300'
+                                        : 'bg-green-200 text-green-900 hover:bg-green-300'
+                                    }`}
                                     aria-label="Copy code"
                                   >
                                     {copiedCode === transaction.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}

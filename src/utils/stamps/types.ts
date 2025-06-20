@@ -34,7 +34,7 @@ export interface StampResponse {
   };
   transaction?: {
     id: string;
-    type: string;
+    type: 'stamp' | 'reward' | 'redeem';
     timestamp?: string;
     created_at?: string;
     card_id?: string;
@@ -80,7 +80,7 @@ export interface RedeemResponse {
     card_id?: string;
     customer_id?: string;
     merchant_id?: string;
-    type?: string;
+    type?: 'redeem';
     reward_code?: string;
     timestamp?: string;
     redeemed_at: string;

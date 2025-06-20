@@ -87,7 +87,9 @@ serve(async (req) => {
       )
     }
 
+    console.log('=== REDEEM REWARD PROCESS START ===')
     console.log('Looking for reward code:', rewardCode)
+    console.log('Merchant user ID:', user.id)
 
     // Check if this code has already been redeemed
     const { data: existingRedemption, error: existingError } = await supabase
@@ -101,7 +103,10 @@ serve(async (req) => {
       console.log('Error checking existing redemption:', existingError)
     }
 
+    console.log('Existing redemption check:', existingRedemption)
+
     if (existingRedemption) {
+      console.log('Reward code already redeemed:', rewardCode)
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -131,6 +136,7 @@ serve(async (req) => {
       .eq('type', 'reward') // Look specifically for reward transactions
       .maybeSingle()
 
+    console.log('=== REWARD TRANSACTION LOOKUP ===')
     console.log('Transaction lookup result:', { transaction, error: transactionError })
 
     if (transactionError || !transaction) {
@@ -160,8 +166,13 @@ serve(async (req) => {
       )
     }
 
+    console.log('=== MERCHANT AUTHORIZATION ===')
+    console.log('Transaction merchant_id:', transaction.merchant_id)
+    console.log('Current user ID:', user.id)
+
     // Check if this merchant is authorized to redeem this reward
     if (transaction.merchant_id !== user.id) {
+      console.log('Unauthorized redemption attempt')
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -180,7 +191,13 @@ serve(async (req) => {
     const currentTime = new Date();
     const hoursDifference = (currentTime.getTime() - redemptionTimestamp.getTime()) / (1000 * 60 * 60);
     
+    console.log('=== EXPIRATION CHECK ===')
+    console.log('Reward earned at:', redemptionTimestamp)
+    console.log('Current time:', currentTime)
+    console.log('Hours difference:', hoursDifference)
+    
     if (hoursDifference > 24) {
+      console.log('Reward code expired')
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -201,7 +218,11 @@ serve(async (req) => {
       .eq('id', transaction.card_id)
       .maybeSingle()
 
+    console.log('=== STAMP CARD LOOKUP ===')
+    console.log('Stamp card result:', { stampCard, error: cardError })
+
     if (cardError || !stampCard) {
+      console.log('Stamp card not found for ID:', transaction.card_id)
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -216,6 +237,7 @@ serve(async (req) => {
     }
 
     // Create a redeem transaction
+    console.log('=== CREATING REDEEM TRANSACTION ===')
     const { data: redeemTransaction, error: redeemError } = await supabase
       .from('stamp_transactions')
       .insert({
@@ -223,7 +245,12 @@ serve(async (req) => {
         customer_id: transaction.customer_id,
         merchant_id: user.id,
         type: 'redeem',
-        reward_code: rewardCode
+        reward_code: rewardCode,
+        metadata: {
+          original_reward_transaction_id: transaction.id,
+          redeemed_by_merchant: user.id,
+          reward_description: stampCard.reward
+        }
       })
       .select()
       .single()
@@ -243,28 +270,34 @@ serve(async (req) => {
       )
     }
 
+    console.log('=== REDEMPTION SUCCESSFUL ===')
     console.log('Redemption successful for code:', rewardCode)
     console.log('Redeem transaction created:', redeemTransaction)
 
+    const response = {
+      success: true, 
+      transaction: {
+        ...redeemTransaction,
+        redeemed_at: new Date().toISOString()
+      },
+      reward: stampCard.reward,
+      customerInfo: {
+        id: transaction.customer_id
+      }
+    }
+
+    console.log('Success response:', response)
+
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        transaction: {
-          ...redeemTransaction,
-          redeemed_at: new Date().toISOString()
-        },
-        reward: stampCard.reward,
-        customerInfo: {
-          id: transaction.customer_id
-        }
-      }),
+      JSON.stringify(response),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
         status: 200
       }
     )
   } catch (error) {
-    console.error('Error in redeem-reward function:', error)
+    console.error('=== ERROR IN REDEEM-REWARD FUNCTION ===')
+    console.error('Error details:', error)
     
     return new Response(
       JSON.stringify({ 
