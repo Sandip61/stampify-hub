@@ -170,8 +170,8 @@ export const initializeDemoData = async (): Promise<void> => {
         
         demoTransactions.push({
           id: `tr-${Date.now()}-${i}-${card.id}`,
-          userId: user.id,
-          cardId: card.id,
+          customer_id: user.id,
+          card_id: card.id,
           businessName: card.businessName,
           type: "stamp",
           count: 1,
@@ -186,8 +186,8 @@ export const initializeDemoData = async (): Promise<void> => {
         
         demoTransactions.push({
           id: `tr-redeem-${Date.now()}-${card.id}`,
-          userId: user.id,
-          cardId: card.id,
+          customer_id: user.id,
+          card_id: card.id,
           businessName: card.businessName,
           type: "redeem",
           timestamp: redeemDate.toISOString(),
