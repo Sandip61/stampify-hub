@@ -67,7 +67,7 @@ const MerchantDashboard = () => {
   const [merchantColor, setMerchantColor] = useState<string>("#3B82F6");
   const [bestPerformingCard, setBestPerformingCard] = useState<{name: string, rate: number} | null>(null);
 
-  const fetchRecentTransactions = async (merchantId: string) => {
+  const fetchRecentTransactions = async (merchantId: string): Promise<TransactionHistory[]> => {
     try {
       // First get transactions with stamp card names, filtered by merchant_id
       const { data: transactionData, error: transactionError } = await merchantSupabase
@@ -76,7 +76,7 @@ const MerchantDashboard = () => {
           *,
           stamp_cards!inner(name)
         `)
-        .eq('merchant_id', user.id)
+        .eq('merchant_id', merchantId)
         .order('timestamp', { ascending: false })
         .limit(10);
 
@@ -117,13 +117,13 @@ const MerchantDashboard = () => {
           };
         });
         
-        setRecentTransactions(formattedTransactions);
+        return formattedTransactions;
       } else {
-        setRecentTransactions([]);
+        return [];
       }
     } catch (error) {
       console.error("Error in fetchRecentTransactions:", error);
-      setRecentTransactions([]);
+      return [];
     }
   };
 

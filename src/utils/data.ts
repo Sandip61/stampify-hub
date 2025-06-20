@@ -36,6 +36,8 @@ export interface Transaction {
   businessName: string;
   count?: number;
   rewardCode?: string;
+  userId?: string;
+  cardId?: string;
 }
 
 // Local storage keys (kept for backward compatibility)
