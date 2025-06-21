@@ -1,9 +1,10 @@
-
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import StampIssuer from "@/components/StampIssuer";
 import RewardRedeemer from "@/components/RewardRedeemer";
 import { StampCard } from "@/types/StampCard";
@@ -16,6 +17,7 @@ import { ErrorType } from "@/utils/errors";
 
 const StampManagement = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [stampCard, setStampCard] = useState<StampCard | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshQRCodes, setRefreshQRCodes] = useState(false);
@@ -78,6 +80,10 @@ const StampManagement = () => {
     setRefreshQRCodes(false);
   };
 
+  const handleBackClick = () => {
+    navigate("/merchant/cards");
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -102,6 +108,18 @@ const StampManagement = () => {
 
   return (
     <div>
+      <div className="flex items-center gap-4 mb-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleBackClick}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Cards
+        </Button>
+      </div>
+
       <StampCardHeader stampCardName={stampCard.name} />
 
       <Tabs defaultValue="issue">
