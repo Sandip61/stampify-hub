@@ -17,6 +17,7 @@ import { TransactionItem } from "@/components/merchant/TransactionItem";
 import { TransactionHistory } from "@/pages/merchant/History";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Placeholder for analytics data structure
 interface AnalyticsData {
@@ -66,6 +67,7 @@ const MerchantDashboard = () => {
   const [merchantLogo, setMerchantLogo] = useState<string>("🏪");
   const [merchantColor, setMerchantColor] = useState<string>("#3B82F6");
   const [bestPerformingCard, setBestPerformingCard] = useState<{name: string, rate: number} | null>(null);
+  const isMobile = useIsMobile();
 
   const fetchRecentTransactions = async (merchantId: string): Promise<TransactionHistory[]> => {
     try {
@@ -441,12 +443,15 @@ const MerchantDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header with merchant name */}
-      <div className="flex items-center justify-between">
+      {/* Header with merchant name - Fixed mobile layout */}
+      <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         
-        {/* Merchant name display in the center */}
-        <div className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 rounded-lg shadow-sm">
+        {/* Merchant name display - Responsive layout */}
+        <div className={cn(
+          "flex items-center px-4 py-2 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 rounded-lg shadow-sm",
+          isMobile ? "justify-center" : ""
+        )}>
           <div 
             className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium mr-3 shadow-sm"
             style={{ backgroundColor: merchantColor }}

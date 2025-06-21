@@ -27,6 +27,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface MerchantLayoutProps {
   children: ReactNode;
@@ -59,6 +60,7 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
 const AppSidebar = () => {
   const location = useLocation();
   const { setOpen } = useSidebar();
+  const isMobile = useIsMobile();
 
   const menuItems = [
     {
@@ -95,8 +97,10 @@ const AppSidebar = () => {
   ];
 
   const handleMenuClick = () => {
-    // Close the sidebar when a menu item is clicked
-    setOpen(false);
+    // Close the sidebar when a menu item is clicked, especially important for mobile
+    if (isMobile) {
+      setOpen(false);
+    }
   };
 
   return (
