@@ -97,7 +97,7 @@ const AppSidebar = () => {
   ];
 
   const handleMenuClick = () => {
-    // Close the sidebar when a menu item is clicked on mobile
+    // Close the sidebar when a menu item is clicked, especially important for mobile
     if (isMobile) {
       setOpen(false);
     }
