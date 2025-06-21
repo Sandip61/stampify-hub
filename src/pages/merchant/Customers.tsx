@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { 
@@ -10,7 +11,8 @@ import {
   Filter,
   Mail,
   Calendar,
-  Award
+  Award,
+  Settings
 } from "lucide-react";
 import { merchantSupabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -108,6 +110,14 @@ const MerchantCustomers = () => {
   };
 
   const getTransactionDisplayInfo = (transaction: MerchantTransaction) => {
+    // Check if this is a system transaction
+    const systemTransactionTypes = ['card_created', 'card_updated', 'card_deactivated', 'card_activated', 'reward'];
+    
+    if (systemTransactionTypes.includes(transaction.type)) {
+      return { name: 'System', email: 'System' };
+    }
+    
+    // For customer transactions, use existing logic
     const email = transaction.metadata?.customer_email || 'Unknown customer';
     const name = email.split('@')[0];
     return { name, email };
@@ -271,24 +281,38 @@ const MerchantCustomers = () => {
           <div className="grid gap-4">
             {filteredTransactions.map((transaction) => {
               const { name, email } = getTransactionDisplayInfo(transaction);
+              const isSystemTransaction = name === 'System';
+              
               return (
                 <Card key={transaction.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold">{name}</h3>
+                          <div className="flex items-center gap-2">
+                            {isSystemTransaction && (
+                              <Settings className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            <h3 className="font-semibold">{name}</h3>
+                          </div>
                           <Badge 
                             variant={transaction.type === 'reward' ? 'default' : 'secondary'}
                             className="text-xs"
                           >
                             {transaction.type === 'reward' ? 'Reward' : transaction.type}
                           </Badge>
+                          {isSystemTransaction && (
+                            <Badge variant="outline" className="text-xs">
+                              System
+                            </Badge>
+                          )}
                         </div>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground mb-1">
-                          <Mail className="h-3 w-3" />
-                          {email}
-                        </div>
+                        {!isSystemTransaction && (
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground mb-1">
+                            <Mail className="h-3 w-3" />
+                            {email}
+                          </div>
+                        )}
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Calendar className="h-3 w-3" />
                           {formatDate(transaction.timestamp || '')}
