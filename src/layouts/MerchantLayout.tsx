@@ -59,8 +59,7 @@ const MerchantLayout = ({ children }: MerchantLayoutProps) => {
 
 const AppSidebar = () => {
   const location = useLocation();
-  const { setOpenMobile } = useSidebar();
-  const isMobile = useIsMobile();
+  const { setOpen, setOpenMobile } = useSidebar();
 
   const menuItems = [
     {
@@ -97,10 +96,9 @@ const AppSidebar = () => {
   ];
 
   const handleMenuClick = () => {
-    // Only close the sidebar on mobile
-    if (isMobile) {
-      setOpenMobile(false);
-    }
+    // Force-close both mobile and desktop sidebar states
+    setOpen(false);
+    setOpenMobile(false);
   };
 
   return (
