@@ -18,6 +18,7 @@ import { TransactionHistory } from "@/pages/merchant/History";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 // Placeholder for analytics data structure
 interface AnalyticsData {
