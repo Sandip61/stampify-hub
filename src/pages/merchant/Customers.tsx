@@ -111,7 +111,7 @@ const MerchantCustomers = () => {
 
   const getTransactionDisplayInfo = (transaction: MerchantTransaction) => {
     // Check if this is a system transaction
-    const systemTransactionTypes = ['card_created', 'card_updated', 'card_deactivated', 'card_activated', 'reward'];
+    const systemTransactionTypes = ['card_created', 'card_updated', 'card_deactivated', 'card_activated', 'reward', 'redeem'];
     
     if (systemTransactionTypes.includes(transaction.type)) {
       return { name: 'System', email: 'System' };
