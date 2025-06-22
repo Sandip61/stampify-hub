@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Home, CreditCard, History, User, LogOut, ScanLine, Store } from "lucide-react";
@@ -213,7 +214,7 @@ const Navigation = () => {
             >
               <User className="w-5 h-5" />
               <span className="text-xs">Profile</span>
-            </button>
+            </NavLink>
           </nav>
         </div>
       )}
