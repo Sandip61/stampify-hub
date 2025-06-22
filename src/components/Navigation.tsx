@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Home, CreditCard, History, User, LogOut, ScanLine, Store } from "lucide-react";
@@ -21,13 +20,24 @@ const Navigation = () => {
     const handleScroll = () => {
       const currentPosition = window.scrollY;
       const isScrollingDown = currentPosition > lastScrollPosition;
+      const scrollThreshold = 10;
 
-      // Show nav when scrolling up or when near the top
-      // Hide nav only when scrolling down and past a threshold
-      if (currentPosition > 50) {
-        setVisible(!isScrollingDown || currentPosition < 10);
+      // For mobile, hide navigation when scrolling down and show when scrolling up
+      if (isMobile) {
+        if (Math.abs(currentPosition - lastScrollPosition) > scrollThreshold) {
+          if (isScrollingDown && currentPosition > 100) {
+            setVisible(false);
+          } else if (!isScrollingDown || currentPosition < 50) {
+            setVisible(true);
+          }
+        }
       } else {
-        setVisible(true);
+        // Desktop behavior - hide when scrolling down past threshold
+        if (currentPosition > 50) {
+          setVisible(!isScrollingDown || currentPosition < 10);
+        } else {
+          setVisible(true);
+        }
       }
 
       setLastScrollPosition(currentPosition);
@@ -39,7 +49,7 @@ const Navigation = () => {
 
     window.addEventListener("scroll", throttledScroll, { passive: true });
     return () => window.removeEventListener("scroll", throttledScroll);
-  }, [lastScrollPosition]);
+  }, [lastScrollPosition, isMobile]);
 
   const handleLogout = () => {
     logoutUser();
@@ -146,7 +156,7 @@ const Navigation = () => {
       {isMobile && (
         <div 
           className={cn(
-            "fixed bottom-0 left-0 right-0 z-50 bg-background border-t transition-transform duration-300 ease-out",
+            "fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t transition-transform duration-300 ease-out",
             !visible && "translate-y-full"
           )}
         >
@@ -203,7 +213,7 @@ const Navigation = () => {
             >
               <User className="w-5 h-5" />
               <span className="text-xs">Profile</span>
-            </NavLink>
+            </button>
           </nav>
         </div>
       )}
