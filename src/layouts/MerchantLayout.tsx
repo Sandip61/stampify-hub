@@ -69,7 +69,7 @@ const AppSidebar = () => {
       end: true,
     },
     {
-      title: "Stamp Cards",
+      title: "Promotions",
       url: "/merchant/cards",
       icon: CreditCard,
     },

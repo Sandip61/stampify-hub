@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -191,7 +190,10 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-card border rounded-xl p-5">
+        <button
+          onClick={() => navigate("/customer/cards")}
+          className="bg-card border rounded-xl p-5 hover:shadow-md transition-shadow cursor-pointer text-left"
+        >
           <div className="flex items-center text-primary mb-2">
             <CreditCard className="h-5 w-5 mr-2" />
             <h2 className="font-semibold">Total Cards</h2>
@@ -206,7 +208,7 @@ const Dashboard = () => {
           <p className="text-sm text-muted-foreground mt-1">
             Number of your loyalty cards
           </p>
-        </div>
+        </button>
 
         <div className="bg-card border rounded-xl p-5">
           <div className="flex items-center text-green-600 mb-2">

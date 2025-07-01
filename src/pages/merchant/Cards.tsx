@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -7,7 +8,8 @@ import {
   Trash2, 
   Search,
   CheckCircle,
-  XCircle
+  XCircle,
+  Settings
 } from "lucide-react";
 import { Merchant } from "@/utils/merchantAuth";
 import { 
@@ -81,7 +83,7 @@ const MerchantCards = () => {
           className="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-gradient-to-r from-teal-600 to-amber-600 text-white hover:from-teal-700 hover:to-amber-700 transition-colors"
         >
           <PlusCircle className="mr-2 h-4 w-4" />
-          New Stamp Card
+          New Promotion
         </Link>
       </div>
 
@@ -127,7 +129,7 @@ const MerchantCards = () => {
                 className="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-gradient-to-r from-teal-600 to-amber-600 text-white hover:from-teal-700 hover:to-amber-700 transition-colors"
               >
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Create your first card
+                Create your first promotion
               </Link>
             </>
           )}
@@ -169,7 +171,7 @@ const MerchantCards = () => {
                               to={`/merchant/cards/${card.id}/manage`}
                               className="p-2 rounded-md hover:bg-purple-100 text-purple-500"
                             >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-ticket"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
+                              <Settings className="h-5 w-5" />
                             </Link>
                           </TooltipTrigger>
                           <TooltipContent 
