@@ -40,11 +40,11 @@ export const getTransactionDescription = (transaction: TransactionHistory) => {
     case 'redeem':
       return `Reward redeemed by ${getCustomerDisplay()}${transaction.reward_code ? ` (Code: ${transaction.reward_code})` : ''}`;
     case 'card_created':
-      return 'New Stamp Card Created';
+      return 'New Promotion Created';
     case 'card_updated':
-      return 'Stamp Card Updated';
+      return 'Promotion Updated';
     case 'card_deactivated':
-      return 'Stamp Card Deactivated';
+      return 'Promotion Deactivated';
     default:
       return 'Unknown Activity';
   }
@@ -68,7 +68,7 @@ export const TransactionItem = ({ transaction }: { transaction: TransactionHisto
       </div>
       <div className="flex-1">
         <p className="text-sm font-medium">
-          {transaction.card_name || 'Stamp Card Activity'}
+          {transaction.card_name || 'Promotion Activity'}
         </p>
         <p className="text-xs text-muted-foreground">
           {getTransactionDescription(transaction)}
