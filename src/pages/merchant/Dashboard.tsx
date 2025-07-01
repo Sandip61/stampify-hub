@@ -471,7 +471,7 @@ const MerchantDashboard = () => {
             className="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
-            New Stamp Card
+            New Promotion
           </Link>
         </div>
       </div>
@@ -481,7 +481,7 @@ const MerchantDashboard = () => {
         <div className="bg-card border rounded-xl p-4">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-muted-foreground">Total Cards</p>
+              <p className="text-sm text-muted-foreground">Total Promotions</p>
               <h3 className="text-2xl font-bold mt-1">{analytics.totalStampCards}</h3>
             </div>
             <div className="rounded-full p-2 bg-primary/10 text-primary">
@@ -522,7 +522,7 @@ const MerchantDashboard = () => {
         <div className="bg-card border rounded-xl p-4">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-muted-foreground">Best Performing Card</p>
+              <p className="text-sm text-muted-foreground">Best Performing Promotion</p>
               <h3 className="text-lg font-bold mt-1">{bestPerformingCard?.name || 'Loading...'}</h3>
               <div className="flex items-center mt-1">
                 <span className="text-xs text-green-600 font-medium">
@@ -605,10 +605,10 @@ const MerchantDashboard = () => {
         </div>
       </div>
 
-      {/* Program performance / Your Stamp Cards */}
+      {/* Program performance / Your Promotions */}
       <div className="bg-card border rounded-xl overflow-hidden">
         <div className="p-4 border-b">
-          <h3 className="font-semibold">Your Stamp Cards</h3>
+          <h3 className="font-semibold">Your Promotions</h3>
         </div>
         
         {stampCards.length > 0 ? (
@@ -650,7 +650,7 @@ const MerchantDashboard = () => {
               className="mt-4 inline-flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             >
               <PlusCircle className="mr-2 h-4 w-4" />
-              Create Stamp Card
+              Create Promotion
             </Link>
           </div>
         )}

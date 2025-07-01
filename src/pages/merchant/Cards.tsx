@@ -46,26 +46,26 @@ const MerchantCards = () => {
   };
 
   const handleDelete = async (cardId: string) => {
-    if (!confirm("Are you sure you want to delete this stamp card? This action cannot be undone.")) {
+    if (!confirm("Are you sure you want to delete this promotion? This action cannot be undone.")) {
       return;
     }
     
     try {
       await deleteMerchantStampCard(cardId);
-      toast.success("Stamp card deleted successfully");
+      toast.success("Promotion deleted successfully");
       loadCards();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to delete stamp card");
+      toast.error(error instanceof Error ? error.message : "Failed to delete promotion");
     }
   };
 
   const toggleCardStatus = async (card: MerchantStampCard) => {
     try {
       await updateMerchantStampCard(card.id, { isActive: !card.isActive });
-      toast.success(`Stamp card ${card.isActive ? 'deactivated' : 'activated'} successfully`);
+      toast.success(`Promotion ${card.isActive ? 'deactivated' : 'activated'} successfully`);
       loadCards();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update stamp card");
+      toast.error(error instanceof Error ? error.message : "Failed to update promotion");
     }
   };
 
@@ -77,7 +77,7 @@ const MerchantCards = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-amber-600 bg-clip-text text-transparent">Stamp Cards</h1>
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-amber-600 bg-clip-text text-transparent">Promotions</h1>
         <Link
           to="/merchant/cards/new"
           className="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-gradient-to-r from-teal-600 to-amber-600 text-white hover:from-teal-700 hover:to-amber-700 transition-colors"
@@ -92,7 +92,7 @@ const MerchantCards = () => {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search stamp cards..."
+            placeholder="Search promotions..."
             className="pl-9 h-10 w-full rounded-md border border-teal-100 bg-white/70 backdrop-blur-sm px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -112,7 +112,7 @@ const MerchantCards = () => {
           {searchTerm ? (
             <>
               <h3 className="text-lg font-semibold mb-1">No results found</h3>
-              <p className="text-muted-foreground mb-4">No stamp cards match your search criteria</p>
+              <p className="text-muted-foreground mb-4">No promotions match your search criteria</p>
               <button
                 onClick={() => setSearchTerm("")}
                 className="text-sm text-teal-600 hover:text-teal-700"
@@ -122,7 +122,7 @@ const MerchantCards = () => {
             </>
           ) : (
             <>
-              <h3 className="text-lg font-semibold mb-1">No stamp cards yet</h3>
+              <h3 className="text-lg font-semibold mb-1">No promotions yet</h3>
               <p className="text-muted-foreground mb-4">Start creating loyalty programs for your customers</p>
               <Link
                 to="/merchant/cards/new"
@@ -179,7 +179,7 @@ const MerchantCards = () => {
                             align="start" 
                             className="whitespace-nowrap"
                           >
-                            Manage Stamps
+                            Manage Promotions
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -199,7 +199,7 @@ const MerchantCards = () => {
                             </button>
                           </TooltipTrigger>
                           <TooltipContent side="bottom">
-                            {card.isActive ? 'Deactivate Card' : 'Activate Card'}
+                            {card.isActive ? 'Deactivate Promotion' : 'Activate Promotion'}
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -215,7 +215,7 @@ const MerchantCards = () => {
                             </Link>
                           </TooltipTrigger>
                           <TooltipContent side="bottom">
-                            Edit Stamp Card
+                            Edit Promotion
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -235,7 +235,7 @@ const MerchantCards = () => {
                             align="end" 
                             className="mr-2 overflow-visible"
                           >
-                            Delete Stamp Card
+                            Delete Promotion
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
