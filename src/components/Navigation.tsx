@@ -15,42 +15,48 @@ const Navigation = () => {
   const isMobile = useIsMobile();
   const { activeRole } = useRole();
   const [visible, setVisible] = useState(true);
-  const [lastScrollPosition, setLastScrollPosition] = useState(0);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => {
-      const currentPosition = window.scrollY;
-      const isScrollingDown = currentPosition > lastScrollPosition;
-      const scrollThreshold = 10;
-
-      // For mobile, hide navigation when scrolling down and show when scrolling up
+      const currentScrollY = window.scrollY;
+      
       if (isMobile) {
-        if (Math.abs(currentPosition - lastScrollPosition) > scrollThreshold) {
-          if (isScrollingDown && currentPosition > 100) {
-            setVisible(false);
-          } else if (!isScrollingDown || currentPosition < 50) {
-            setVisible(true);
-          }
+        // For mobile: Simple logic - hide when scrolling down significantly, show when scrolling up
+        if (currentScrollY > lastScrollY && currentScrollY > 100) {
+          // Scrolling down and past threshold
+          setVisible(false);
+        } else if (currentScrollY < lastScrollY - 10 || currentScrollY <= 50) {
+          // Scrolling up with some momentum or near top
+          setVisible(true);
         }
       } else {
-        // Desktop behavior - hide when scrolling down past threshold
-        if (currentPosition > 50) {
-          setVisible(!isScrollingDown || currentPosition < 10);
+        // Desktop: Show/hide based on scroll direction with smaller threshold
+        if (currentScrollY > 50) {
+          setVisible(currentScrollY < lastScrollY || currentScrollY <= 100);
         } else {
           setVisible(true);
         }
       }
-
-      setLastScrollPosition(currentPosition);
+      
+      setLastScrollY(currentScrollY);
     };
 
+    // Throttle scroll events for better performance
+    let ticking = false;
     const throttledScroll = () => {
-      requestAnimationFrame(handleScroll);
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          handleScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
     window.addEventListener("scroll", throttledScroll, { passive: true });
     return () => window.removeEventListener("scroll", throttledScroll);
-  }, [lastScrollPosition, isMobile]);
+  }, [lastScrollY, isMobile]);
 
   const handleLogout = () => {
     logoutUser();
@@ -157,7 +163,7 @@ const Navigation = () => {
       {isMobile && (
         <div 
           className={cn(
-            "fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t transition-transform duration-300 ease-out",
+            "fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t transition-transform duration-200 ease-out",
             !visible && "translate-y-full"
           )}
         >
@@ -214,7 +220,7 @@ const Navigation = () => {
             >
               <User className="w-5 h-5" />
               <span className="text-xs">Profile</span>
-            </NavLink>
+            </button>
           </nav>
         </div>
       )}
